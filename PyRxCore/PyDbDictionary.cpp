@@ -8,17 +8,23 @@ using namespace boost::python;
 //PyDbDictionary wrapper
 void makePyDbDictionaryWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     constexpr const std::string_view removeOverload = "Overloads:\n"
         "- key: str\n"
         "- key: PyDb.ObjectId\n"
         "- key: str, returnId: PyDb.ObjectId\n";
 
-    PyDocString DS("PyDb.Dictionary");
+    PyDocString DS("Dictionary");
     class_<PyDbDictionary, bases<PyDbObject>>("Dictionary")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 3737)))
         .def("getAt", &PyDbDictionary::getAt, DS.ARGS({ "val : str" }, 3762))
         .def("has", &PyDbDictionary::has1)
         .def("has", &PyDbDictionary::has2, DS.ARGS({ "val : str|PyDb.ObjectId" }, 3764))
@@ -35,7 +41,7 @@ void makePyDbDictionaryWrapper()
         .def("desc", &PyDbDictionary::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbDictionary::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
         .def("cast", &PyDbDictionary::cast, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cast")
-        .def("__getitem__", &PyDbDictionary::getAt, DS.ARGS({ "val : str" }, 3762))
+        .def("__getitem__", &PyDbDictionary::getAtEx, DS.ARGS({ "val : str" }, 3762))
         .def("__contains__", &PyDbDictionary::has1)
         .def("__contains__", &PyDbDictionary::has2, DS.ARGS({ "val : str|PyDb.ObjectId" }, 3764))
         ;
@@ -74,6 +80,16 @@ PyDbObjectId PyDbDictionary::getAt(const std::string& entryName) const
     AcDbObjectId id;
     PyThrowBadEs(impObj()->getAt(utf8_to_wstr(entryName).c_str(), id));
     return PyDbObjectId(id);
+}
+
+PyDbObjectId PyDbDictionary::getAtEx(const std::string& entryName) const
+{
+    AcDbObjectId id;
+    const auto es = impObj()->getAt(utf8_to_wstr(entryName).c_str(), id);
+    if (es == Acad::eKeyNotFound)
+        throw PyRxEKeyError(entryName);
+    PyThrowBadEs(es);
+    return id;
 }
 
 bool PyDbDictionary::has1(const std::string& entryName) const

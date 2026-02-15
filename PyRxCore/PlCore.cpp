@@ -5,9 +5,7 @@
 
 using namespace boost::python;
 
-#if defined(_BRXTARGET250)
-//
-#else
+
 void makePyPlCoreWrapper()
 {
     PyDocString DS("Core");
@@ -26,11 +24,14 @@ ProcessPlotState PlCore::processPlotState()
 
 void PlCore::publishExecute(const PyPlDSDData& dsdDataObj, const PyPlPlotConfig& pConfig, bool bShowPlotProgress)
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     acplPublishExecute(*dsdDataObj.impObj(), pConfig.impObj(), bShowPlotProgress);
+#endif
 }
 
 std::string PlCore::className()
 {
     return "PlCore";
 }
-#endif

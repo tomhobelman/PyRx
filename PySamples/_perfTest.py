@@ -1,8 +1,10 @@
-from pyrx_imp import Rx, Ge, Gi, Db, Ap, Ed, Ax
 import timeit
 
-#run this before release!!!
-#PySamples\dwg\TestPoints.dwg
+from pyrx import Ap, Db, Ge
+
+# run this before release!!!
+# PySamples\dwg\TestPoints.dwg
+
 
 # calls Db.Point.desc() every loop
 def move_points_old():
@@ -19,6 +21,7 @@ def move_points_old():
     except Exception as err:
         print(err)
 
+
 # caches Db.Point.desc()
 def move_points():
     mat = Ge.Matrix3d()
@@ -31,7 +34,8 @@ def move_points():
             ent = Db.Entity(id, Db.OpenMode.ForWrite)
             ent.transformBy(mat)
 
-# uses model.objectIds(desc) instead of 
+
+# uses model.objectIds(desc) instead of
 # if id.isDerivedFrom(desc):
 def move_points_new():
     mat = Ge.Matrix3d()
@@ -42,16 +46,20 @@ def move_points_new():
         ent = Db.Entity(id, Db.OpenMode.ForWrite)
         ent.transformBy(mat)
 
-#model is iterable
+
+# model is iterable
 def move_points_iter():
     mat = Ge.Matrix3d()
     mat.setToTranslation(Ge.Point3d(100, 100, 0).asVector())
     db = Db.curDb()
     model = Db.BlockTableRecord(db.modelSpaceId())
+    desc = Db.Point.desc()
     for id in model:
-        ent = Db.Entity(id, Db.OpenMode.ForWrite)
-        ent.transformBy(mat)
-        
+        if id.isDerivedFrom(desc):
+            ent = Db.Entity(id, Db.OpenMode.ForWrite)
+            ent.transformBy(mat)
+
+
 def move_points_com_iter():
     objType = "AcDbPoint"
     mat = Ge.Matrix3d()
@@ -61,7 +69,8 @@ def move_points_com_iter():
     for e in axDoc.modelSpace():
         if e.objectName() == objType:
             e.transformBy(mat)
-            
+
+
 def move_points_com():
     objType = "AcDbPoint"
     mat = Ge.Matrix3d()
@@ -85,15 +94,37 @@ print("test move_points_com_iter....time = 6.430184000004374")
 
 print("\nrun command pyperftest")
 
+
 def PyRxCmd_pyperftest():
     try:
         nruns = 20
-        print("test move_points_new....\t time = {}".format(timeit.timeit(move_points_new, number=nruns)))
-        print("test move_points........\t time = {}".format(timeit.timeit(move_points, number=nruns)))
-        print("test move_points_old....\t time = {}".format(timeit.timeit(move_points_old, number=nruns)))
-        print("test move_points_iter...\t time = {}".format(timeit.timeit(move_points_iter, number=nruns)))
-        print("test move_points_com....\t time = {}".format(timeit.timeit(move_points_com, number=nruns)))
-        print("test move_points_com_iter....\t time = {}".format(timeit.timeit(move_points_com_iter, number=nruns)))
+        print(
+            "test move_points_new....\t time = {}".format(
+                timeit.timeit(move_points_new, number=nruns)
+            )
+        )
+        print(
+            "test move_points........\t time = {}".format(timeit.timeit(move_points, number=nruns))
+        )
+        print(
+            "test move_points_old....\t time = {}".format(
+                timeit.timeit(move_points_old, number=nruns)
+            )
+        )
+        print(
+            "test move_points_iter...\t time = {}".format(
+                timeit.timeit(move_points_iter, number=nruns)
+            )
+        )
+        print(
+            "test move_points_com....\t time = {}".format(
+                timeit.timeit(move_points_com, number=nruns)
+            )
+        )
+        print(
+            "test move_points_com_iter....\t time = {}".format(
+                timeit.timeit(move_points_com_iter, number=nruns)
+            )
+        )
     except Exception as err:
         print(err)
-

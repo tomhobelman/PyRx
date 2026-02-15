@@ -12,7 +12,7 @@ using namespace boost::python;
 OutputDisplayServiceImpl::OutputDisplayServiceImpl()
 {
     ms_buffer.clear();
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     PyThrowBadEs(acdbSetHostApplicationServices(this));
     setWorkingGlobals(m_pOldHostServices->workingGlobals());
     setWorkingDatabase(m_pOldHostServices->workingDatabase());
@@ -22,7 +22,7 @@ OutputDisplayServiceImpl::OutputDisplayServiceImpl()
 OutputDisplayServiceImpl::~OutputDisplayServiceImpl()
 {
     ms_buffer.clear();
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     acdbSetHostApplicationServices(m_pOldHostServices);
     setWorkingGlobals(m_pOldHostServices->workingGlobals());
     setWorkingDatabase(m_pOldHostServices->workingDatabase());
@@ -34,10 +34,16 @@ Acad::ErrorStatus OutputDisplayServiceImpl::findFile(ACHAR* pthOut, int nBufLeng
     return Acad::ErrorStatus::eNotImplemented;
 }
 
-#if !defined(_BRXTARGET250)
 AcadInternalServices* OutputDisplayServiceImpl::acadInternalServices()
 {
-    return m_pOldHostServices->acadInternalServices();
+    PyThrowBadEs(eNotImplemented);
+    return nullptr;
+}
+
+#if defined(_ARXTARGET) && (_ARXTARGET >= 260)
+bool OutputDisplayServiceImpl::notifyCorruptDrawingFoundOnOpen(AcDbObjectId id, Acad::ErrorStatus es)
+{
+    return false;
 }
 #endif
 
@@ -71,12 +77,16 @@ std::wstring OutputDisplayServiceImpl::getOutput() const
     return ms_buffer;
 }
 
+AcDbTransactionManager* OutputDisplayServiceImpl::workingTransactionManager()
+{
+    throw PyNotimplementedByHost{};
+}
 
 //---------------------------------------------------------------------------------------- -
 //PyOutputDisplayService
 void makePyOutputDisplayServiceWrapper()
 {
-    PyDocString DS("PyDb.OutputDisplayService");
+    PyDocString DS("OutputDisplayService");
     class_<PyOutputDisplayService>("OutputDisplayService")
         .def(init<>(DS.ARGS()))
         .def("getMuteCmdLine", &PyOutputDisplayService::getMuteCmdLine, DS.ARGS())
@@ -101,7 +111,7 @@ bool PyOutputDisplayService::getMuteCmdLine() const
     return impObj()->getMuteCmdLine();
 }
 
-void PyOutputDisplayService::setMuteCmdLine(bool val)
+void PyOutputDisplayService::setMuteCmdLine(bool val) const
 {
     impObj()->setMuteCmdLine(val);
 }
@@ -290,7 +300,7 @@ PyDbLayoutManager PyDbHostApplicationServices::dbLayoutManager()
 
 PyOutputDisplayService PyDbHostApplicationServices::createOutputCapture()
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250)
     throw PyNotimplementedByHost();
 #else
     return PyOutputDisplayService{};
@@ -373,157 +383,256 @@ void makePyDbSymUtilServicesWrapper()
 
 bool PyDbSymUtilServices::isBlockLayoutName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isBlockLayoutName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isBlockModelSpaceName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    return icompare(name, "*MODEL_SPACE");
+#else
     return imp->isBlockModelSpaceName(utf8_to_wstr(name).c_str());
+#endif
 }
 
 bool PyDbSymUtilServices::isBlockPaperSpaceName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    return icompare(name, "*PAPER_SPACE");
+#else
     return imp->isBlockPaperSpaceName(utf8_to_wstr(name).c_str());
+#endif
 }
 
 bool PyDbSymUtilServices::isLayerDefpointsName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isLayerDefpointsName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isLayerZeroName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    return icompare(name, "0");
+#else
     return imp->isLayerZeroName(utf8_to_wstr(name).c_str());
+#endif
 }
 
 bool PyDbSymUtilServices::isLinetypeByBlockName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isLinetypeByBlockName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isLinetypeByLayerName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isLinetypeByLayerName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isLinetypeContinuousName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isLinetypeContinuousName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isRegAppAcadName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isRegAppAcadName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isTextStyleStandardName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isTextStyleStandardName(utf8_to_wstr(name).c_str());
 }
 
 bool PyDbSymUtilServices::isViewportActiveName(const std::string& name) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->isViewportActiveName(utf8_to_wstr(name).c_str());
 }
 
 PyDbObjectId PyDbSymUtilServices::blockModelSpaceId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    PyDbObjectId recid;
+    AcDbBlockTablePointer bt(pDb.impObj()->blockTableId());
+    bt->getIdAt(L"*MODEL_SPACE", recid.m_id);
+    return recid;
+#else
     return PyDbObjectId(imp->blockModelSpaceId(pDb.impObj()));
+#endif
 }
 
 PyDbObjectId PyDbSymUtilServices::blockPaperSpaceId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->blockPaperSpaceId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::layerDefpointsId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->layerDefpointsId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::layerZeroId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->layerZeroId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::linetypeByBlockId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->linetypeByBlockId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::linetypeByLayerId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->linetypeByLayerId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::linetypeContinuousId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->linetypeContinuousId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::regAppAcadId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->regAppAcadId(pDb.impObj()));
 }
 
 PyDbObjectId PyDbSymUtilServices::textStyleStandardId(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return PyDbObjectId(imp->textStyleStandardId(pDb.impObj()));
 }
 
 std::string PyDbSymUtilServices::blockModelSpaceName() const
 {
+#if defined(_IRXTARGET140)
+    return "*Model_Space";
+#else
     return wstr_to_utf8(imp->blockModelSpaceName());
+#endif
 }
 
 std::string PyDbSymUtilServices::blockPaperSpaceName() const
 {
+#if defined(_IRXTARGET140)
+    return "*Paper_Space";
+#else
     return wstr_to_utf8(imp->blockPaperSpaceName());
+#endif
 }
 
 std::string PyDbSymUtilServices::layerDefpointsName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->layerDefpointsName());
 }
 
 std::string PyDbSymUtilServices::layerZeroName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->layerZeroName());
 }
 
 std::string PyDbSymUtilServices::linetypeByBlockName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->linetypeByBlockName());
 }
 
 std::string PyDbSymUtilServices::linetypeByLayerName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->linetypeByLayerName());
 }
 
 std::string PyDbSymUtilServices::linetypeContinuousName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->linetypeContinuousName());
 }
 
 std::string PyDbSymUtilServices::regAppAcadName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->regAppAcadName());
 }
 
 std::string PyDbSymUtilServices::textStyleStandardName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->textStyleStandardName());
 }
 
 std::string PyDbSymUtilServices::viewportActiveName() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return wstr_to_utf8(imp->viewportActiveName());
 }
 
 int PyDbSymUtilServices::compareSymbolName(const std::string& thisName, const std::string& otherName) const
 {
-#if defined(_GRXTARGET250) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET250) || defined(_BRXTARGET260) || defined(_IRXTARGET140)
     if (thisName == otherName)
         return 0;
     else if (thisName > otherName)
@@ -536,7 +645,7 @@ int PyDbSymUtilServices::compareSymbolName(const std::string& thisName, const st
 
 bool PyDbSymUtilServices::hasVerticalBar(const std::string& name) const
 {
-#if defined(_GRXTARGET250) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET250) || defined(_BRXTARGET260) || defined(_IRXTARGET140)
     return name.find('|') != std::string::npos;
 #endif
     return imp->hasVerticalBar(utf8_to_wstr(name).c_str());
@@ -544,7 +653,11 @@ bool PyDbSymUtilServices::hasVerticalBar(const std::string& name) const
 
 std::string PyDbSymUtilServices::makeDependentName(const std::string& dwgName, const std::string& symbolName) const
 {
-#if defined(_ARXTARGET) && (_ARXTARGET >= 250)
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
+
+#if defined(_ARXTARGET) && (_ARXTARGET >= 250) || (_GRXTARGET == 260)
     AcString pNewName;
     PyThrowBadEs(imp->makeDependentName(pNewName, utf8_to_wstr(dwgName).c_str(), utf8_to_wstr(symbolName).c_str()));
     std::string val = wstr_to_utf8(pNewName);
@@ -559,6 +672,10 @@ std::string PyDbSymUtilServices::makeDependentName(const std::string& dwgName, c
 
 std::string PyDbSymUtilServices::repairPreExtendedSymbolName(const std::string& oldName, bool allowVerticalBar) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
+
     ACHAR* pNewName = nullptr;
     PyThrowBadEs(imp->repairPreExtendedSymbolName(pNewName, utf8_to_wstr(oldName).c_str(), allowVerticalBar));
     std::string val = wstr_to_utf8(pNewName);
@@ -568,6 +685,10 @@ std::string PyDbSymUtilServices::repairPreExtendedSymbolName(const std::string& 
 
 std::string PyDbSymUtilServices::repairSymbolName(const std::string& oldName, bool allowVerticalBar) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
+
     ACHAR* pNewName = nullptr;
     PyThrowBadEs(imp->repairSymbolName(pNewName, utf8_to_wstr(oldName).c_str(), allowVerticalBar));
     std::string val = wstr_to_utf8(pNewName);
@@ -577,21 +698,33 @@ std::string PyDbSymUtilServices::repairSymbolName(const std::string& oldName, bo
 
 Acad::ErrorStatus PyDbSymUtilServices::validatePreExtendedSymbolName(const std::string& name, bool allowVerticalBar) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->validatePreExtendedSymbolName(utf8_to_wstr(name).c_str(), allowVerticalBar);
 }
 
 Acad::ErrorStatus PyDbSymUtilServices::validateSymbolName(const std::string& name, bool allowVerticalBar) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->validateSymbolName(utf8_to_wstr(name).c_str(), allowVerticalBar);
 }
 
 bool PyDbSymUtilServices::compatibilityMode(PyDbDatabase& pDb) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->compatibilityMode(pDb.impObj());
 }
 
 std::string PyDbSymUtilServices::getBlockNameFromInsertPathName(const std::string& pathName) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     ACHAR* pNewName = nullptr;
     PyThrowBadEs(imp->getBlockNameFromInsertPathName(pNewName, utf8_to_wstr(pathName).c_str()));
     std::string val = wstr_to_utf8(pNewName);
@@ -601,7 +734,11 @@ std::string PyDbSymUtilServices::getBlockNameFromInsertPathName(const std::strin
 
 std::string PyDbSymUtilServices::getInsertPathNameFromBlockName(const std::string& pathName) const
 {
-#if defined(_ARXTARGET) && (_ARXTARGET >= 250)
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
+
+#if defined(_ARXTARGET) && (_ARXTARGET >= 250) || (_GRXTARGET == 260) 
     AcString pNewName;
     PyThrowBadEs(imp->getInsertPathNameFromBlockName(pNewName, utf8_to_wstr(pathName).c_str()));
     std::string val = wstr_to_utf8(pNewName);
@@ -616,6 +753,9 @@ std::string PyDbSymUtilServices::getInsertPathNameFromBlockName(const std::strin
 
 std::string PyDbSymUtilServices::getPathNameFromSymbolName(const std::string& symbolName, const std::string& extensions) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     ACHAR* pNewName = nullptr;
     PyThrowBadEs(imp->getPathNameFromSymbolName(pNewName, utf8_to_wstr(symbolName).c_str(), utf8_to_wstr(extensions).c_str()));
     std::string val = wstr_to_utf8(pNewName);
@@ -625,6 +765,9 @@ std::string PyDbSymUtilServices::getPathNameFromSymbolName(const std::string& sy
 
 std::string PyDbSymUtilServices::getSymbolNameFromPathName(const std::string& symbolName, const std::string& extensions) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     ACHAR* pNewName = nullptr;
     PyThrowBadEs(imp->getSymbolNameFromPathName(pNewName, utf8_to_wstr(symbolName).c_str(), utf8_to_wstr(extensions).c_str()));
     std::string val = wstr_to_utf8(pNewName);
@@ -634,13 +777,49 @@ std::string PyDbSymUtilServices::getSymbolNameFromPathName(const std::string& sy
 
 Acad::ErrorStatus PyDbSymUtilServices::validateCompatibleSymbolName(const std::string& name, bool isNewName, bool allowVerticalBar, bool compatibilityMode) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     return imp->validateCompatibleSymbolName(utf8_to_wstr(name).c_str(), isNewName, allowVerticalBar, compatibilityMode);
 }
+
+//-----------------------------------------------------------------------------------------
+//SummaryInfo_Iterator
+struct SummaryInfo_Iterator
+{
+    SummaryInfo_Iterator(const PyDbDatabaseSummaryInfo& info) : _info(info)
+    {
+    }
+
+    boost::python::tuple next()
+    {
+        if (current >= _info.numCustomInfo())
+        {
+            PyErr_SetString(PyExc_StopIteration, "End of Selection Set");
+            boost::python::throw_error_already_set();
+        }
+        return _info.getCustomSummaryInfo2(current++); // Fetch items one-by-one lazily
+    }
+
+    SummaryInfo_Iterator& iter() { return *this; } // __iter__ must return self
+
+    //members
+    PyDbDatabaseSummaryInfo _info;
+    size_t current = 0;
+};
 
 //---------------------------------------------------------------------------------------- -
 //PyDbDatabaseSummaryInfo
 void makePyDbDatabaseSummaryInfoWrapper()
 {
+    class_<SummaryInfo_Iterator>("DatabaseSummaryInfoIterator", no_init)
+        .def("__iter__", &SummaryInfo_Iterator::iter, return_internal_reference<>())
+        .def("__next__", &SummaryInfo_Iterator::next);
+
+    constexpr const std::string_view ctor = "Overloads:\n"
+        "- None: Any\n"
+        "- db: PyDb.Database\n";
+
     constexpr const std::string_view deleteCustomSummaryInfoOverloads = "Overloads:\n"
         "- index: int\n"
         "- key: str\n";
@@ -653,25 +832,33 @@ void makePyDbDatabaseSummaryInfoWrapper()
         "- customInfoKey: str, value: str\n"
         "- index: int, key: str, value: str\n";
 
+    constexpr const std::string_view setIntoDatabaseOverloads = "Overloads:\n"
+        "- None: Any\n"
+        "- db: PyDb.Database\n";
+
     PyDocString DS("DatabaseSummaryInfo");
-    class_<PyDbDatabaseSummaryInfo, bases<PyRxObject>>("DatabaseSummaryInfo", boost::python::no_init)
+    class_<PyDbDatabaseSummaryInfo, bases<PyRxObject>>("DatabaseSummaryInfo")
+        .def(init<>())
+        .def(init<const PyDbDatabase&>(DS.CTOR(ctor)))
         .def("getTitle", &PyDbDatabaseSummaryInfo::getTitle, DS.ARGS())
-        .def("setTitle", &PyDbDatabaseSummaryInfo::setTitle, DS.ARGS({ "val: str" }))
+        .def("setTitle", &PyDbDatabaseSummaryInfo::setTitle, DS.ARGS({ "title: str" }))
         .def("getSubject", &PyDbDatabaseSummaryInfo::getSubject, DS.ARGS())
-        .def("setSubject", &PyDbDatabaseSummaryInfo::setSubject, DS.ARGS({ "val: str" }))
+        .def("setSubject", &PyDbDatabaseSummaryInfo::setSubject, DS.ARGS({ "subject: str" }))
         .def("getAuthor", &PyDbDatabaseSummaryInfo::getAuthor, DS.ARGS())
-        .def("setAuthor", &PyDbDatabaseSummaryInfo::setAuthor, DS.ARGS({ "val: str" }))
+        .def("setAuthor", &PyDbDatabaseSummaryInfo::setAuthor, DS.ARGS({ "author: str" }))
         .def("getKeywords", &PyDbDatabaseSummaryInfo::getKeywords, DS.ARGS())
         .def("setKeywords", &PyDbDatabaseSummaryInfo::setKeywords, DS.ARGS({ "keywordlist: str" }))
         .def("getComments", &PyDbDatabaseSummaryInfo::getComments, DS.ARGS())
-        .def("setComments", &PyDbDatabaseSummaryInfo::setComments, DS.ARGS({ "val: str" }))
+        .def("setComments", &PyDbDatabaseSummaryInfo::setComments, DS.ARGS({ "comments: str" }))
         .def("getLastSavedBy", &PyDbDatabaseSummaryInfo::getLastSavedBy, DS.ARGS())
-        .def("setLastSavedBy", &PyDbDatabaseSummaryInfo::setLastSavedBy, DS.ARGS({ "val: str" }))
+        .def("setLastSavedBy", &PyDbDatabaseSummaryInfo::setLastSavedBy, DS.ARGS({ "lastSavedBy: str" }))
         .def("getRevisionNumber", &PyDbDatabaseSummaryInfo::getRevisionNumber, DS.ARGS())
-        .def("setRevisionNumber", &PyDbDatabaseSummaryInfo::setRevisionNumber, DS.ARGS({ "val: str" }))
+        .def("setRevisionNumber", &PyDbDatabaseSummaryInfo::setRevisionNumber, DS.ARGS({ "revisionNumber: str" }))
         .def("getHyperlinkBase", &PyDbDatabaseSummaryInfo::getHyperlinkBase, DS.ARGS())
-        .def("setHyperlinkBase", &PyDbDatabaseSummaryInfo::setHyperlinkBase, DS.ARGS({ "val: str" }))
+        .def("setHyperlinkBase", &PyDbDatabaseSummaryInfo::setHyperlinkBase, DS.ARGS({ "hyperlinkBase: str" }))
+        .def("hasCustomKey", &PyDbDatabaseSummaryInfo::hasCustomKey, DS.ARGS({ "key: str" }))
         .def("numCustomInfo", &PyDbDatabaseSummaryInfo::numCustomInfo, DS.ARGS())
+        .def("removeAllCustomSummaryInfo", &PyDbDatabaseSummaryInfo::removeAllCustomSummaryInfo, DS.ARGS())
         .def("addCustomSummaryInfo", &PyDbDatabaseSummaryInfo::addCustomSummaryInfo, DS.ARGS({ "key: str","val: str" }))
         .def("deleteCustomSummaryInfo", &PyDbDatabaseSummaryInfo::deleteCustomSummaryInfo1)
         .def("deleteCustomSummaryInfo", &PyDbDatabaseSummaryInfo::deleteCustomSummaryInfo2, DS.OVRL(deleteCustomSummaryInfoOverloads))
@@ -679,11 +866,47 @@ void makePyDbDatabaseSummaryInfoWrapper()
         .def("getCustomSummaryInfo", &PyDbDatabaseSummaryInfo::getCustomSummaryInfo2, DS.OVRL(getCustomSummaryInfoOverloads))
         .def("setCustomSummaryInfo", &PyDbDatabaseSummaryInfo::setCustomSummaryInfo1)
         .def("setCustomSummaryInfo", &PyDbDatabaseSummaryInfo::setCustomSummaryInfo2, DS.OVRL(setCustomSummaryInfoOverloads))
+        .def("setIntoDatabase", &PyDbDatabaseSummaryInfo::setIntoDatabase1)
+        .def("setIntoDatabase", &PyDbDatabaseSummaryInfo::setIntoDatabase2, DS.OVRL(setIntoDatabaseOverloads))
         .def("setCustomSummaryFromDict", &PyDbDatabaseSummaryInfo::setCustomSummaryFromDict, DS.ARGS({ "keyValues: dict" }))
         .def("asDict", &PyDbDatabaseSummaryInfo::asDict, DS.ARGS())
-        .def("__getitem__", &PyDbDatabaseSummaryInfo::getCustomSummaryInfo2, DS.ARGS({ "index: int" }))
         .def("className", &PyDbDatabaseSummaryInfo::className, DS.SARGS()).staticmethod("className")
+        .def("__contains__", &PyDbDatabaseSummaryInfo::hasCustomKey, DS.ARGS({ "val: str" }))
+        .def("__getitem__", &PyDbDatabaseSummaryInfo::getCustomSummaryInfo2, DS.ARGS({ "index: int" }))
+        .def("__iter__", +[](const PyDbDatabaseSummaryInfo& self) {return SummaryInfo_Iterator(self); })
         ;
+}
+
+static AcDbDatabaseSummaryInfo* SummaryInfoFactory()
+{
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
+    AcDbDatabaseSummaryInfo* info = nullptr;
+    PyThrowBadEs(acdbGetSummaryInfo(acdbHostApplicationServices()->workingDatabase(), info));
+    return info;
+#endif
+}
+
+static AcDbDatabaseSummaryInfo* SummaryInfoFactory(const PyDbDatabase& db)
+{
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
+    AcDbDatabaseSummaryInfo* info = nullptr;
+    PyThrowBadEs(acdbGetSummaryInfo(db.impObj(), info));
+    return info;
+#endif
+}
+
+PyDbDatabaseSummaryInfo::PyDbDatabaseSummaryInfo()
+    :PyDbDatabaseSummaryInfo(SummaryInfoFactory())
+{
+}
+
+PyDbDatabaseSummaryInfo::PyDbDatabaseSummaryInfo(const PyDbDatabase& db)
+    :PyDbDatabaseSummaryInfo(SummaryInfoFactory(db))
+{
 }
 
 PyDbDatabaseSummaryInfo::PyDbDatabaseSummaryInfo(AcDbDatabaseSummaryInfo* ptr)
@@ -693,7 +916,7 @@ PyDbDatabaseSummaryInfo::PyDbDatabaseSummaryInfo(AcDbDatabaseSummaryInfo* ptr)
 
 std::string PyDbDatabaseSummaryInfo::getTitle() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getTitle(str.buf));
     return wstr_to_utf8(str.buf);
@@ -704,14 +927,14 @@ std::string PyDbDatabaseSummaryInfo::getTitle() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setTitle(const std::string& title)
+void PyDbDatabaseSummaryInfo::setTitle(const std::string& title) const
 {
     PyThrowBadEs(impObj()->setTitle(utf8_to_wstr(title).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getSubject() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getSubject(str.buf));
     return wstr_to_utf8(str.buf);
@@ -722,14 +945,14 @@ std::string PyDbDatabaseSummaryInfo::getSubject() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setSubject(const std::string& subject)
+void PyDbDatabaseSummaryInfo::setSubject(const std::string& subject) const
 {
     PyThrowBadEs(impObj()->setSubject(utf8_to_wstr(subject).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getAuthor() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getAuthor(str.buf));
     return wstr_to_utf8(str.buf);
@@ -740,14 +963,14 @@ std::string PyDbDatabaseSummaryInfo::getAuthor() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setAuthor(const std::string& author)
+void PyDbDatabaseSummaryInfo::setAuthor(const std::string& author) const
 {
     PyThrowBadEs(impObj()->setAuthor(utf8_to_wstr(author).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getKeywords() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getKeywords(str.buf));
     return wstr_to_utf8(str.buf);
@@ -758,14 +981,14 @@ std::string PyDbDatabaseSummaryInfo::getKeywords() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setKeywords(const std::string& keywordlist)
+void PyDbDatabaseSummaryInfo::setKeywords(const std::string& keywordlist) const
 {
     PyThrowBadEs(impObj()->setKeywords(utf8_to_wstr(keywordlist).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getComments() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getComments(str.buf));
     return wstr_to_utf8(str.buf);
@@ -776,14 +999,14 @@ std::string PyDbDatabaseSummaryInfo::getComments() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setComments(const std::string& comments)
+void PyDbDatabaseSummaryInfo::setComments(const std::string& comments) const
 {
     PyThrowBadEs(impObj()->setComments(utf8_to_wstr(comments).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getLastSavedBy() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getLastSavedBy(str.buf));
     return wstr_to_utf8(str.buf);
@@ -794,14 +1017,14 @@ std::string PyDbDatabaseSummaryInfo::getLastSavedBy() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setLastSavedBy(const std::string& lastSavedBy)
+void PyDbDatabaseSummaryInfo::setLastSavedBy(const std::string& lastSavedBy) const
 {
     PyThrowBadEs(impObj()->setLastSavedBy(utf8_to_wstr(lastSavedBy).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getRevisionNumber() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getRevisionNumber(str.buf));
     return wstr_to_utf8(str.buf);
@@ -812,14 +1035,14 @@ std::string PyDbDatabaseSummaryInfo::getRevisionNumber() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setRevisionNumber(const std::string& revisionNumber)
+void PyDbDatabaseSummaryInfo::setRevisionNumber(const std::string& revisionNumber) const
 {
     PyThrowBadEs(impObj()->setRevisionNumber(utf8_to_wstr(revisionNumber).c_str()));
 }
 
 std::string PyDbDatabaseSummaryInfo::getHyperlinkBase() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getHyperlinkBase(str.buf));
     return wstr_to_utf8(str.buf);
@@ -830,7 +1053,7 @@ std::string PyDbDatabaseSummaryInfo::getHyperlinkBase() const
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setHyperlinkBase(const std::string& HyperlinkBase)
+void PyDbDatabaseSummaryInfo::setHyperlinkBase(const std::string& HyperlinkBase) const
 {
     PyThrowBadEs(impObj()->setHyperlinkBase(utf8_to_wstr(HyperlinkBase).c_str()));
 }
@@ -840,24 +1063,24 @@ int PyDbDatabaseSummaryInfo::numCustomInfo() const
     return impObj()->numCustomInfo();
 }
 
-void PyDbDatabaseSummaryInfo::addCustomSummaryInfo(const std::string& key, const std::string& value)
+void PyDbDatabaseSummaryInfo::addCustomSummaryInfo(const std::string& key, const std::string& value) const
 {
     PyThrowBadEs(impObj()->addCustomSummaryInfo(utf8_to_wstr(key).c_str(), utf8_to_wstr(value).c_str()));
 }
 
-void PyDbDatabaseSummaryInfo::deleteCustomSummaryInfo1(int index)
+void PyDbDatabaseSummaryInfo::deleteCustomSummaryInfo1(int index) const
 {
     PyThrowBadEs(impObj()->deleteCustomSummaryInfo(index));
 }
 
-void PyDbDatabaseSummaryInfo::deleteCustomSummaryInfo2(const std::string& key)
+void PyDbDatabaseSummaryInfo::deleteCustomSummaryInfo2(const std::string& key) const
 {
     PyThrowBadEs(impObj()->deleteCustomSummaryInfo(utf8_to_wstr(key).c_str()));
 }
 
 boost::python::tuple PyDbDatabaseSummaryInfo::getCustomSummaryInfo1(const std::string& customInfoKey) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr value;
     PyThrowBadEs(impObj()->getCustomSummaryInfo(utf8_to_wstr(customInfoKey).c_str(), value.buf));
     PyAutoLockGIL lock;
@@ -874,7 +1097,7 @@ boost::python::tuple PyDbDatabaseSummaryInfo::getCustomSummaryInfo2(int index) c
 {
     if (index >= numCustomInfo())
         throw std::out_of_range{ "IndexError " };
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr key;
     RxAutoOutStr value;
     PyThrowBadEs(impObj()->getCustomSummaryInfo(index, key.buf, value.buf));
@@ -889,19 +1112,19 @@ boost::python::tuple PyDbDatabaseSummaryInfo::getCustomSummaryInfo2(int index) c
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setCustomSummaryInfo1(const std::string& customInfoKey, const std::string& value)
+void PyDbDatabaseSummaryInfo::setCustomSummaryInfo1(const std::string& customInfoKey, const std::string& value) const
 {
     PyThrowBadEs(impObj()->setCustomSummaryInfo(utf8_to_wstr(customInfoKey).c_str(), utf8_to_wstr(value).c_str()));
 }
 
-void PyDbDatabaseSummaryInfo::setCustomSummaryInfo2(int index, const std::string& key, const std::string& value)
+void PyDbDatabaseSummaryInfo::setCustomSummaryInfo2(int index, const std::string& key, const std::string& value) const
 {
     PyThrowBadEs(impObj()->setCustomSummaryInfo(index, utf8_to_wstr(key).c_str(), utf8_to_wstr(value).c_str()));
 }
 
-static bool hasKey(AcDbDatabaseSummaryInfo* imp, const TCHAR* key)
+static bool hasKeyimpl(AcDbDatabaseSummaryInfo* imp, const TCHAR* key)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr dummy;
     return imp->getCustomSummaryInfo(key, dummy.buf) == eOk;
 #else
@@ -910,7 +1133,7 @@ static bool hasKey(AcDbDatabaseSummaryInfo* imp, const TCHAR* key)
 #endif
 }
 
-void PyDbDatabaseSummaryInfo::setCustomSummaryFromDict(boost::python::dict& pydict)
+void PyDbDatabaseSummaryInfo::setCustomSummaryFromDict(boost::python::dict& pydict) const
 {
     PyAutoLockGIL lock;
     boost::python::list keys = boost::python::list(pydict.keys());
@@ -922,7 +1145,7 @@ void PyDbDatabaseSummaryInfo::setCustomSummaryFromDict(boost::python::dict& pydi
             const std::string& key = keyExtractor();
             boost::python::extract<std::string> valExtractor(pydict[key]);
             const std::string& val = valExtractor();
-            if (hasKey(impObj(), utf8_to_wstr(key).c_str()))
+            if (hasKeyimpl(impObj(), utf8_to_wstr(key).c_str()))
                 setCustomSummaryInfo1(key, val);
             else
                 addCustomSummaryInfo(key, val);
@@ -937,7 +1160,7 @@ boost::python::dict PyDbDatabaseSummaryInfo::asDict() const
 
     for (int idx = 0; idx < this->numCustomInfo(); idx++)
     {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
         RxAutoOutStr key;
         RxAutoOutStr value;
         if (impObj()->getCustomSummaryInfo(idx, key.buf, value.buf) == eOk)
@@ -958,6 +1181,37 @@ boost::python::dict PyDbDatabaseSummaryInfo::asDict() const
 #endif
     }
     return sinfoDict;
+}
+
+void PyDbDatabaseSummaryInfo::removeAllCustomSummaryInfo() const
+{
+    for (int idx = this->numCustomInfo() - 1; idx >= 0; idx--)
+    {
+        PyThrowBadEs(impObj()->deleteCustomSummaryInfo(idx));
+    }
+}
+
+bool PyDbDatabaseSummaryInfo::hasCustomKey(const std::string& key) const
+{
+    return hasKeyimpl(impObj(), utf8_to_wstr(key).c_str());
+}
+
+void PyDbDatabaseSummaryInfo::setIntoDatabase1() const
+{
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
+    PyThrowBadEs(acdbPutSummaryInfo(impObj(), acdbHostApplicationServices()->workingDatabase()));
+#endif
+}
+
+void PyDbDatabaseSummaryInfo::setIntoDatabase2(const PyDbDatabase& db) const
+{
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
+    PyThrowBadEs(acdbPutSummaryInfo(impObj(), db.impObj()));
+#endif
 }
 
 std::string PyDbDatabaseSummaryInfo::className()
@@ -1014,6 +1268,7 @@ void makePyDbPlotSettingsValidatorWrapper()
         .def("getLocaleMediaName", &PyDbPlotSettingsValidator::getLocaleMediaName2, DS.OVRL(getLocaleMediaNameOverloads))
         .def("setClosestMediaName", &PyDbPlotSettingsValidator::setClosestMediaName, DS.ARGS({ "settings: PyDb.PlotSettings", "paperWidth: float","paperHeight: float","units: PyDb.PlotPaperUnits","matchPrintableArea: bool" }))
         .def("plotStyleSheetList", &PyDbPlotSettingsValidator::plotStyleSheetList, DS.ARGS())
+        .def("refreshLists", &PyDbPlotSettingsValidator::refreshLists, DS.ARGS({ "settings: PyDb.PlotSettings" }))
         .def("setZoomToPaperOnUpdate", &PyDbPlotSettingsValidator::setZoomToPaperOnUpdate, DS.ARGS({ "settings: PyDb.PlotSettings","doZoom: bool" }))
         .def("setDefaultPlotConfig", &PyDbPlotSettingsValidator::setDefaultPlotConfig, DS.ARGS({ "settings: PyDb.PlotSettings" }))
         .def("className", &PyDbPlotSettingsValidator::className, DS.SARGS()).staticmethod("className")
@@ -1025,87 +1280,87 @@ PyDbPlotSettingsValidator::PyDbPlotSettingsValidator(AcDbPlotSettingsValidator* 
 {
 }
 
-void PyDbPlotSettingsValidator::setPlotCfgName1(PyDbPlotSettings& settings, const std::string& plotDeviceName)
+void PyDbPlotSettingsValidator::setPlotCfgName1(PyDbPlotSettings& settings, const std::string& plotDeviceName) const
 {
     PyThrowBadEs(impObj()->setPlotCfgName(settings.impObj(), utf8_to_wstr(plotDeviceName).c_str()));
 }
 
-void PyDbPlotSettingsValidator::setPlotCfgName2(PyDbPlotSettings& settings, const std::string& plotDeviceName, const std::string& mediaName)
+void PyDbPlotSettingsValidator::setPlotCfgName2(PyDbPlotSettings& settings, const std::string& plotDeviceName, const std::string& mediaName) const
 {
     PyThrowBadEs(impObj()->setPlotCfgName(settings.impObj(), utf8_to_wstr(plotDeviceName).c_str(), utf8_to_wstr(mediaName).c_str()));
 }
 
-void PyDbPlotSettingsValidator::setCanonicalMediaName(PyDbPlotSettings& settings, const std::string& mediaName)
+void PyDbPlotSettingsValidator::setCanonicalMediaName(PyDbPlotSettings& settings, const std::string& mediaName) const
 {
     PyThrowBadEs(impObj()->setCanonicalMediaName(settings.impObj(), utf8_to_wstr(mediaName).c_str()));
 }
 
-void PyDbPlotSettingsValidator::setPlotOrigin(PyDbPlotSettings& settings, const double xCoordinate, const double yCoordinate)
+void PyDbPlotSettingsValidator::setPlotOrigin(PyDbPlotSettings& settings, const double xCoordinate, const double yCoordinate) const
 {
     PyThrowBadEs(impObj()->setPlotOrigin(settings.impObj(), xCoordinate, yCoordinate));
 }
 
-void PyDbPlotSettingsValidator::setPlotPaperUnits(PyDbPlotSettings& pPlotSet, const PlotPaperUnits units)
+void PyDbPlotSettingsValidator::setPlotPaperUnits(PyDbPlotSettings& pPlotSet, const PlotPaperUnits units) const
 {
     PyThrowBadEs(impObj()->setPlotPaperUnits(pPlotSet.impObj(), units));
 }
 
-void PyDbPlotSettingsValidator::setPlotRotation(PyDbPlotSettings& pPlotSet, const PlotRotation rotationType)
+void PyDbPlotSettingsValidator::setPlotRotation(PyDbPlotSettings& pPlotSet, const PlotRotation rotationType) const
 {
     PyThrowBadEs(impObj()->setPlotRotation(pPlotSet.impObj(), rotationType));
 }
 
-void PyDbPlotSettingsValidator::setPlotCentered(PyDbPlotSettings& pPlotSet, Adesk::Boolean isCentered)
+void PyDbPlotSettingsValidator::setPlotCentered(PyDbPlotSettings& pPlotSet, Adesk::Boolean isCentered) const
 {
     PyThrowBadEs(impObj()->setPlotCentered(pPlotSet.impObj(), isCentered));
 }
 
-void PyDbPlotSettingsValidator::setPlotType(PyDbPlotSettings& pPlotSet, const PlotType plotAreaType)
+void PyDbPlotSettingsValidator::setPlotType(PyDbPlotSettings& pPlotSet, const PlotType plotAreaType) const
 {
     PyThrowBadEs(impObj()->setPlotType(pPlotSet.impObj(), plotAreaType));
 }
 
-void PyDbPlotSettingsValidator::setPlotWindowArea1(PyDbPlotSettings& pPlotSet, const double xmin, const double ymin, const double xmax, const double ymax)
+void PyDbPlotSettingsValidator::setPlotWindowArea1(PyDbPlotSettings& pPlotSet, const double xmin, const double ymin, const double xmax, const double ymax) const
 {
     PyThrowBadEs(impObj()->setPlotWindowArea(pPlotSet.impObj(), xmin, ymin, xmax, ymax));
 }
 
-void PyDbPlotSettingsValidator::setPlotWindowArea2(PyDbPlotSettings& pPlotSet, AcDbExtents2d& ex)
+void PyDbPlotSettingsValidator::setPlotWindowArea2(PyDbPlotSettings& pPlotSet, AcDbExtents2d& ex) const
 {
     PyThrowBadEs(impObj()->setPlotWindowArea(pPlotSet.impObj(), ex.minPoint().x, ex.minPoint().y, ex.maxPoint().x, ex.maxPoint().y));
 }
 
-void PyDbPlotSettingsValidator::setPlotViewName(PyDbPlotSettings& pPlotSet, const std::string& viewName)
+void PyDbPlotSettingsValidator::setPlotViewName(PyDbPlotSettings& pPlotSet, const std::string& viewName) const
 {
     PyThrowBadEs(impObj()->setPlotViewName(pPlotSet.impObj(), utf8_to_wstr(viewName).c_str()));
 }
 
-void PyDbPlotSettingsValidator::setUseStandardScale(PyDbPlotSettings& pPlotSet, Adesk::Boolean useStandard)
+void PyDbPlotSettingsValidator::setUseStandardScale(PyDbPlotSettings& pPlotSet, Adesk::Boolean useStandard) const
 {
     PyThrowBadEs(impObj()->setUseStandardScale(pPlotSet.impObj(), useStandard));
 }
 
-void PyDbPlotSettingsValidator::setCustomPrintScale(PyDbPlotSettings& pPlotSet, const double numerator, const double denominator)
+void PyDbPlotSettingsValidator::setCustomPrintScale(PyDbPlotSettings& pPlotSet, const double numerator, const double denominator) const
 {
     PyThrowBadEs(impObj()->setCustomPrintScale(pPlotSet.impObj(), numerator, denominator));
 }
 
-void PyDbPlotSettingsValidator::setCurrentStyleSheet(PyDbPlotSettings& pPlotSet, const std::string& styleSheetName)
+void PyDbPlotSettingsValidator::setCurrentStyleSheet(PyDbPlotSettings& pPlotSet, const std::string& styleSheetName) const
 {
     PyThrowBadEs(impObj()->setCurrentStyleSheet(pPlotSet.impObj(), utf8_to_wstr(styleSheetName).c_str()));
 }
 
-void PyDbPlotSettingsValidator::setStdScaleType(PyDbPlotSettings& pPlotSet, const StdScaleType scaleType)
+void PyDbPlotSettingsValidator::setStdScaleType(PyDbPlotSettings& pPlotSet, const StdScaleType scaleType) const
 {
     PyThrowBadEs(impObj()->setStdScaleType(pPlotSet.impObj(), scaleType));
 }
 
-void PyDbPlotSettingsValidator::setStdScale(PyDbPlotSettings& pPlotSet, const double standardScale)
+void PyDbPlotSettingsValidator::setStdScale(PyDbPlotSettings& pPlotSet, const double standardScale) const
 {
     PyThrowBadEs(impObj()->setStdScale(pPlotSet.impObj(), standardScale));
 }
 
-boost::python::list PyDbPlotSettingsValidator::plotDeviceList()
+boost::python::list PyDbPlotSettingsValidator::plotDeviceList() const
 {
     PyAutoLockGIL lock;
     boost::python::list pylist;
@@ -1116,7 +1371,7 @@ boost::python::list PyDbPlotSettingsValidator::plotDeviceList()
     return pylist;
 }
 
-boost::python::list PyDbPlotSettingsValidator::canonicalMediaNameList(PyDbPlotSettings& pPlotSet)
+boost::python::list PyDbPlotSettingsValidator::canonicalMediaNameList(PyDbPlotSettings& pPlotSet) const
 {
     PyAutoLockGIL lock;
     boost::python::list pylist;
@@ -1127,26 +1382,26 @@ boost::python::list PyDbPlotSettingsValidator::canonicalMediaNameList(PyDbPlotSe
     return pylist;
 }
 
-std::string PyDbPlotSettingsValidator::getLocaleMediaName1(PyDbPlotSettings& pPlotSet, const std::string& canonicalName)
+std::string PyDbPlotSettingsValidator::getLocaleMediaName1(PyDbPlotSettings& pPlotSet, const std::string& canonicalName) const
 {
     const ACHAR* localeName = nullptr;
     PyThrowBadEs(impObj()->getLocaleMediaName(pPlotSet.impObj(), utf8_to_wstr(canonicalName).c_str(), localeName));
     return wstr_to_utf8(localeName);
 }
 
-std::string PyDbPlotSettingsValidator::getLocaleMediaName2(PyDbPlotSettings& pPlotSet, int index)
+std::string PyDbPlotSettingsValidator::getLocaleMediaName2(PyDbPlotSettings& pPlotSet, int index) const
 {
     const ACHAR* localeName = nullptr;
     PyThrowBadEs(impObj()->getLocaleMediaName(pPlotSet.impObj(), index, localeName));
     return wstr_to_utf8(localeName);
 }
 
-void PyDbPlotSettingsValidator::setClosestMediaName(PyDbPlotSettings& pPlotSet, double paperWidth, double paperHeight, PlotPaperUnits units, Adesk::Boolean matchPrintableArea)
+void PyDbPlotSettingsValidator::setClosestMediaName(PyDbPlotSettings& pPlotSet, double paperWidth, double paperHeight, PlotPaperUnits units, Adesk::Boolean matchPrintableArea) const
 {
     PyThrowBadEs(impObj()->setClosestMediaName(pPlotSet.impObj(), paperWidth, paperHeight, units, matchPrintableArea));
 }
 
-boost::python::list PyDbPlotSettingsValidator::plotStyleSheetList()
+boost::python::list PyDbPlotSettingsValidator::plotStyleSheetList() const
 {
     PyAutoLockGIL lock;
     boost::python::list pylist;
@@ -1157,17 +1412,17 @@ boost::python::list PyDbPlotSettingsValidator::plotStyleSheetList()
     return pylist;
 }
 
-void PyDbPlotSettingsValidator::refreshLists(PyDbPlotSettings& pPlotSet)
+void PyDbPlotSettingsValidator::refreshLists(PyDbPlotSettings& pPlotSet) const
 {
     impObj()->refreshLists(pPlotSet.impObj());
 }
 
-void PyDbPlotSettingsValidator::setZoomToPaperOnUpdate(PyDbPlotSettings& pPlotSet, Adesk::Boolean doZoom)
+void PyDbPlotSettingsValidator::setZoomToPaperOnUpdate(PyDbPlotSettings& pPlotSet, Adesk::Boolean doZoom) const
 {
     impObj()->setZoomToPaperOnUpdate(pPlotSet.impObj(), doZoom);
 }
 
-void PyDbPlotSettingsValidator::setDefaultPlotConfig(PyDbPlotSettings& pPlotSet)
+void PyDbPlotSettingsValidator::setDefaultPlotConfig(PyDbPlotSettings& pPlotSet) const
 {
     impObj()->setDefaultPlotConfig(pPlotSet.impObj());
 }
@@ -1181,7 +1436,7 @@ AcDbPlotSettingsValidator* PyDbPlotSettingsValidator::impObj(const std::source_l
 {
     if (m_impl == nullptr) [[unlikely]]
         throw PyNullObject(src);
-        return m_impl;
+    return m_impl;
 }
 
 void makePyDbDictUtilWrapper()
@@ -1223,7 +1478,7 @@ void makePyDbDictUtilWrapper()
 
 std::string PyDbDictUtil::dictionaryNameAt1(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::dictionaryNameAt(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1236,7 +1491,7 @@ std::string PyDbDictUtil::dictionaryNameAt1(const PyDbObjectId& itemId)
 
 std::string PyDbDictUtil::dictionaryNameAt2(const PyDbObjectId& itemId, const PyDbObjectId& ownerDictId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::dictionaryNameAt(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1256,7 +1511,7 @@ PyDbObjectId PyDbDictUtil::dictionaryGetAt(const std::string& name, const PyDbOb
 
 std::string PyDbDictUtil::getColorName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getColorName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1276,7 +1531,7 @@ PyDbObjectId PyDbDictUtil::getGroupId(const std::string& name, const PyDbDatabas
 
 std::string PyDbDictUtil::getGroupName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getGroupName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1296,7 +1551,7 @@ PyDbObjectId PyDbDictUtil::getLayoutId(const std::string& name, const PyDbDataba
 
 std::string PyDbDictUtil::getLayoutName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getLayoutName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1316,7 +1571,7 @@ PyDbObjectId PyDbDictUtil::getMaterialId(const std::string& name, const PyDbData
 
 std::string PyDbDictUtil::getMaterialName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getMaterialName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1336,7 +1591,7 @@ PyDbObjectId PyDbDictUtil::getMLStyleId(const std::string& name, const PyDbDatab
 
 std::string PyDbDictUtil::getMLStyleName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getMLStyleName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1356,7 +1611,7 @@ PyDbObjectId PyDbDictUtil::getPlotSettingsId(const std::string& name, const PyDb
 
 std::string PyDbDictUtil::getPlotSettingsName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getPlotSettingsName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1376,7 +1631,7 @@ PyDbObjectId PyDbDictUtil::getPlotStyleNameId(const std::string& name, const PyD
 
 std::string PyDbDictUtil::getPlotStyleNameName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getPlotStyleNameName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1396,7 +1651,7 @@ PyDbObjectId PyDbDictUtil::getTableStyleId(const std::string& name, const PyDbDa
 
 std::string PyDbDictUtil::getTableStyleName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getTableStyleName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);
@@ -1416,7 +1671,7 @@ PyDbObjectId PyDbDictUtil::getVisualStyleId(const std::string& name, const PyDbD
 
 std::string PyDbDictUtil::getVisualStyleName(const PyDbObjectId& itemId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(AcDbDictUtil::getVisualStyleName(str.buf, itemId.m_id));
     return wstr_to_utf8(str.buf);

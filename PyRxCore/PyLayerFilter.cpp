@@ -12,25 +12,26 @@ void makePyLyLayerFilterWrapper()
 {
     PyDocString DS("LayerFilter");
     class_<PyLyLayerFilter, bases<PyRxObject>>("LayerFilter")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.ARGS(14645)))
         .def("name", &PyLyLayerFilter::name, DS.ARGS(14666))
-        .def("setName", &PyLyLayerFilter::setName, DS.ARGS({ "val : str" }, 14671))
+        .def("setName", &PyLyLayerFilter::setName, DS.ARGS({ "filter_name : str" }, 14671))
         .def("allowRename", &PyLyLayerFilter::allowRename, DS.ARGS(14654))
         .def("parent", &PyLyLayerFilter::parent, DS.ARGS(14667))
         .def("getNestedFilters", &PyLyLayerFilter::getNestedFilters, DS.ARGS(14663))
-        .def("addNested", &PyLyLayerFilter::addNested, DS.ARGS({ "val : PyAp.LayerFilter" }, 14651))
-        .def("removeNested", &PyLyLayerFilter::removeNested, DS.ARGS({ "val : PyAp.LayerFilter" }, 14669))
+        .def("addNested", &PyLyLayerFilter::addNested, DS.ARGS({ "nested_filter : PyAp.LayerFilter" }, 14651))
+        .def("removeNested", &PyLyLayerFilter::removeNested, DS.ARGS({ "nested_filter : PyAp.LayerFilter" }, 14669))
         .def("generateNested", &PyLyLayerFilter::generateNested, DS.ARGS(14661))
         .def("dynamicallyGenerated", &PyLyLayerFilter::dynamicallyGenerated, DS.ARGS(14657))
         .def("allowNested", &PyLyLayerFilter::allowNested, DS.ARGS(14653))
         .def("allowDelete", &PyLyLayerFilter::allowDelete, DS.ARGS(14652))
         .def("isProxy", &PyLyLayerFilter::isProxy, DS.ARGS(14665))
         .def("isIdFilter", &PyLyLayerFilter::isIdFilter, DS.ARGS(14664))
-        .def("filter", &PyLyLayerFilter::filter, DS.ARGS({ "val : PyDb.LayerTableRecord" }, 14658))
+        .def("filter", &PyLyLayerFilter::filter, DS.ARGS({ "layer_record : PyDb.LayerTableRecord" }, 14658))
         .def("showEditor", &PyLyLayerFilter::showEditor, DS.ARGS(14672))
         .def("filterExpression", &PyLyLayerFilter::filterExpression, DS.ARGS(14659))
-        .def("setFilterExpression", &PyLyLayerFilter::setFilterExpression, DS.ARGS({ "val : str" }, 14670))
-        .def("compareTo", &PyLyLayerFilter::compareTo, DS.ARGS({ "other : PyAp.LayerFilter" }, 14655))
+        .def("setFilterExpression", &PyLyLayerFilter::setFilterExpression, DS.ARGS({ "expression : str" }, 14670))
+        .def("filterExpressionTree", &PyLyLayerFilter::filterExpressionTree, DS.ARGS())
+        .def("compareTo", &PyLyLayerFilter::compareTo, DS.ARGS({ "other_filter : PyAp.LayerFilter" }, 14655))
         .def("desc", &PyLyLayerFilter::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyLyLayerFilter::className, DS.SARGS()).staticmethod("className")
         ;
@@ -51,7 +52,7 @@ const std::string PyLyLayerFilter::name() const
     return wstr_to_utf8(impObj()->name());
 }
 
-void PyLyLayerFilter::setName(const std::string& name)
+void PyLyLayerFilter::setName(const std::string& name) const
 {
     PyThrowBadEs(impObj()->setName(utf8_to_wstr(name).c_str()));
 }
@@ -70,23 +71,22 @@ boost::python::list PyLyLayerFilter::getNestedFilters() const
 {
     PyAutoLockGIL lock;
     boost::python::list pyFilters;
-    const auto& filters = impObj()->getNestedFilters();
-    for (auto filter : filters)
+    for (auto filter : impObj()->getNestedFilters())
         pyFilters.append(PyLyLayerFilter(filter, false));
     return pyFilters;
 }
 
-void PyLyLayerFilter::addNested(PyLyLayerFilter& filter)
+void PyLyLayerFilter::addNested(PyLyLayerFilter& filter) const
 {
     PyThrowBadEs(impObj()->addNested(filter.impObj()));
 }
 
-void PyLyLayerFilter::removeNested(PyLyLayerFilter& filter)
+void PyLyLayerFilter::removeNested(PyLyLayerFilter& filter) const
 {
     PyThrowBadEs(impObj()->removeNested(filter.impObj()));
 }
 
-void PyLyLayerFilter::generateNested()
+void PyLyLayerFilter::generateNested() const
 {
     PyThrowBadEs(impObj()->generateNested());
 }
@@ -121,7 +121,7 @@ bool PyLyLayerFilter::filter(PyDbLayerTableRecord& layer) const
     return impObj()->filter(layer.impObj());
 }
 
-int PyLyLayerFilter::showEditor()
+int PyLyLayerFilter::showEditor() const
 {
     return impObj()->showEditor();
 }
@@ -131,9 +131,30 @@ const std::string PyLyLayerFilter::filterExpression() const
     return wstr_to_utf8(impObj()->filterExpression());
 }
 
-void PyLyLayerFilter::setFilterExpression(const std::string& expr)
+void PyLyLayerFilter::setFilterExpression(const std::string& expr) const
 {
     PyThrowBadEs(impObj()->setFilterExpression(utf8_to_wstr(expr).c_str()));
+}
+
+boost::python::list PyLyLayerFilter::filterExpressionTree() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pylist;
+    auto tree = impObj()->filterExpressionTree();
+    if (tree == nullptr)
+        return pylist;
+    for (const auto& item : tree->getAndExprs())
+    {
+        if (item == nullptr)
+            continue;
+        for (auto expr : item->getRelExprs())
+        {
+            if (expr == nullptr)
+                continue;
+            pylist.append(boost::python::make_tuple(wstr_to_utf8(expr->getConstant()), wstr_to_utf8(expr->getVariable())));
+        }
+    }
+    return pylist;
 }
 
 bool PyLyLayerFilter::compareTo(const PyLyLayerFilter& pOther) const
@@ -184,12 +205,12 @@ PyLyLayerGroup::PyLyLayerGroup(AcLyLayerGroup* pt, bool autoDelete)
 {
 }
 
-void PyLyLayerGroup::addLayerId(const PyDbObjectId& id)
+void PyLyLayerGroup::addLayerId(const PyDbObjectId& id) const
 {
     PyThrowBadEs(impObj()->addLayerId(id.m_id));
 }
 
-void PyLyLayerGroup::removeLayerId(const PyDbObjectId& id)
+void PyLyLayerGroup::removeLayerId(const PyDbObjectId& id) const
 {
     PyThrowBadEs(impObj()->removeLayerId(id.m_id));
 }
@@ -228,7 +249,7 @@ void makePyLayerFilterManagerWrapper()
     PyDocString DS("LayerFilterManager");
     class_<PyLayerFilterManager>("LayerFilterManager")
         .def(init<>())
-        .def(init<PyDbDatabase&>(DS.ARGS({ "db: PyDb.Database=None" })))
+        .def(init<PyDbDatabase&>(DS.ARGS({ "db: PyDb.Database = ..." })))
         .def("getFilters", &PyLayerFilterManager::getFilters, DS.ARGS())
         .def("setFilters", &PyLayerFilterManager::setFilters1)
         .def("setFilters", &PyLayerFilterManager::setFilters2, DS.OVRL(setFiltersOverloads))
@@ -251,6 +272,8 @@ boost::python::tuple PyLayerFilterManager::getFilters()
     AcLyLayerFilter* root = nullptr;
     AcLyLayerFilter* current = nullptr;
     PyThrowBadEs(imp->getFilters(root, current));
+    if(current == nullptr)
+        return boost::python::make_tuple(PyLyLayerFilter(root, false));
     return boost::python::make_tuple(PyLyLayerFilter(root, false), PyLyLayerFilter(current, false));//current is owned by root
 }
 

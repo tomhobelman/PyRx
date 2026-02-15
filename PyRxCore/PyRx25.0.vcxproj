@@ -73,11 +73,12 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_WIN64;_WINDOWS;ARXBRXTEST_MODULE;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=250;PYRXDEBUG=1;__WXMSW__;WXUSINGDLL;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_WINDOWS;PYRX_MODULE;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=250;PYRXDEBUG=1;__WXMSW__;WXUSINGDLL;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);SOLUTION_DIR=std::filesystem::path(R"literal($(SolutionDir))literal");%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalUsingDirectories>%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalIncludeDirectories>$(ARX2025)\inc;$(ARX2025)\inc-$(PlatformName);$(ARX2025)\utils\brep\inc;$(ARX2025)\utils\Atil\Inc;$(Py312)\include;$(BOOST);$(WXWIN)\include;$(WXWIN)\include\msvc;$(WXPYWIN)\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <OutputFile>$(outdir)/$(targetname)$(TargetExt)</OutputFile>
@@ -103,7 +104,7 @@
       <Optimization>MaxSpeed</Optimization>
       <StringPooling>true</StringPooling>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -115,7 +116,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <OmitFramePointers>true</OmitFramePointers>
-      <PreprocessorDefinitions>_WIN64;_WINDOWS;ARXBRXTEST_MODULE;NDEBUG;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=250;__WXMSW__;WXUSINGDLL;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_WINDOWS;PYRX_MODULE;NDEBUG;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=250;__WXMSW__;WXUSINGDLL;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);SOLUTION_DIR=std::filesystem::path(R"literal($(SolutionDir))literal");%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <OutputFile>$(outdir)/$(targetname)$(TargetExt)</OutputFile>
@@ -139,6 +140,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="PyRxOverrulableEntity.cpp" />
     <ClCompile Include="acrxEntryPoint.cpp" />
     <ClCompile Include="DbCore.cpp" />
     <ClCompile Include="dllmain.cpp" />
@@ -164,10 +166,12 @@
     <ClCompile Include="PyDb3dProfile.cpp" />
     <ClCompile Include="PyDbDatabaseReactor.cpp" />
     <ClCompile Include="PyDbDate.cpp" />
+    <ClCompile Include="PyDbAssocAction.cpp" />
     <ClCompile Include="PyDbDbLayerStateManager.cpp" />
     <ClCompile Include="PyDbDimAssoc.cpp" />
     <ClCompile Include="PyDbEllipse.cpp" />
     <ClCompile Include="PyDbGeo.cpp" />
+    <ClCompile Include="PyDbGraph.cpp" />
     <ClCompile Include="PyDbGripData.cpp" />
     <ClCompile Include="PyDbHyperlink.cpp" />
     <ClCompile Include="PyDbOverrule.cpp" />
@@ -178,6 +182,7 @@
     <ClCompile Include="PyDbSubDMesh.cpp" />
     <ClCompile Include="PyDbTextEditor.cpp" />
     <ClCompile Include="PyException.cpp" />
+    <ClCompile Include="PyGePoint3dTree.cpp" />
     <ClCompile Include="PyGeSurface.cpp" />
     <ClCompile Include="PyAcGs.cpp" />
     <ClCompile Include="PyAcPl.cpp" />
@@ -285,6 +290,10 @@
     <ClCompile Include="PyEdUserInteraction.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="concaveman.h" />
+    <ClInclude Include="delaunator.h" />
+    <ClInclude Include="nanoflann.hpp" />
+    <ClInclude Include="PyRxOverrulableEntity.h" />
     <ClInclude Include="DbCore.h" />
     <ClInclude Include="DocData.h" />
     <ClInclude Include="EdCore.h" />
@@ -310,10 +319,12 @@
     <ClInclude Include="PyDb3dProfile.h" />
     <ClInclude Include="PyDbDatabaseReactor.h" />
     <ClInclude Include="PyDbDate.h" />
+    <ClInclude Include="PyDbAssocAction.h" />
     <ClInclude Include="PyDbDbLayerStateManager.h" />
     <ClInclude Include="PyDbDimAssoc.h" />
     <ClInclude Include="PyDbEllipse.h" />
     <ClInclude Include="PyDbGeo.h" />
+    <ClInclude Include="PyDbGraph.h" />
     <ClInclude Include="PyDbGripData.h" />
     <ClInclude Include="PyDbHyperlink.h" />
     <ClInclude Include="PyDbOverrule.h" />
@@ -323,6 +334,7 @@
     <ClInclude Include="PyDbSpatialFilter.h" />
     <ClInclude Include="PyDbSubDMesh.h" />
     <ClInclude Include="PyDbTextEditor.h" />
+    <ClInclude Include="PyGePoint3dTree.h" />
     <ClInclude Include="PyGeSurface.h" />
     <ClInclude Include="PyAcGs.h" />
     <ClInclude Include="PyAcPl.h" />

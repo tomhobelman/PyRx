@@ -14,8 +14,8 @@ void makePyEdJigWrapper()
     class_<PyJig, boost::noncopyable>("Jig", boost::python::no_init)
         .def(init<const PyDbEntity&>(DS.ARGS({ "entity: PyDb.Entity" })))
         .def("drag", &PyJig::dragwr1)
-#if !defined(_BRXTARGET250)
-        .def("drag", &PyJig::dragwr2, DS.ARGS({ "style: PyEd.DragStyle=None" }))
+#if !defined(_BRXTARGET260)
+        .def("drag", &PyJig::dragwr2, DS.ARGS({ "style: PyEd.DragStyle = ..." }))
 #endif
         .def("sampler", &PyJig::sampler, DS.ARGS())
         .def("update", &PyJig::update, DS.ARGS())
@@ -26,11 +26,11 @@ void makePyEdJigWrapper()
         .def("setDispPrompt", &PyJig::setDispPromptWr, DS.ARGS({ "val: str" }))
         .def("acquireString", &PyJig::acquireStringWr, DS.ARGS())
         .def("acquireAngle", &PyJig::acquireAngleWr1)
-        .def("acquireAngle", &PyJig::acquireAngleWr2, DS.ARGS({ "basePnt: PyGe.Point3d=None" }))
+        .def("acquireAngle", &PyJig::acquireAngleWr2, DS.ARGS({ "basePnt: PyGe.Point3d = ..." }))
         .def("acquireDist", &PyJig::acquireDistWr1)
-        .def("acquireDist", &PyJig::acquireDistWr2, DS.ARGS({ "basePnt: PyGe.Point3d=None" }))
+        .def("acquireDist", &PyJig::acquireDistWr2, DS.ARGS({ "basePnt: PyGe.Point3d = ..." }))
         .def("acquirePoint", &PyJig::acquirePointWr1)
-        .def("acquirePoint", &PyJig::acquirePointWr2, DS.ARGS({ "basePnt: PyGe.Point3d=None" }))
+        .def("acquirePoint", &PyJig::acquirePointWr2, DS.ARGS({ "basePnt: PyGe.Point3d = ..." }))
         .def("specialCursorType", &PyJig::specialCursorTypeWr, DS.ARGS())
         .def("setSpecialCursorType", &PyJig::setSpecialCursorTypeWr, DS.ARGS({ "val: PyEd.CursorType" }))
         .def("userInputControls", &PyJig::userInputControlsWr, DS.ARGS())
@@ -96,7 +96,7 @@ void makePyEdJigWrapper()
         .export_values()
         ;
 
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
     class_<AcEdDragStyle>("DragStyle")
         .def(init<>())
         .def(init<AcEdDragStyle::StyleType, AcEdDragStyle::StyleType>(DS.ARGS({ "styleTypeForOriginal: PyEd.DragStyleType","styleTypeForDragged: PyEd.DragStyleType" })))
@@ -106,7 +106,7 @@ void makePyEdJigWrapper()
         .def("setStyleTypeForDragged", &AcEdDragStyle::setStyleTypeForDragged, DS.ARGS({ "styleTypeForDragged: PyEd.DragStyleType" }))
         ;
 #endif
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
     enum_<AcEdDragStyle::StyleType>("DragStyleType")
         .value("kNone", AcEdDragStyle::StyleType::kNone)
         .value("kHide", AcEdDragStyle::StyleType::kHide)
@@ -130,10 +130,10 @@ AcEdJig::DragStatus PyJig::dragwr1()
     return this->drag();
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 AcEdJig::DragStatus PyJig::dragwr2(const AcEdDragStyle& style)
 {
-    return  this->drag(style);
+    return this->drag(style);
 }
 #endif
 
@@ -194,15 +194,14 @@ void PyJig::setDispPromptWr(const std::string& val)
 
 boost::python::tuple PyJig::acquireStringWr()
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
     PyAutoLockGIL lock;
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     wchar_t value[2049];
     auto result = this->acquireString(value);
     return boost::python::make_tuple(result, wstr_to_utf8(value));
 #endif
 
 #ifdef _ARXTARGET
-    PyAutoLockGIL lock;
     AcString value;
     auto result = this->acquireString(value);
     return boost::python::make_tuple(result, wstr_to_utf8(value));
@@ -295,8 +294,8 @@ void makePyEdDrawJigWrapper()
     class_<PyDrawJig, boost::noncopyable>("DrawJig")
         .def(init<>(DS.ARGS()))
         .def("drag", &PyDrawJig::dragwr1)
-#if !defined(_BRXTARGET250)
-        .def("drag", &PyDrawJig::dragwr2, DS.ARGS({ "style: PyEd.DragStyle=None" }))
+#if !defined(_BRXTARGET260)
+        .def("drag", &PyDrawJig::dragwr2, DS.ARGS({ "style: PyEd.DragStyle = ..." }))
 #endif
         .def("sampler", &PyDrawJig::sampler, DS.ARGS())
         .def("update", &PyDrawJig::update, DS.ARGS())
@@ -306,11 +305,11 @@ void makePyEdDrawJigWrapper()
         .def("setDispPrompt", &PyDrawJig::setDispPromptWr, DS.ARGS({ "val: str" }))
         .def("acquireString", &PyDrawJig::acquireStringWr, DS.ARGS())
         .def("acquireAngle", &PyDrawJig::acquireAngleWr1)
-        .def("acquireAngle", &PyDrawJig::acquireAngleWr2, DS.ARGS({ "basePnt: PyGe.Point3d=None" }))
+        .def("acquireAngle", &PyDrawJig::acquireAngleWr2, DS.ARGS({ "basePnt: PyGe.Point3d = ..." }))
         .def("acquireDist", &PyDrawJig::acquireDistWr1)
-        .def("acquireDist", &PyDrawJig::acquireDistWr2, DS.ARGS({ "basePnt: PyGe.Point3d=None" }))
+        .def("acquireDist", &PyDrawJig::acquireDistWr2, DS.ARGS({ "basePnt: PyGe.Point3d = ..." }))
         .def("acquirePoint", &PyDrawJig::acquirePointWr1)
-        .def("acquirePoint", &PyDrawJig::acquirePointWr2, DS.ARGS({ "basePnt: PyGe.Point3d=None" }))
+        .def("acquirePoint", &PyDrawJig::acquirePointWr2, DS.ARGS({ "basePnt: PyGe.Point3d = ..." }))
         .def("specialCursorType", &PyDrawJig::specialCursorTypeWr, DS.ARGS())
         .def("setSpecialCursorType", &PyDrawJig::setSpecialCursorTypeWr, DS.ARGS({ "val: PyEd.CursorType" }))
         .def("userInputControls", &PyDrawJig::userInputControlsWr, DS.ARGS())
@@ -323,6 +322,9 @@ void makePyEdDrawJigWrapper()
 
 PyDrawJig::PyDrawJig()
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#endif
     this->setDatabaseDefaults();
 }
 
@@ -331,10 +333,14 @@ AcEdJig::DragStatus PyDrawJig::dragwr1()
     return this->drag();
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 AcEdJig::DragStatus PyDrawJig::dragwr2(const AcEdDragStyle& style)
 {
+#if defined(_ZRXTARGET260)
+    throw PyNotimplementedByHost{};
+#else
     return this->drag(style);
+#endif
 }
 #endif
 
@@ -390,15 +396,14 @@ void PyDrawJig::setDispPromptWr(const std::string& val)
 
 boost::python::tuple PyDrawJig::acquireStringWr()
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
     PyAutoLockGIL lock;
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     wchar_t value[2049];
     auto result = this->acquireString(value);
     return boost::python::make_tuple(result, wstr_to_utf8(value));
 #endif
 
 #ifdef _ARXTARGET 
-    PyAutoLockGIL lock;
     AcString value;
     auto result = this->acquireString(value);
     return boost::python::make_tuple(result, wstr_to_utf8(value));

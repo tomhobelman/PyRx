@@ -9,6 +9,12 @@ using namespace boost::python;
 
 void makePyDb3dSolidWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     constexpr const std::string_view createRevolvedSolidOverloads = "Overloads:\n"
         "- pRevEnt: PyDb.Entity, axisPnt: PyGe.Point3d, axisDir: PyGe.Vector3d, revAngle: float, startAngle: float, revolveOptions: PyDb.RevolveOptions\n"
         "- pRevEnt: PyDb.Entity,faceSubentId:PyDb.SubentId, axisPnt: PyGe.Point3d, axisDir: PyGe.Vector3d, revAngle: float, startAngle: float, revolveOptions: PyDb.RevolveOptions\n";
@@ -22,67 +28,70 @@ void makePyDb3dSolidWrapper()
         "- pSweepEnt: PyDb.Entity, faceSubentId:PyDb.SubentId, directionVec: PyGe.Vector3d, sweepOptions: PyDb.SweepOptions\n"
         "- pSweepEnt: PyDb.Entity, faceSubentId:PyDb.SubentId, height: float, sweepOptions: PyDb.SweepOptions\n";
 
-    PyDocString DS("PyDb.Solid3d");
+    PyDocString DS("Solid3d");
     class_<PyDb3dSolid, bases<PyDbEntity>>("Solid3d")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>((DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }))))
-        .def("createBox", &PyDb3dSolid::createBox, DS.ARGS({ "xLen: float","yLen: float" ,"zLen: float" }))
-        .def("createFrustum", &PyDb3dSolid::createFrustum, DS.ARGS({ "height: float","xRadius: float","yRadius: float","topXRadius: float" }))
-        .def("createSphere", &PyDb3dSolid::createSphere, DS.ARGS({ "radius: float" }))
-        .def("createTorus", &PyDb3dSolid::createTorus, DS.ARGS({ "majorRadius: float", "minorRadius: float" }))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 1270)))
+        .def("createBox", &PyDb3dSolid::createBox, DS.ARGS({ "xLen: float","yLen: float" ,"zLen: float" }, 1280))
+        .def("createCone", &PyDb3dSolid::createCone, DS.ARGS({ "height: float","bRadius: float","tRadius: float" }, 1283))
+        .def("createFrustum", &PyDb3dSolid::createFrustum, DS.ARGS({ "height: float","xRadius: float","yRadius: float","topXRadius: float" }, 1283))
+        .def("createCylinder", &PyDb3dSolid::createCylinder, DS.ARGS({ "height: float","radius: float" }, 1283))
+        .def("createSphere", &PyDb3dSolid::createSphere, DS.ARGS({ "radius: float" }, 1288))
+        .def("createTorus", &PyDb3dSolid::createTorus, DS.ARGS({ "majorRadius: float", "minorRadius: float" }, 1290))
         .def("createPyramid", &PyDb3dSolid::createPyramid1)
-        .def("createPyramid", &PyDb3dSolid::createPyramid2, DS.ARGS({ "height: float","sides: int","radius: float","topRadius: float=0.0" }))
-        .def("createWedge", &PyDb3dSolid::createWedge, DS.ARGS({ "xLen: float","yLen: float" ,"zLen: float" }))
+        .def("createPyramid", &PyDb3dSolid::createPyramid2, DS.ARGS({ "height: float","sides: int","radius: float","topRadius: float=0.0" }, 1285))
+        .def("createWedge", &PyDb3dSolid::createWedge, DS.ARGS({ "xLen: float","yLen: float" ,"zLen: float" }, 1291))
         .def("extrude", &PyDb3dSolid::extrude1)
-        .def("extrude", &PyDb3dSolid::extrude2, DS.ARGS({ "region: PyDb.Region","height: float","taperAngle: float=0.0" }))
+        .def("extrude", &PyDb3dSolid::extrude2, DS.ARGS({ "region: PyDb.Region","height: float","taperAngle: float=0.0" }, 1293))
         .def("extrudeAlongPath", &PyDb3dSolid::extrudeAlongPath1)
-        .def("extrudeAlongPath", &PyDb3dSolid::extrudeAlongPath2, DS.ARGS({ "region: PyDb.Region","path: PyDb.Curve","taperAngle: float=0.0" }))
+        .def("extrudeAlongPath", &PyDb3dSolid::extrudeAlongPath2, DS.ARGS({ "region: PyDb.Region","path: PyDb.Curve","taperAngle: float=0.0" }, 1294))
         .def("createRevolvedSolid", &PyDb3dSolid::createRevolvedSolid1)
-        .def("createRevolvedSolid", &PyDb3dSolid::createRevolvedSolid2, DS.OVRL(createRevolvedSolidOverloads))
+        .def("createRevolvedSolid", &PyDb3dSolid::createRevolvedSolid2, DS.OVRL(createRevolvedSolidOverloads, 1286))
         .def("createSweptSolid", &PyDb3dSolid::createSweptSolid1)
-        .def("createSweptSolid", &PyDb3dSolid::createSweptSolid2, DS.OVRL(createSweptSolidOverloads))
+        .def("createSweptSolid", &PyDb3dSolid::createSweptSolid2, DS.OVRL(createSweptSolidOverloads, 1289))
         .def("createExtrudedSolid", &PyDb3dSolid::createExtrudedSolid1)
         .def("createExtrudedSolid", &PyDb3dSolid::createExtrudedSolid2)
-        .def("createExtrudedSolid", &PyDb3dSolid::createExtrudedSolid3, DS.OVRL(createExtrudedSolidOverloads))
-        .def("createFrom", &PyDb3dSolid::createFrom, DS.ARGS({ "val: PyDb.Entity" }))
-        .def("getArea", &PyDb3dSolid::getArea, DS.ARGS())
-        .def("checkInterference", &PyDb3dSolid::checkInterference, DS.ARGS({ "val: PyDb.Solid3d","createNewSolid: bool" }))
-        .def("getMassProp", &PyDb3dSolid::getMassProp, DS.ARGS())
-        .def("isNull", &PyDb3dSolid::isNull, DS.ARGS())
-        .def("getSection", &PyDb3dSolid::getSection, DS.ARGS({ "plane: PyGe.Plane" }))
+        .def("createExtrudedSolid", &PyDb3dSolid::createExtrudedSolid3, DS.OVRL(createExtrudedSolidOverloads, 1281))
+        .def("createFrom", &PyDb3dSolid::createFrom, DS.ARGS({ "val: PyDb.Entity" }, 1282))
+        .def("getArea", &PyDb3dSolid::getArea, DS.ARGS(1298))
+        .def("checkInterference", &PyDb3dSolid::checkInterference, DS.ARGS({ "val: PyDb.Solid3d","createNewSolid: bool" }, 1275))
+        .def("getMassProp", &PyDb3dSolid::getMassProp, DS.ARGS(1299))
+        .def("isNull", &PyDb3dSolid::isNull, DS.ARGS(1308))
+        .def("getSection", &PyDb3dSolid::getSection, DS.ARGS({ "plane: PyGe.Plane" }, 1300))
         .def("stlOut", &PyDb3dSolid::stlOut1)
-        .def("stlOut", &PyDb3dSolid::stlOut2, DS.ARGS({ "fileName: str","asciiFormat: bool","maxSurfaceDeviation: float = 0.0 " }))
-        .def("booleanOper", &PyDb3dSolid::booleanOper, DS.ARGS({ "operation: PyDb.BoolOperType", "solid: PyDb.Solid3d" }))
+        .def("stlOut", &PyDb3dSolid::stlOut2, DS.ARGS({ "fileName: str","asciiFormat: bool","maxSurfaceDeviation: float = 0.0 " }, 1325))
+        .def("booleanOper", &PyDb3dSolid::booleanOper, DS.ARGS({ "operation: PyDb.BoolOperType", "solid: PyDb.Solid3d" }, 1273))
         .def("getSlice", &PyDb3dSolid::getSlice1)
-        .def("getSlice", &PyDb3dSolid::getSlice2, DS.ARGS({ "plane: PyGe.Plane|PyDb.Surface","getNegHalfToo: bool" }))
-        .def("numChanges", &PyDb3dSolid::numChanges, DS.ARGS())
-        .def("copyEdge", &PyDb3dSolid::copyEdge, DS.ARGS({ "subentId: PyDb.SubentId" }))
-        .def("copyFace", &PyDb3dSolid::copyFace, DS.ARGS({ "subentId: PyDb.SubentId" }))
-        .def("extrudeFaces", &PyDb3dSolid::extrudeFaces, DS.ARGS({ "subentIds: list[PyDb.SubentId]","height: float", "taper: float" }))
-        .def("extrudeFacesAlongPath", &PyDb3dSolid::extrudeFacesAlongPath, DS.ARGS({ "subentIds: list[PyDb.SubentId]","path: PyDb.Curve" }))
-        .def("imprintEntity", &PyDb3dSolid::imprintEntity, DS.ARGS({ "pEntity: PyDb.Entity" }))
-        .def("cleanBody", &PyDb3dSolid::cleanBody, DS.ARGS())
-        .def("offsetBody", &PyDb3dSolid::offsetBody, DS.ARGS({ "offsetDistance: float" }))
-        .def("offsetFaces", &PyDb3dSolid::offsetFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "offsetDistance: float" }))
-        .def("removeFaces", &PyDb3dSolid::removeFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]" }))
-        .def("separateBody", &PyDb3dSolid::separateBody, DS.ARGS())
-        .def("shellBody", &PyDb3dSolid::shellBody, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "offsetDistance: float" }))
-        .def("taperFaces", &PyDb3dSolid::taperFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "basePoint: PyGe.Point3d","draftVector: PyGe.Vector3d", "draftAngle: float" }))
-        .def("transformFaces", &PyDb3dSolid::transformFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "xform: PyGe.Matrix2d" }))
-        .def("setSubentColor", &PyDb3dSolid::setSubentColor, DS.ARGS({ "faceSubentId: PyDb.SubentId", "clr: PyDb.AcCmColor" }))
-        .def("getSubentColor", &PyDb3dSolid::getSubentColor, DS.ARGS({ "faceSubentId: PyDb.SubentId" }))
-        .def("setSubentMaterial", &PyDb3dSolid::setSubentMaterial, DS.ARGS({ "faceSubentId: PyDb.SubentId", "id: PyDb.ObjectId" }))
-        .def("getSubentMaterial", &PyDb3dSolid::getSubentMaterial, DS.ARGS({ "faceSubentId: PyDb.SubentId" }))
-        .def("recordHistory", &PyDb3dSolid::recordHistory, DS.ARGS())
-        .def("setRecordHistory", &PyDb3dSolid::setRecordHistory, DS.ARGS({ "val: bool" }))
-        .def("showHistory", &PyDb3dSolid::showHistory, DS.ARGS())
-        .def("setShowHistory", &PyDb3dSolid::setShowHistory, DS.ARGS({ "val: bool" }))
-        .def("chamferEdges", &PyDb3dSolid::chamferEdges, DS.ARGS({ "edgeSubentIds: list[PyDb.SubentId]","faceSubentId: PyDb.SubentId","baseDist: float","otherDist: float" }))
-        .def("filletEdges", &PyDb3dSolid::filletEdges, DS.ARGS({ "edgeSubentIds: list[PyDb.SubentId]","radius: list[float]","startSetback: list[float]","endSetback: list[float]" }))
+        .def("getSlice", &PyDb3dSolid::getSlice2, DS.ARGS({ "plane: PyGe.Plane|PyDb.Surface","getNegHalfToo: bool" }, 1301))
+        .def("numChanges", &PyDb3dSolid::numChanges, DS.ARGS(1309))
+        .def("copyEdge", &PyDb3dSolid::copyEdge, DS.ARGS({ "subentId: PyDb.SubentId" }, 1278))
+        .def("copyFace", &PyDb3dSolid::copyFace, DS.ARGS({ "subentId: PyDb.SubentId" }, 1279))
+        .def("extrudeFaces", &PyDb3dSolid::extrudeFaces, DS.ARGS({ "subentIds: list[PyDb.SubentId]","height: float", "taper: float" }, 1295))
+        .def("extrudeFacesAlongPath", &PyDb3dSolid::extrudeFacesAlongPath, DS.ARGS({ "subentIds: list[PyDb.SubentId]","path: PyDb.Curve" }, 1296))
+        .def("imprintEntity", &PyDb3dSolid::imprintEntity, DS.ARGS({ "pEntity: PyDb.Entity" }, 1305))
+        .def("cleanBody", &PyDb3dSolid::cleanBody, DS.ARGS(1276))
+        .def("offsetBody", &PyDb3dSolid::offsetBody, DS.ARGS({ "offsetDistance: float" }, 1310))
+        .def("offsetFaces", &PyDb3dSolid::offsetFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "offsetDistance: float" }, 1311))
+        .def("removeFaces", &PyDb3dSolid::removeFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]" }, 1314))
+        .def("separateBody", &PyDb3dSolid::separateBody, DS.ARGS(1316))
+        .def("shellBody", &PyDb3dSolid::shellBody, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "offsetDistance: float" }, 1323))
+        .def("taperFaces", &PyDb3dSolid::taperFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "basePoint: PyGe.Point3d","draftVector: PyGe.Vector3d", "draftAngle: float" }, 1327))
+        .def("transformFaces", &PyDb3dSolid::transformFaces, DS.ARGS({ "faceSubentIds: list[PyDb.SubentId]", "xform: PyGe.Matrix2d" }, 1328))
+        .def("setSubentColor", &PyDb3dSolid::setSubentColor, DS.ARGS({ "faceSubentId: PyDb.SubentId", "clr: PyDb.AcCmColor" }, 1320))
+        .def("getSubentColor", &PyDb3dSolid::getSubentColor, DS.ARGS({ "faceSubentId: PyDb.SubentId" }, 1302))
+        .def("setSubentMaterial", &PyDb3dSolid::setSubentMaterial, DS.ARGS({ "faceSubentId: PyDb.SubentId", "id: PyDb.ObjectId" }, 1321))
+        .def("getSubentMaterial", &PyDb3dSolid::getSubentMaterial, DS.ARGS({ "faceSubentId: PyDb.SubentId" }, 1303))
+        .def("recordHistory", &PyDb3dSolid::recordHistory, DS.ARGS(1313))
+        .def("setRecordHistory", &PyDb3dSolid::setRecordHistory, DS.ARGS({ "val: bool" }, 1318))
+        .def("showHistory", &PyDb3dSolid::showHistory, DS.ARGS(1324))
+        .def("setShowHistory", &PyDb3dSolid::setShowHistory, DS.ARGS({ "val: bool" }, 1319))
+        .def("chamferEdges", &PyDb3dSolid::chamferEdges, DS.ARGS({ "edgeSubentIds: list[PyDb.SubentId]","faceSubentId: PyDb.SubentId","baseDist: float","otherDist: float" }, 1274))
+        .def("filletEdges", &PyDb3dSolid::filletEdges, DS.ARGS({ "edgeSubentIds: list[PyDb.SubentId]","radius: list[float]","startSetback: list[float]","endSetback: list[float]" }, 1297))
         .def("usesGraphicsCache", &PyDb3dSolid::usesGraphicsCache, DS.ARGS())
-        .def("createSculptedSolid", &PyDb3dSolid::createSculptedSolid, DS.ARGS({ "limitingBodies: list[PyDb.Entity]","limitingFlags: list[int]" }))
-        .def("projectOnToSolid", &PyDb3dSolid::projectOnToSolid, DS.ARGS({ "pEntityToProject: PyDb.Entity","projectionDirection: PyGe.Vector3d" }))
+        .def("createSculptedSolid", &PyDb3dSolid::createSculptedSolid, DS.ARGS({ "limitingBodies: list[PyDb.Entity]","limitingFlags: list[int]" }, 1287))
+        .def("projectOnToSolid", &PyDb3dSolid::projectOnToSolid, DS.ARGS({ "pEntityToProject: PyDb.Entity","projectionDirection: PyGe.Vector3d" }, 1312))
         .def("className", &PyDb3dSolid::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDb3dSolid::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDb3dSolid::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -100,107 +109,122 @@ PyDb3dSolid::PyDb3dSolid()
 {
 }
 
+PyDb3dSolid::PyDb3dSolid(const PyDbObjectId& id)
+    : PyDbEntity(openAcDbObject<AcDb3dSolid>(id), false)
+{
+}
+
 PyDb3dSolid::PyDb3dSolid(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbEntity(openAcDbObject<AcDb3dSolid>(id, mode), false)
 {
 }
 
-PyDb3dSolid::PyDb3dSolid(const PyDbObjectId& id)
-    : PyDb3dSolid(id, AcDb::OpenMode::kForRead)
+PyDb3dSolid::PyDb3dSolid(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbEntity(openAcDbObject<AcDb3dSolid>(id, mode, erased), false)
 {
 }
 
-void PyDb3dSolid::createBox(double xLen, double yLen, double zLen)
+void PyDb3dSolid::createBox(double xLen, double yLen, double zLen) const
 {
     return PyThrowBadEs(impObj()->createBox(xLen, yLen, zLen));
 }
 
-void PyDb3dSolid::createFrustum(double height, double xRadius, double yRadius, double topXRadius)
+void PyDb3dSolid::createFrustum(double height, double xRadius, double yRadius, double topXRadius) const
 {
     return PyThrowBadEs(impObj()->createFrustum(height, xRadius, yRadius, topXRadius));
 }
 
-void PyDb3dSolid::createSphere(double radius)
+void PyDb3dSolid::createSphere(double radius) const
 {
     return PyThrowBadEs(impObj()->createSphere(radius));
 }
 
-void PyDb3dSolid::createTorus(double majorRadius, double minorRadius)
+void PyDb3dSolid::createCylinder(double height, double radius) const
+{
+    return PyThrowBadEs(impObj()->createFrustum(height, radius, radius, radius));
+}
+
+void PyDb3dSolid::createCone(double height, double bRadius, double tRadius) const
+{
+    return PyThrowBadEs(impObj()->createFrustum(height, bRadius, bRadius, tRadius));
+}
+
+void PyDb3dSolid::createTorus(double majorRadius, double minorRadius) const
 {
     return PyThrowBadEs(impObj()->createTorus(majorRadius, minorRadius));
 }
 
-void PyDb3dSolid::createPyramid1(double height, int sides, double radius)
+void PyDb3dSolid::createPyramid1(double height, int sides, double radius) const
 {
     return PyThrowBadEs(impObj()->createPyramid(height, sides, radius));
 }
 
-void PyDb3dSolid::createPyramid2(double height, int sides, double radius, double topRadius)
+void PyDb3dSolid::createPyramid2(double height, int sides, double radius, double topRadius) const
 {
     return PyThrowBadEs(impObj()->createPyramid(height, sides, radius, topRadius));
 }
 
-void PyDb3dSolid::createWedge(double xLen, double yLen, double zLen)
+void PyDb3dSolid::createWedge(double xLen, double yLen, double zLen) const
 {
     return PyThrowBadEs(impObj()->createWedge(xLen, yLen, zLen));
 }
 
-void PyDb3dSolid::extrude1(const PyDbRegion& region, double height)
+void PyDb3dSolid::extrude1(const PyDbRegion& region, double height) const
 {
     return PyThrowBadEs(impObj()->extrude(region.impObj(), height));
 }
 
-void PyDb3dSolid::extrude2(const PyDbRegion& region, double height, double taperAngle)
+void PyDb3dSolid::extrude2(const PyDbRegion& region, double height, double taperAngle) const
 {
     return PyThrowBadEs(impObj()->extrude(region.impObj(), height, taperAngle));
 }
 
-void PyDb3dSolid::extrudeAlongPath1(const PyDbRegion& region, const PyDbCurve& path)
+void PyDb3dSolid::extrudeAlongPath1(const PyDbRegion& region, const PyDbCurve& path) const
 {
     return PyThrowBadEs(impObj()->extrudeAlongPath(region.impObj(), path.impObj()));
 }
 
-void PyDb3dSolid::extrudeAlongPath2(const PyDbRegion& region, const PyDbCurve& path, double taperAngle)
+void PyDb3dSolid::extrudeAlongPath2(const PyDbRegion& region, const PyDbCurve& path, double taperAngle) const
 {
     return PyThrowBadEs(impObj()->extrudeAlongPath(region.impObj(), path.impObj(), taperAngle));
 }
 
-void PyDb3dSolid::createRevolvedSolid1(const PyDbEntity& pRevEnt, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir, double revAngle, double startAngle, PyDbRevolveOptions& revolveOptions)
+void PyDb3dSolid::createRevolvedSolid1(const PyDbEntity& pRevEnt, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir, double revAngle, double startAngle, PyDbRevolveOptions& revolveOptions) const
 {
     return PyThrowBadEs(impObj()->createRevolvedSolid(pRevEnt.impObj(), axisPnt, axisDir, revAngle, startAngle, *revolveOptions.impObj()));
 }
 
-void PyDb3dSolid::createRevolvedSolid2(const PyDbEntity& pRevEnt, const PyDbSubentId& faceSubentId, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir, double revAngle, double startAngle, PyDbRevolveOptions& revolveOptions)
+void PyDb3dSolid::createRevolvedSolid2(const PyDbEntity& pRevEnt, const PyDbSubentId& faceSubentId, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir, double revAngle, double startAngle, PyDbRevolveOptions& revolveOptions) const
 {
     return PyThrowBadEs(impObj()->createRevolvedSolid(pRevEnt.impObj(), *faceSubentId.impObj(), axisPnt, axisDir, revAngle, startAngle, *revolveOptions.impObj()));
 }
 
-void PyDb3dSolid::createSweptSolid1(const PyDbEntity& pSweepEnt, const  PyDbEntity& pPathEnt, PyDbSweepOptions& sweepOptions)
+void PyDb3dSolid::createSweptSolid1(const PyDbEntity& pSweepEnt, const  PyDbEntity& pPathEnt, PyDbSweepOptions& sweepOptions) const
 {
     return PyThrowBadEs(impObj()->createSweptSolid(pSweepEnt.impObj(), pPathEnt.impObj(), *sweepOptions.impObj()));
 }
 
-void PyDb3dSolid::createSweptSolid2(const PyDbEntity& pSweepEnt, const PyDbSubentId& faceSubentId, PyDbEntity& pPathEnt, PyDbSweepOptions& sweepOptions)
+void PyDb3dSolid::createSweptSolid2(const PyDbEntity& pSweepEnt, const PyDbSubentId& faceSubentId, PyDbEntity& pPathEnt, PyDbSweepOptions& sweepOptions) const
 {
     return PyThrowBadEs(impObj()->createSweptSolid(pSweepEnt.impObj(), *faceSubentId.impObj(), pPathEnt.impObj(), *sweepOptions.impObj()));
 }
 
-void PyDb3dSolid::createExtrudedSolid1(const PyDbEntity& pSweepEnt, const AcGeVector3d& directionVec, PyDbSweepOptions& sweepOptions)
+void PyDb3dSolid::createExtrudedSolid1(const PyDbEntity& pSweepEnt, const AcGeVector3d& directionVec, PyDbSweepOptions& sweepOptions) const
 {
     return PyThrowBadEs(impObj()->createExtrudedSolid(pSweepEnt.impObj(), directionVec, *sweepOptions.impObj()));
 }
 
-void PyDb3dSolid::createExtrudedSolid2(const PyDbEntity& pSweepEnt, const PyDbSubentId& faceSubentId, const AcGeVector3d& directionVec, PyDbSweepOptions& sweepOptions)
+void PyDb3dSolid::createExtrudedSolid2(const PyDbEntity& pSweepEnt, const PyDbSubentId& faceSubentId, const AcGeVector3d& directionVec, PyDbSweepOptions& sweepOptions) const
 {
     return PyThrowBadEs(impObj()->createExtrudedSolid(pSweepEnt.impObj(), *faceSubentId.impObj(), directionVec, *sweepOptions.impObj()));
 }
 
-void PyDb3dSolid::createExtrudedSolid3(const PyDbEntity& pSweepEnt, const PyDbSubentId& faceSubentId, double height, PyDbSweepOptions& sweepOptions)
+void PyDb3dSolid::createExtrudedSolid3(const PyDbEntity& pSweepEnt, const PyDbSubentId& faceSubentId, double height, PyDbSweepOptions& sweepOptions) const
 {
     return PyThrowBadEs(impObj()->createExtrudedSolid(pSweepEnt.impObj(), *faceSubentId.impObj(), height, *sweepOptions.impObj()));
 }
 
-void PyDb3dSolid::createFrom(const PyDbEntity& pFromEntity)
+void PyDb3dSolid::createFrom(const PyDbEntity& pFromEntity) const
 {
     return PyThrowBadEs(impObj()->createFrom(pFromEntity.impObj()));
 }
@@ -212,7 +236,7 @@ double PyDb3dSolid::getArea() const
     return area;
 }
 
-boost::python::tuple PyDb3dSolid::checkInterference(const PyDb3dSolid& otherSolid, Adesk::Boolean createNewSolid)
+boost::python::tuple PyDb3dSolid::checkInterference(const PyDb3dSolid& otherSolid, Adesk::Boolean createNewSolid) const
 {
     PyAutoLockGIL lock;
     Adesk::Boolean solidsInterfere = false;
@@ -221,7 +245,7 @@ boost::python::tuple PyDb3dSolid::checkInterference(const PyDb3dSolid& otherSoli
     return boost::python::make_tuple(solidsInterfere, PyDb3dSolid(commonVolumeSolid, true));
 }
 
-boost::python::tuple PyDb3dSolid::getMassProp()
+boost::python::tuple PyDb3dSolid::getMassProp() const
 {
     PyAutoLockGIL lock;
     double volume = 0;
@@ -242,7 +266,7 @@ Adesk::Boolean PyDb3dSolid::isNull() const
     return impObj()->isNull();
 }
 
-PyDbRegion PyDb3dSolid::getSection(const PyGePlane& plane)
+PyDbRegion PyDb3dSolid::getSection(const PyGePlane& plane) const
 {
     AcDbRegion* sectionRegion = nullptr;
     PyThrowBadEs(impObj()->getSection(*plane.impObj(), sectionRegion));
@@ -259,19 +283,19 @@ void PyDb3dSolid::stlOut2(const std::string& fileName, Adesk::Boolean asciiForma
     return PyThrowBadEs(impObj()->stlOut(utf8_to_wstr(fileName).c_str(), asciiFormat, maxSurfaceDeviation));
 }
 
-void PyDb3dSolid::booleanOper(AcDb::BoolOperType operation, PyDb3dSolid& solid)
+void PyDb3dSolid::booleanOper(AcDb::BoolOperType operation, const PyDb3dSolid& solid) const
 {
     return PyThrowBadEs(impObj()->booleanOper(operation, solid.impObj()));
 }
 
-PyDb3dSolid PyDb3dSolid::getSlice1(const PyGePlane& plane, Adesk::Boolean getNegHalfToo)
+PyDb3dSolid PyDb3dSolid::getSlice1(const PyGePlane& plane, Adesk::Boolean getNegHalfToo) const
 {
     AcDb3dSolid* negHalfSolid = nullptr;
     PyThrowBadEs(impObj()->getSlice(*plane.impObj(), getNegHalfToo, negHalfSolid));
     return PyDb3dSolid(negHalfSolid, true);
 }
 
-PyDb3dSolid PyDb3dSolid::getSlice2(const PyDbSurface& plane, Adesk::Boolean getNegHalfToo)
+PyDb3dSolid PyDb3dSolid::getSlice2(const PyDbSurface& plane, Adesk::Boolean getNegHalfToo) const
 {
     AcDb3dSolid* negHalfSolid = nullptr;
     PyThrowBadEs(impObj()->getSlice(plane.impObj(), getNegHalfToo, negHalfSolid));
@@ -283,56 +307,56 @@ Adesk::UInt32 PyDb3dSolid::numChanges() const
     return impObj()->numChanges();
 }
 
-PyDbEntity PyDb3dSolid::copyEdge(const PyDbSubentId& subentId)
+PyDbEntity PyDb3dSolid::copyEdge(const PyDbSubentId& subentId) const
 {
     AcDbEntity* newEntity = nullptr;
     PyThrowBadEs(impObj()->copyEdge(*subentId.impObj(), newEntity));
     return PyDbEntity(newEntity, true);
 }
 
-PyDbEntity PyDb3dSolid::copyFace(const PyDbSubentId& subentId)
+PyDbEntity PyDb3dSolid::copyFace(const PyDbSubentId& subentId) const
 {
     AcDbEntity* newEntity = nullptr;
     PyThrowBadEs(impObj()->copyFace(*subentId.impObj(), newEntity));
     return PyDbEntity(newEntity, true);
 }
 
-void PyDb3dSolid::extrudeFaces(const boost::python::list& faceSubentIds, double height, double taper)
+void PyDb3dSolid::extrudeFaces(const boost::python::list& faceSubentIds, double height, double taper) const
 {
     return PyThrowBadEs(impObj()->extrudeFaces(PyListToPyDbSubentIdPtrArray(faceSubentIds), height, taper));
 }
 
-void PyDb3dSolid::extrudeFacesAlongPath(boost::python::list& faceSubentIds, const PyDbCurve& path)
+void PyDb3dSolid::extrudeFacesAlongPath(boost::python::list& faceSubentIds, const PyDbCurve& path) const
 {
     return PyThrowBadEs(impObj()->extrudeFacesAlongPath(PyListToPyDbSubentIdPtrArray(faceSubentIds), path.impObj()));
 }
 
-void PyDb3dSolid::imprintEntity(const PyDbEntity& pEntity)
+void PyDb3dSolid::imprintEntity(const PyDbEntity& pEntity) const
 {
     return PyThrowBadEs(impObj()->imprintEntity(pEntity.impObj()));
 }
 
-void PyDb3dSolid::cleanBody()
+void PyDb3dSolid::cleanBody() const
 {
     return PyThrowBadEs(impObj()->cleanBody());
 }
 
-void PyDb3dSolid::offsetBody(double offsetDistance)
+void PyDb3dSolid::offsetBody(double offsetDistance) const
 {
     return PyThrowBadEs(impObj()->offsetBody(offsetDistance));
 }
 
-void PyDb3dSolid::offsetFaces(const boost::python::list& faceSubentIds, double offsetDistance)
+void PyDb3dSolid::offsetFaces(const boost::python::list& faceSubentIds, double offsetDistance) const
 {
     return PyThrowBadEs(impObj()->offsetFaces(PyListToPyDbSubentIdPtrArray(faceSubentIds), offsetDistance));
 }
 
-void PyDb3dSolid::removeFaces(const boost::python::list& faceSubentIds)
+void PyDb3dSolid::removeFaces(const boost::python::list& faceSubentIds) const
 {
     return PyThrowBadEs(impObj()->removeFaces(PyListToPyDbSubentIdPtrArray(faceSubentIds)));
 }
 
-boost::python::list PyDb3dSolid::separateBody()
+boost::python::list PyDb3dSolid::separateBody() const
 {
     PyAutoLockGIL lock;
     AcArray<AcDb3dSolid*> newSolids;
@@ -343,22 +367,22 @@ boost::python::list PyDb3dSolid::separateBody()
     return pyList;
 }
 
-void PyDb3dSolid::shellBody(const boost::python::list& faceSubentIds, double offsetDistance)
+void PyDb3dSolid::shellBody(const boost::python::list& faceSubentIds, double offsetDistance) const
 {
     PyThrowBadEs(impObj()->shellBody(PyListToPyDbSubentIdPtrArray(faceSubentIds), offsetDistance));
 }
 
-void PyDb3dSolid::taperFaces(const boost::python::list& faceSubentIds, const AcGePoint3d& basePoint, const AcGeVector3d& draftVector, double draftAngle)
+void PyDb3dSolid::taperFaces(const boost::python::list& faceSubentIds, const AcGePoint3d& basePoint, const AcGeVector3d& draftVector, double draftAngle) const
 {
     PyThrowBadEs(impObj()->taperFaces(PyListToPyDbSubentIdPtrArray(faceSubentIds), basePoint, draftVector, draftAngle));
 }
 
-void PyDb3dSolid::transformFaces(const boost::python::list& faceSubentIds, const AcGeMatrix3d& matrix)
+void PyDb3dSolid::transformFaces(const boost::python::list& faceSubentIds, const AcGeMatrix3d& matrix) const
 {
     PyThrowBadEs(impObj()->transformFaces(PyListToPyDbSubentIdPtrArray(faceSubentIds), matrix));
 }
 
-void PyDb3dSolid::setSubentColor(const PyDbSubentId& subentId, const AcCmColor& color)
+void PyDb3dSolid::setSubentColor(const PyDbSubentId& subentId, const AcCmColor& color) const
 {
     PyThrowBadEs(impObj()->setSubentColor(*subentId.impObj(), color));
 }
@@ -370,7 +394,7 @@ AcCmColor PyDb3dSolid::getSubentColor(const PyDbSubentId& subentId) const
     return clr;
 }
 
-void PyDb3dSolid::setSubentMaterial(const PyDbSubentId& subentId, const PyDbObjectId& matId)
+void PyDb3dSolid::setSubentMaterial(const PyDbSubentId& subentId, const PyDbObjectId& matId) const
 {
     return PyThrowBadEs(impObj()->setSubentMaterial(*subentId.impObj(), matId.m_id));
 }
@@ -387,7 +411,7 @@ bool PyDb3dSolid::recordHistory() const
     return impObj()->recordHistory();
 }
 
-void PyDb3dSolid::setRecordHistory(bool bRecord)
+void PyDb3dSolid::setRecordHistory(bool bRecord) const
 {
     return PyThrowBadEs(impObj()->setRecordHistory(bRecord));
 }
@@ -397,17 +421,17 @@ bool PyDb3dSolid::showHistory() const
     return impObj()->showHistory();
 }
 
-void PyDb3dSolid::setShowHistory(bool bShow)
+void PyDb3dSolid::setShowHistory(bool bShow) const
 {
     return PyThrowBadEs(impObj()->setShowHistory(bShow));
 }
 
-void PyDb3dSolid::chamferEdges(const boost::python::list& edgeSubentIds, const PyDbSubentId& baseFaceSubentId, double baseDist, double otherDist)
+void PyDb3dSolid::chamferEdges(const boost::python::list& edgeSubentIds, const PyDbSubentId& baseFaceSubentId, double baseDist, double otherDist) const
 {
     return PyThrowBadEs(impObj()->chamferEdges(PyListToPyDbSubentIdPtrArray(edgeSubentIds), *baseFaceSubentId.impObj(), baseDist, otherDist));
 }
 
-void PyDb3dSolid::filletEdges(const boost::python::list& edgeSubentIds, boost::python::list& radius, boost::python::list& startSetback, boost::python::list& endSetback)
+void PyDb3dSolid::filletEdges(const boost::python::list& edgeSubentIds, const boost::python::list& radius, const boost::python::list& startSetback, const boost::python::list& endSetback) const
 {
     const auto& _edgeSubentIds = PyListToPyDbSubentIdPtrArray(edgeSubentIds);
     const AcGeDoubleArray& _radius = PyListToDoubleArray(radius);
@@ -416,16 +440,16 @@ void PyDb3dSolid::filletEdges(const boost::python::list& edgeSubentIds, boost::p
     return PyThrowBadEs(impObj()->filletEdges(_edgeSubentIds, _radius, _startSetback, _endSetback));
 }
 
-bool PyDb3dSolid::usesGraphicsCache()
+bool PyDb3dSolid::usesGraphicsCache() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->usesGraphicsCache();
 #endif
 }
 
-void PyDb3dSolid::createSculptedSolid(const boost::python::list& limitingBodies, const boost::python::list& limitingFlags)
+void PyDb3dSolid::createSculptedSolid(const boost::python::list& limitingBodies, const boost::python::list& limitingFlags) const
 {
     const auto& _limitingBodies = PyListToPyDbEntityPtrArray(limitingBodies);
     const AcGeIntArray& _limitingFlags = PyListToIntArray(limitingFlags);
@@ -434,7 +458,7 @@ void PyDb3dSolid::createSculptedSolid(const boost::python::list& limitingBodies,
 
 boost::python::list PyDb3dSolid::projectOnToSolid(const PyDbEntity& pEntityToProject, const AcGeVector3d& projectionDirection) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -475,18 +499,27 @@ AcDb3dSolid* PyDb3dSolid::impObj(const std::source_location& src /*= std::source
     return static_cast<AcDb3dSolid*>(m_pyImp.get());
 }
 
-
 //-----------------------------------------------------------------------------------
 //PyDbRegion
 void makePyDbRegionWrapper()
 {
-    PyDocString DS("PyDb.Region");
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n";
+
+    PyDocString DS("Region");
     class_<PyDbRegion, bases<PyDbEntity>>("Region")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>((DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }))))
-        .def("isNull", &PyDbRegion::isNull, DS.ARGS())
-        .def("createFromCurves", &PyDbRegion::createFromCurves, DS.SARGS({ "curves: PyDb.Curve" })).staticmethod("createFromCurves")
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.CTOR(ctords, 8157)))
+        .def("isNull", &PyDbRegion::isNull, DS.ARGS(8170))
+        .def("getPerimeter", &PyDbRegion::getPerimeter, DS.ARGS(8166))
+        .def("getArea", &PyDbRegion::getArea, DS.ARGS(8163))
+        .def("getNormal", &PyDbRegion::getNormal, DS.ARGS(8165))
+        .def("booleanOper", &PyDbRegion::booleanOper, DS.ARGS({ "operation : PyDb.BoolOperType","otherRegion : PyDb.Region" }, 8160))
+        .def("numChanges", &PyDbRegion::numChanges, DS.ARGS(8171))
+        .def("createFromCurves", &PyDbRegion::createFromCurves, DS.SARGS({ "curves: list[PyDb.Curve]" }, 8161)).staticmethod("createFromCurves")
         .def("className", &PyDbRegion::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbRegion::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbRegion::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -512,6 +545,37 @@ PyDbRegion::PyDbRegion(const PyDbObjectId& id, AcDb::OpenMode mode)
 PyDbRegion::PyDbRegion(const PyDbObjectId& id)
     : PyDbRegion(id, AcDb::OpenMode::kForRead)
 {
+}
+
+double PyDbRegion::getPerimeter() const
+{
+    double val = 0.0;
+    PyThrowBadEs(impObj()->getPerimeter(val));
+    return val;
+}
+
+double PyDbRegion::getArea() const
+{
+    double val = 0.0;
+    PyThrowBadEs(impObj()->getArea(val));
+    return val;
+}
+
+AcGeVector3d PyDbRegion::getNormal() const
+{
+    AcGeVector3d val;
+    PyThrowBadEs(impObj()->getNormal(val));
+    return val;
+}
+
+void PyDbRegion::booleanOper(AcDb::BoolOperType operation, const PyDbRegion& otherRegion) const
+{
+    PyThrowBadEs(impObj()->booleanOper(operation, otherRegion.impObj()));
+}
+
+Adesk::UInt32 PyDbRegion::numChanges() const
+{
+    return impObj()->numChanges();
 }
 
 Adesk::Boolean PyDbRegion::isNull() const
@@ -577,11 +641,16 @@ AcDbRegion* PyDbRegion::impObj(const std::source_location& src /*= std::source_l
 //PyDbBody
 void makePyDbBodyWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n";
+
     PyDocString DS("Body");
     class_<PyDbBody, bases<PyDbEntity>>("Body")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>((DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }))))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.CTOR(ctords, 2605)))
         .def("className", &PyDbBody::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbBody::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbBody::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -642,15 +711,15 @@ void makePyDbRevolveOptionsWrapper()
 {
     PyDocString DS("RevolveOptions");
     class_<PyDbRevolveOptions>("RevolveOptions")
-        .def(init<>(DS.ARGS()))
-        .def("draftAngle", &PyDbRevolveOptions::draftAngle, DS.ARGS())
-        .def("setDraftAngle", &PyDbRevolveOptions::setDraftAngle, DS.ARGS({ "val: float" }))
-        .def("twistAngle", &PyDbRevolveOptions::twistAngle, DS.ARGS())
-        .def("setTwistAngle", &PyDbRevolveOptions::setTwistAngle, DS.ARGS({ "val: float" }))
-        .def("closeToAxis", &PyDbRevolveOptions::closeToAxis, DS.ARGS())
-        .def("setCloseToAxis", &PyDbRevolveOptions::setCloseToAxis, DS.ARGS({ "val: bool" }))
+        .def(init<>(DS.ARGS(8289)))
+        .def("draftAngle", &PyDbRevolveOptions::draftAngle, DS.ARGS(8294))
+        .def("setDraftAngle", &PyDbRevolveOptions::setDraftAngle, DS.ARGS({ "val: float" }, 8296))
+        .def("twistAngle", &PyDbRevolveOptions::twistAngle, DS.ARGS(8298))
+        .def("setTwistAngle", &PyDbRevolveOptions::setTwistAngle, DS.ARGS({ "val: float" }, 8297))
+        .def("closeToAxis", &PyDbRevolveOptions::closeToAxis, DS.ARGS(8293))
+        .def("setCloseToAxis", &PyDbRevolveOptions::setCloseToAxis, DS.ARGS({ "val: bool" }, 8295))
         .def("checkRevolveCurve", &PyDbRevolveOptions::checkRevolveCurve1)
-        .def("checkRevolveCurve", &PyDbRevolveOptions::checkRevolveCurve2, DS.ARGS({ "ent: PyDb.Entity","axisPnt: PyGe.Point3d","axisDir: PyGe.Vector3d","displayErrorMessages: bool=False" }))
+        .def("checkRevolveCurve", &PyDbRevolveOptions::checkRevolveCurve2, DS.ARGS({ "ent: PyDb.Entity","axisPnt: PyGe.Point3d","axisDir: PyGe.Vector3d","displayErrorMessages: bool=False" }, 8292))
         ;
 }
 
@@ -669,7 +738,7 @@ double PyDbRevolveOptions::draftAngle() const
     return impObj()->draftAngle();
 }
 
-void PyDbRevolveOptions::setDraftAngle(double ang)
+void PyDbRevolveOptions::setDraftAngle(double ang) const
 {
     return impObj()->setDraftAngle(ang);
 }
@@ -679,7 +748,7 @@ double PyDbRevolveOptions::twistAngle() const
     return impObj()->twistAngle();
 }
 
-void PyDbRevolveOptions::setTwistAngle(double ang)
+void PyDbRevolveOptions::setTwistAngle(double ang) const
 {
     return impObj()->setTwistAngle(ang);
 }
@@ -689,19 +758,19 @@ bool PyDbRevolveOptions::closeToAxis() const
     return impObj()->closeToAxis();
 }
 
-void PyDbRevolveOptions::setCloseToAxis(bool val)
+void PyDbRevolveOptions::setCloseToAxis(bool val) const
 {
     return impObj()->setCloseToAxis(val);
 }
 
-boost::python::tuple PyDbRevolveOptions::checkRevolveCurve1(PyDbEntity& ent, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir)
+boost::python::tuple PyDbRevolveOptions::checkRevolveCurve1(PyDbEntity& ent, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir) const
 {
     return checkRevolveCurve2(ent, axisPnt, axisDir, false);
 }
 
-boost::python::tuple PyDbRevolveOptions::checkRevolveCurve2(PyDbEntity& ent, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir, bool displayErrorMessages)
+boost::python::tuple PyDbRevolveOptions::checkRevolveCurve2(PyDbEntity& ent, const AcGePoint3d& axisPnt, const AcGeVector3d& axisDir, bool displayErrorMessages) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -737,45 +806,45 @@ void makePyDbSweepOptionsWrapper()
 
     PyDocString DS("SweepOptions");
     class_<PyDbSweepOptions>("SweepOptions")
-        .def(init<>(DS.ARGS()))
-        .def("draftAngle", &PyDbSweepOptions::draftAngle, DS.ARGS())
-        .def("setDraftAngle", &PyDbSweepOptions::setDraftAngle, DS.ARGS({ "val: float" }))
-        .def("startDraftDist", &PyDbSweepOptions::startDraftDist, DS.ARGS())
-        .def("setStartDraftDist", &PyDbSweepOptions::setStartDraftDist, DS.ARGS({ "val: float" }))
-        .def("endDraftDist", &PyDbSweepOptions::endDraftDist, DS.ARGS())
-        .def("setEndDraftDist", &PyDbSweepOptions::setEndDraftDist, DS.ARGS({ "val: float" }))
-        .def("twistAngle", &PyDbSweepOptions::twistAngle, DS.ARGS())
-        .def("setTwistAngle", &PyDbSweepOptions::setTwistAngle, DS.ARGS({ "val: float" }))
-        .def("scaleFactor", &PyDbSweepOptions::scaleFactor, DS.ARGS())
-        .def("setScaleFactor", &PyDbSweepOptions::setScaleFactor, DS.ARGS({ "val: float" }))
-        .def("alignAngle", &PyDbSweepOptions::alignAngle, DS.ARGS())
-        .def("setAlignAngle", &PyDbSweepOptions::setAlignAngle, DS.ARGS({ "val: float" }))
-        .def("align", &PyDbSweepOptions::align, DS.ARGS())
-        .def("setAlign", &PyDbSweepOptions::setAlign, DS.ARGS({ "val: PyDb.SweepAlignOption" }))
-        .def("miterOption", &PyDbSweepOptions::miterOption, DS.ARGS())
-        .def("setMiterOption", &PyDbSweepOptions::setMiterOption, DS.ARGS({ "val: PyDb.SweepMiterOption" }))
-        .def("alignStart", &PyDbSweepOptions::alignStart, DS.ARGS())
-        .def("setAlignStart", &PyDbSweepOptions::setAlignStart, DS.ARGS({ "val: bool" }))
-        .def("basePoint", &PyDbSweepOptions::basePoint, DS.ARGS())
-        .def("setBasePoint", &PyDbSweepOptions::setBasePoint, DS.ARGS({ "pt: PyGe.Point3d" }))
-        .def("bank", &PyDbSweepOptions::bank, DS.ARGS())
-        .def("setBank", &PyDbSweepOptions::setBank, DS.ARGS({ "val: bool" }))
-        .def("checkIntersections", &PyDbSweepOptions::checkIntersections, DS.ARGS())
-        .def("setCheckIntersections", &PyDbSweepOptions::setCheckIntersections, DS.ARGS({ "val: bool" }))
-        .def("twistRefVec", &PyDbSweepOptions::twistRefVec, DS.ARGS())
-        .def("setTwistRefVec", &PyDbSweepOptions::setTwistRefVec, DS.ARGS({ "vec: PyGe.Vector3d" }))
-        .def("getSweepEntityTransform", &PyDbSweepOptions::getSweepEntityTransform, DS.ARGS({ "xform: PyGe.Matrix3d" }))
+        .def(init<>(DS.ARGS(8985)))
+        .def("draftAngle", &PyDbSweepOptions::draftAngle, DS.ARGS(8998))
+        .def("setDraftAngle", &PyDbSweepOptions::setDraftAngle, DS.ARGS({ "val: float" }, 9011))
+        .def("startDraftDist", &PyDbSweepOptions::startDraftDist, DS.ARGS(9020))
+        .def("setStartDraftDist", &PyDbSweepOptions::setStartDraftDist, DS.ARGS({ "val: float" }, 9016))
+        .def("endDraftDist", &PyDbSweepOptions::endDraftDist, DS.ARGS(8999))
+        .def("setEndDraftDist", &PyDbSweepOptions::setEndDraftDist, DS.ARGS({ "val: float" }, 9012))
+        .def("twistAngle", &PyDbSweepOptions::twistAngle, DS.ARGS(9021))
+        .def("setTwistAngle", &PyDbSweepOptions::setTwistAngle, DS.ARGS({ "val: float" }, 9018))
+        .def("scaleFactor", &PyDbSweepOptions::scaleFactor, DS.ARGS(9004))
+        .def("setScaleFactor", &PyDbSweepOptions::setScaleFactor, DS.ARGS({ "val: float" }, 9015))
+        .def("alignAngle", &PyDbSweepOptions::alignAngle, DS.ARGS(8990))
+        .def("setAlignAngle", &PyDbSweepOptions::setAlignAngle, DS.ARGS({ "val: float" }, 9006))
+        .def("align", &PyDbSweepOptions::align, DS.ARGS(8989))
+        .def("setAlign", &PyDbSweepOptions::setAlign, DS.ARGS({ "val: PyDb.SweepAlignOption" }, 9005))
+        .def("miterOption", &PyDbSweepOptions::miterOption, DS.ARGS(9002))
+        .def("setMiterOption", &PyDbSweepOptions::setMiterOption, DS.ARGS({ "val: PyDb.SweepMiterOption" }, 9013))
+        .def("alignStart", &PyDbSweepOptions::alignStart, DS.ARGS(8992))
+        .def("setAlignStart", &PyDbSweepOptions::setAlignStart, DS.ARGS({ "val: bool" }, 9007))
+        .def("basePoint", &PyDbSweepOptions::basePoint, DS.ARGS(8994))
+        .def("setBasePoint", &PyDbSweepOptions::setBasePoint, DS.ARGS({ "pt: PyGe.Point3d" }, 9009))
+        .def("bank", &PyDbSweepOptions::bank, DS.ARGS(8993))
+        .def("setBank", &PyDbSweepOptions::setBank, DS.ARGS({ "val: bool" }, 9008))
+        .def("checkIntersections", &PyDbSweepOptions::checkIntersections, DS.ARGS(8995))
+        .def("setCheckIntersections", &PyDbSweepOptions::setCheckIntersections, DS.ARGS({ "val: bool" }, 9010))
+        .def("twistRefVec", &PyDbSweepOptions::twistRefVec, DS.ARGS(9022))
+        .def("setTwistRefVec", &PyDbSweepOptions::setTwistRefVec, DS.ARGS({ "vec: PyGe.Vector3d" }, 9019))
+        .def("getSweepEntityTransform", &PyDbSweepOptions::getSweepEntityTransform, DS.ARGS({ "xform: PyGe.Matrix3d" }, 9001))
         .def("setSweepEntityTransform", &PyDbSweepOptions::setSweepEntityTransform1)
         .def("setSweepEntityTransform", &PyDbSweepOptions::setSweepEntityTransform2)
-        .def("setSweepEntityTransform", &PyDbSweepOptions::setSweepEntityTransform3, DS.OVRL(setSweepEntityTransformOverloads))
-        .def("getPathEntityTransform", &PyDbSweepOptions::getPathEntityTransform, DS.ARGS({ "xform: PyGe.Matrix3d" }))
+        .def("setSweepEntityTransform", &PyDbSweepOptions::setSweepEntityTransform3, DS.OVRL(setSweepEntityTransformOverloads, 9017))
+        .def("getPathEntityTransform", &PyDbSweepOptions::getPathEntityTransform, DS.ARGS({ "xform: PyGe.Matrix3d" }, 9000))
         .def("setPathEntityTransform", &PyDbSweepOptions::setPathEntityTransform1)
         .def("setPathEntityTransform", &PyDbSweepOptions::setPathEntityTransform2)
-        .def("setPathEntityTransform", &PyDbSweepOptions::setPathEntityTransform3, DS.OVRL(setPathEntityTransformOverloads))
+        .def("setPathEntityTransform", &PyDbSweepOptions::setPathEntityTransform3, DS.OVRL(setPathEntityTransformOverloads, 9014))
         .def("checkSweepCurve", &PyDbSweepOptions::checkSweepCurve1)
-        .def("checkSweepCurve", &PyDbSweepOptions::checkSweepCurve2, DS.ARGS({ "pPathEnt: PyDb.Entity","displayErrorMessages: bool=False" }))
+        .def("checkSweepCurve", &PyDbSweepOptions::checkSweepCurve2, DS.ARGS({ "pPathEnt: PyDb.Entity","displayErrorMessages: bool=False" }, 8997))
         .def("checkPathCurve", &PyDbSweepOptions::checkPathCurve1)
-        .def("checkPathCurve", &PyDbSweepOptions::checkPathCurve2, DS.ARGS({ "pPathEnt: PyDb.Entity","displayErrorMessages: bool=False" }))
+        .def("checkPathCurve", &PyDbSweepOptions::checkPathCurve2, DS.ARGS({ "pPathEnt: PyDb.Entity","displayErrorMessages: bool=False" }, 8996))
         ;
     enum_<AcDbSweepOptions::AlignOption>("SweepAlignOption")
         .value("kNoAlignment", AcDbSweepOptions::AlignOption::kNoAlignment)
@@ -809,7 +878,7 @@ double PyDbSweepOptions::draftAngle() const
     return impObj()->draftAngle();
 }
 
-void PyDbSweepOptions::setDraftAngle(double ang)
+void PyDbSweepOptions::setDraftAngle(double ang) const
 {
     return impObj()->setDraftAngle(ang);
 }
@@ -819,7 +888,7 @@ double PyDbSweepOptions::startDraftDist() const
     return impObj()->startDraftDist();
 }
 
-void PyDbSweepOptions::setStartDraftDist(double val)
+void PyDbSweepOptions::setStartDraftDist(double val) const
 {
     return impObj()->setStartDraftDist(val);
 }
@@ -829,7 +898,7 @@ double PyDbSweepOptions::endDraftDist() const
     return impObj()->endDraftDist();
 }
 
-void PyDbSweepOptions::setEndDraftDist(double val)
+void PyDbSweepOptions::setEndDraftDist(double val) const
 {
     return impObj()->setEndDraftDist(val);
 }
@@ -839,7 +908,7 @@ double PyDbSweepOptions::twistAngle() const
     return impObj()->twistAngle();
 }
 
-void PyDbSweepOptions::setTwistAngle(double ang)
+void PyDbSweepOptions::setTwistAngle(double ang) const
 {
     return impObj()->setTwistAngle(ang);
 }
@@ -849,7 +918,7 @@ double PyDbSweepOptions::scaleFactor() const
     return impObj()->scaleFactor();
 }
 
-void PyDbSweepOptions::setScaleFactor(double val)
+void PyDbSweepOptions::setScaleFactor(double val) const
 {
     return impObj()->setScaleFactor(val);
 }
@@ -859,7 +928,7 @@ double PyDbSweepOptions::alignAngle() const
     return impObj()->alignAngle();
 }
 
-void PyDbSweepOptions::setAlignAngle(double ang)
+void PyDbSweepOptions::setAlignAngle(double ang) const
 {
     return impObj()->setAlignAngle(ang);
 }
@@ -869,7 +938,7 @@ AcDbSweepOptions::AlignOption PyDbSweepOptions::align() const
     return impObj()->align();
 }
 
-void PyDbSweepOptions::setAlign(AcDbSweepOptions::AlignOption val)
+void PyDbSweepOptions::setAlign(AcDbSweepOptions::AlignOption val) const
 {
     return impObj()->setAlign(val);
 }
@@ -879,7 +948,7 @@ AcDbSweepOptions::MiterOption PyDbSweepOptions::miterOption() const
     return impObj()->miterOption();
 }
 
-void PyDbSweepOptions::setMiterOption(AcDbSweepOptions::MiterOption val)
+void PyDbSweepOptions::setMiterOption(AcDbSweepOptions::MiterOption val) const
 {
     return impObj()->setMiterOption(val);
 }
@@ -889,7 +958,7 @@ bool PyDbSweepOptions::alignStart() const
     return impObj()->alignStart();
 }
 
-void PyDbSweepOptions::setAlignStart(bool val)
+void PyDbSweepOptions::setAlignStart(bool val) const
 {
     return impObj()->setAlignStart(val);
 }
@@ -899,7 +968,7 @@ AcGePoint3d PyDbSweepOptions::basePoint() const
     return impObj()->basePoint();
 }
 
-void PyDbSweepOptions::setBasePoint(AcGePoint3d& pnt)
+void PyDbSweepOptions::setBasePoint(AcGePoint3d& pnt) const
 {
     return impObj()->setBasePoint(pnt);
 }
@@ -909,7 +978,7 @@ bool PyDbSweepOptions::bank() const
     return impObj()->bank();
 }
 
-void PyDbSweepOptions::setBank(bool val)
+void PyDbSweepOptions::setBank(bool val) const
 {
     return impObj()->setBank(val);
 }
@@ -919,7 +988,7 @@ bool PyDbSweepOptions::checkIntersections() const
     return impObj()->checkIntersections();
 }
 
-void PyDbSweepOptions::setCheckIntersections(bool val)
+void PyDbSweepOptions::setCheckIntersections(bool val) const
 {
     return impObj()->setCheckIntersections(val);
 }
@@ -929,27 +998,27 @@ AcGeVector3d PyDbSweepOptions::twistRefVec() const
     return impObj()->twistRefVec();
 }
 
-void PyDbSweepOptions::setTwistRefVec(const AcGeVector3d& vec)
+void PyDbSweepOptions::setTwistRefVec(const AcGeVector3d& vec) const
 {
     return impObj()->setTwistRefVec(vec);
 }
 
-bool PyDbSweepOptions::getSweepEntityTransform(AcGeMatrix3d& mat)
+bool PyDbSweepOptions::getSweepEntityTransform(AcGeMatrix3d& mat) const
 {
     return impObj()->getSweepEntityTransform(mat);
 }
 
-void PyDbSweepOptions::setSweepEntityTransform1(AcGeMatrix3d& mat)
+void PyDbSweepOptions::setSweepEntityTransform1(AcGeMatrix3d& mat) const
 {
     return impObj()->setSweepEntityTransform(mat);
 }
 
-void PyDbSweepOptions::setSweepEntityTransform2(boost::python::list& sweepEntities)
+void PyDbSweepOptions::setSweepEntityTransform2(boost::python::list& sweepEntities) const
 {
     return setSweepEntityTransform3(sweepEntities, false);
 }
 
-void PyDbSweepOptions::setSweepEntityTransform3(boost::python::list& sweepEntities, bool displayErrorMessages)
+void PyDbSweepOptions::setSweepEntityTransform3(boost::python::list& sweepEntities, bool displayErrorMessages) const
 {
     AcArray<AcDbEntity*> _sweepEntities;
     auto vec = py_list_to_std_vector<PyDbEntity>(sweepEntities);
@@ -958,50 +1027,50 @@ void PyDbSweepOptions::setSweepEntityTransform3(boost::python::list& sweepEntiti
     return PyThrowBadEs(impObj()->setSweepEntityTransform(_sweepEntities, displayErrorMessages));
 }
 
-bool PyDbSweepOptions::getPathEntityTransform(AcGeMatrix3d& mat)
+bool PyDbSweepOptions::getPathEntityTransform(AcGeMatrix3d& mat) const
 {
     return impObj()->getPathEntityTransform(mat);
 }
 
-void PyDbSweepOptions::setPathEntityTransform1(AcGeMatrix3d& mat)
+void PyDbSweepOptions::setPathEntityTransform1(AcGeMatrix3d& mat) const
 {
     return impObj()->setPathEntityTransform(mat);
 }
 
-void PyDbSweepOptions::setPathEntityTransform2(PyDbEntity& pPathEnt)
+void PyDbSweepOptions::setPathEntityTransform2(PyDbEntity& pPathEnt) const
 {
     return PyThrowBadEs(impObj()->setPathEntityTransform(pPathEnt.impObj()));
 }
 
-void PyDbSweepOptions::setPathEntityTransform3(PyDbEntity& pPathEnt, bool displayErrorMessages)
+void PyDbSweepOptions::setPathEntityTransform3(PyDbEntity& pPathEnt, bool displayErrorMessages) const
 {
     return PyThrowBadEs(impObj()->setPathEntityTransform(pPathEnt.impObj(), displayErrorMessages));
 }
 
-boost::python::tuple PyDbSweepOptions::checkSweepCurve1(PyDbEntity& pSweepEnt)
+boost::python::tuple PyDbSweepOptions::checkSweepCurve1(PyDbEntity& pSweepEnt) const
 {
     return checkSweepCurve2(pSweepEnt, false);
 }
 
-boost::python::tuple PyDbSweepOptions::checkSweepCurve2(PyDbEntity& pSweepEnt, bool displayErrorMessages)
+boost::python::tuple PyDbSweepOptions::checkSweepCurve2(PyDbEntity& pSweepEnt, bool displayErrorMessages) const
 {
     PyAutoLockGIL lock;
-    AcDb::Planarity planarity;
     AcGePoint3d pnt;
     AcGeVector3d vec;
     bool closed = false;
     double approxArcLen = 0;
+    AcDb::Planarity planarity = AcDb::kNonPlanar;
     if (auto es = impObj()->checkSweepCurve(pSweepEnt.impObj(), planarity, pnt, vec, closed, approxArcLen, displayErrorMessages); es != eOk)
         throw PyErrorStatusException(es);
     return boost::python::make_tuple(planarity, pnt, vec, closed, approxArcLen);
 }
 
-void PyDbSweepOptions::checkPathCurve1(PyDbEntity& pPathEnt)
+void PyDbSweepOptions::checkPathCurve1(PyDbEntity& pPathEnt) const
 {
     return PyThrowBadEs(impObj()->checkPathCurve(pPathEnt.impObj()));
 }
 
-void PyDbSweepOptions::checkPathCurve2(PyDbEntity& pPathEnt, bool displayErrorMessages)
+void PyDbSweepOptions::checkPathCurve2(PyDbEntity& pPathEnt, bool displayErrorMessages) const
 {
     return PyThrowBadEs(impObj()->checkPathCurve(pPathEnt.impObj(), displayErrorMessages));
 }

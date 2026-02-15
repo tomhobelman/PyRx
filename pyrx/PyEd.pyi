@@ -1,13 +1,17 @@
 from __future__ import annotations
-from typing import ClassVar, Self, Any, Collection, Iterator, overload
+
+from typing import Any, ClassVar, Collection, Self, overload
+
+import wx
+
 from pyrx import Ap as PyAp
 from pyrx import Db as PyDb
 from pyrx import Ed as PyEd
 from pyrx import Ge as PyGe
 from pyrx import Gi as PyGi
 from pyrx import Rx as PyRx
-import wx
 from pyrx.doc_utils.boost_meta import _BoostPythonEnum
+
 eAligned: PointHistory  # 1024
 eAppFiltered: PointHistory  # 2048
 eCancel: PromptStatus  # -5002
@@ -27,7 +31,7 @@ eKeyword: PromptStatus  # -5005
 eLastPt: PointHistory  # 4
 eModeless: PromptStatus  # 5027
 eNoEmpty: PromptCondition  # 1
-eNoNegitive: PromptCondition  # 2
+eNoNegative: PromptCondition  # 2
 eNoZero: PromptCondition  # 1
 eNone: PromptCondition  # 0
 eNormal: PromptStatus  # 5100
@@ -104,15 +108,19 @@ kTargetBox: CursorType  # 4
 kTransparent25: DragStyleType  # 2
 kTransparent75: DragStyleType  # 3
 kUseBasePointElevation: UserInputControls  # 32768
+
 class AutoSysVar:
-    def __init__(self, varName:str, value, /) -> None: ...
+    def __init__(self, varName: str, value, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
     def detach(self, val: bool, /) -> None: ...
+
 class Core:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
     @staticmethod
-    def addSupplementalCursorImage(image: wx.Image,order: int = 0,alpha: int = 255, /) -> bool: ...
+    def addSupplementalCursorImage(
+        image: wx.Image, order: int = 0, alpha: int = 255, /
+    ) -> bool: ...
     @staticmethod
     def alert(msg: str, /) -> int:
         """
@@ -123,7 +131,7 @@ class Core:
     @staticmethod
     def arxLoad(path: str, /) -> int:
         """
-        Loads an ARX module. Corresponds to the AutoLISP (arxload).  acedArxLoad() returns an error
+        Loads an ARX module. Corresponds to the AutoLISP (arxload). acedArxLoad() returns an error
         status code when the string parameter does not specify an existing file or when the file
         cannot be loaded for some other reason.
         """
@@ -138,20 +146,20 @@ class Core:
     @staticmethod
     def arxUnload(app: str, /) -> int:
         """
-        Unloads an ARX module. Corresponds to the AutoLISP (arxunload) function.  The
+        Unloads an ARX module. Corresponds to the AutoLISP (arxunload) function. The
         acedArxUnload() function returns an error status code when the string parameter does not
         specify a loaded ARX program or when the program to be unloaded has dependents registered
         on its services.
         """
     @staticmethod
-    def audit(db: PyDb.Database,fix: bool,echo: bool=False, /) -> None:
+    def audit(db: PyDb.Database, fix: bool, echo: bool = False, /) -> None:
         """
         This function audits the AcDbDatabase pointed to by pDb.
         """
     @staticmethod
-    def autoSetVar(name:str,value, /) -> AutoSysVar: ...
+    def autoSetVar(name: str, value, /) -> AutoSysVar: ...
     @staticmethod
-    def calcTextExtents(val: str,textStyleId: PyDb.ObjectId, /) -> tuple[float,float]: ...
+    def calcTextExtents(val: str, textStyleId: PyDb.ObjectId, /) -> tuple[float, float]: ...
     @staticmethod
     def callBackOnCancel() -> None:
         """
@@ -166,7 +174,7 @@ class Core:
         This function is for use with OLE Automation applications. Whenever such an application
         uses any of the ObjectARX API functions, it must call acedSetOLELock() to set a lock. When
         the lock is set, the application calls this function to clear the lock and allow other OLE
-        applications their chance to lock and use ObjectARX API functions. handle is a lock "code"
+        applications their chance to lock and use ObjectARX API functions. handle is a lock 'code'
         integer that is used to make sure that the setting and clearing of the lock are done by the
         same application. Both acedSetOLELock() and this function must be passed this integer lock
         code as an identifier. If handle is a different code than was used to set the lock, then
@@ -188,10 +196,20 @@ class Core:
         """
     @overload
     @staticmethod
-    def cmdS(commandName:str, /) -> bool: ...
+    def cmdS(commandName: str, /) -> bool:
+        """
+        This function does the same thing with the same restructions as acedCommandS, with a resbuf
+        chain rather than a veriable arguments list. Two more supplied parameters are intended for
+        future use.
+        """
     @overload
     @staticmethod
-    def cmdS(resultBuffer:list[tuple[int,any]], /) -> bool: ...
+    def cmdS(resultBuffer: list[tuple[int, Any]], /) -> bool:
+        """
+        This function does the same thing with the same restructions as acedCommandS, with a resbuf
+        chain rather than a veriable arguments list. Two more supplied parameters are intended for
+        future use.
+        """
     @overload
     @staticmethod
     def cmdS(*args) -> bool:
@@ -201,33 +219,28 @@ class Core:
         future use.
         """
     @staticmethod
-    def cmdUndefine(name: str,undefineit: int, /) -> int:
+    def cmdUndefine(name: str, undefineit: int, /) -> int:
         """
         This function searches the command stack of registered commands for the command name cmdstr
-        and if found sets (if undefit == 1) or unsets (if undefit == 0) the "undefine" bit in the
-        command flags for that command. If the "undefine" bit is set, then AutoCAD will treat this
+        and if found sets (if undefit == 1) or unsets (if undefit == 0) the 'undefine' bit in the
+        command flags for that command. If the 'undefine' bit is set, then AutoCAD will treat this
         command as though it is undefined in the same way that internal AutoCAD commands are
         treated if they have been undefined via the AutoCAD UNDEFINE command.
         """
+    @overload
     @staticmethod
-    def convertEntityToHatch(hatch: PyDb.Hatch,entity: PyDb.Entity,transferId: bool, /) -> None:
+    def coordFromPixelToWorld(pt: tuple[int, int], /) -> PyGe.Point3d:
         """
-        Converts a block reference or a solid to a hatch. If transferId is true, the calling
-        AcDbHatch assumes the AcDbObjectId, handle, any extended entity data, extension
-        dictionaries, or reactors, as well as any hatch associativity of pEnt. This is the only way
-        the associativity with the boundary objects can be transferred. pEnt will then be deleted
-        and set to NULL. If transferId is false, pEnt remains in the database as is and the caller
-        is responsible for closing it. The resulting AcDbHatch is not database-resident and, as
-        such, cannot assume any of the associativity with pEnt boundary objects. The caller can
-        later call pEnt->handOverTo() to exchange the new AcDbHatch for pEnt in the database, but
-        the associativity cannot be re-established.
+        Converts coordinates from AutoCAD drawing window to current active viewport's coordinates.
+        Returns TRUE if it successfully converts the coordinates; otherwise, it returns FALSE.
         """
     @overload
     @staticmethod
-    def coordFromPixelToWorld(pt: tuple[int,int], /) -> PyGe.Point3d: ...
-    @overload
-    @staticmethod
-    def coordFromPixelToWorld(winnum: int, pt: tuple[int,int], /) -> PyGe.Point3d: ...
+    def coordFromPixelToWorld(winnum: int, pt: tuple[int, int], /) -> PyGe.Point3d:
+        """
+        Converts coordinates from AutoCAD drawing window to current active viewport's coordinates.
+        Returns TRUE if it successfully converts the coordinates; otherwise, it returns FALSE.
+        """
     @overload
     @staticmethod
     def coordFromPixelToWorld(*args) -> PyGe.Point3d:
@@ -236,31 +249,35 @@ class Core:
         Returns TRUE if it successfully converts the coordinates; otherwise, it returns FALSE.
         """
     @staticmethod
-    def coordFromWorldToPixel(windnum: int ,pnt: PyGe.Point3d, /) -> tuple[int,int]:
+    def coordFromWorldToPixel(windnum: int, pnt: PyGe.Point3d, /) -> tuple[int, int]:
         """
         Converts coordinates in given viewport to Windows screen coordinates. Returns TRUE if it
         successfully converts the coordinates; otherwise, returns FALSE.
         """
     @staticmethod
-    def createInternetShortcut(szURL: str,szShortcutPath: str, /) -> bool:
+    def createInternetShortcut(szURL: str, szShortcutPath: str, /) -> bool:
         """
         Creates an MSIE-compatible Internet shortcut using the arguments passed to it.
         """
     @staticmethod
-    def createViewportByView(db: PyDb.Database,view: PyDb.ObjectId,pt: PyGe.Point2d,scale: float, /) -> PyDb.ObjectId:
+    def createViewportByView(
+        db: PyDb.Database, view: PyDb.ObjectId, pt: PyGe.Point2d, scale: float, /
+    ) -> PyDb.ObjectId:
         """
         This function creates a viewport for the given model view at the desired location. It bases
         the size of the viewport on the scale factor and the size of the model view. For example, a
         model view 20 feet across and a scale of one foot to a quarter inch would yield a viewport
-        that was five inches across on the paper of the layout.  This call assumes that the
-        viewport is being created in the current layout.  Returns eOk on success. Possible error
-        codes include Acad::eNotInPaperspace if not currently in a layout, Acad::eWrongDatabase if
-        the AcDbDatabase passed in was not the current database, various open errors if the
+        that was five inches across on the paper of the layout. This call assumes that the viewport
+        is being created in the current layout. Returns eOk on success. Possible error codes
+        include Acad::eNotInPaperspace if not currently in a layout, Acad::eWrongDatabase if the
+        AcDbDatabase passed in was not the current database, various open errors if the
         AcDbViewTableRecord could not be opened, or Acad::eInvalidInput if another error occurred
         preventing the creation of the viewport.
         """
     @staticmethod
-    def defun(name: str,funcnumber: int, /) -> int:
+    def curDwgXrefGraph() -> PyDb.XrefGraph: ...
+    @staticmethod
+    def defun(name: str, funcnumber: int, /) -> int:
         """
         Defines an ARX application function as an external AutoLISP function and clears any
         existing acedSetFunHelp() reference. Once a function in an ARX application has been defined
@@ -279,7 +296,7 @@ class Core:
         symbol type. Warning If the application defines a C:XXX command whose name conflicts with a
         built-in command or with a command name defined in the acad.pgp file, AutoCAD does not
         recognize the external function as a command (though it can still be invoked as an AutoLISP
-        external function). For example, after the call to acedDefun("c:cp", 0), a user input of cp
+        external function). For example, after the call to acedDefun('c:cp', 0), a user input of cp
         invokes the AutoCAD COPY command (this alias is defined in the sample acad.pgp), but the
         user could invoke the external function with (c:cp). Function names defined by acedDefun()
         can be undefined by calling acedUndef(). This removes the function name from the AutoLISP
@@ -287,7 +304,7 @@ class Core:
         acedDefun() succeeds, it returns RTNORM; otherwise, it returns an error code.
         """
     @staticmethod
-    def defunEx(globalName: str,name: str,funcnumber: int, /) -> int:
+    def defunEx(globalName: str, name: str, funcnumber: int, /) -> int:
         """
         Defines an ARX application function as an external AutoLISP function and clears any
         existing acedSetFunHelp() references. It is similar to acedDefun(), but takes both global
@@ -311,7 +328,7 @@ class Core:
         the application defines a C:XXX command whose name conflicts with a built-in command or
         with a command name defined in the acad.pgp file, AutoCAD does not recognize the external
         function as a command (though it can still be invoked as an AutoLISP external function).
-        For example, after the call to acedDefunEx("c:cp", 0), a user input of cp invokes the
+        For example, after the call to acedDefunEx('c:cp', 0), a user input of cp invokes the
         AutoCAD COPY command (this alias is defined in the sample acad.pgp), but the user could
         invoke the external function with (c:cp). Function names defined by acedDefunEx() can be
         undefined by calling acedUndef(). This removes the function name from the AutoLISP atom
@@ -329,7 +346,7 @@ class Core:
     @staticmethod
     def disableUsrbrk() -> None:
         """
-          This function disables the user break mechanism for the current document.
+        This function disables the user break mechanism for the current document.
         """
     @staticmethod
     def displayBorder(val: bool, /) -> bool:
@@ -338,11 +355,13 @@ class Core:
         window. This behavior is used with the Drawing Compare feature (COMPARE command).
         """
     @staticmethod
-    def drawOrderInherit(parent: PyDb.ObjectId,childids: list[PyDb.ObjectId],cmd: PyEd.DrawOrderCmdType, /) -> None:
+    def drawOrderInherit(
+        parent: PyDb.ObjectId, childids: list[PyDb.ObjectId], cmd: PyEd.DrawOrderCmdType, /
+    ) -> None:
         """
         This function is called to set the draw order on a new child array object or objects. It
         should be called after the child array objects are added to the database, but before they
-        are regen'ed, so that they are regen'ed to the proper location the first time.  If cmd
+        are regen'ed, so that they are regen'ed to the proper location the first time. If cmd
         argument is kDrawOrderBelow or kDrawOrderAbove, then a valid parent ID must be supplied,
         and children objects are placed either just below or just above the parent entity,
         visually. If the cmd argument is kDrawOrderTop or kDrawOrderBottom, the parent entity can
@@ -367,19 +386,19 @@ class Core:
         For internal use only.
         """
     @staticmethod
-    def editMTextInteractive(mt: PyDb.MText,usenewUI: bool,allowTabs: bool, /) -> int:
+    def editMTextInteractive(mt: PyDb.MText, usenewUI: bool, allowTabs: bool, /) -> int:
         """
         Invokes the MTEXT user interface.
         """
     @staticmethod
     def enableUsrbrk() -> None:
         """
-          This function enables the user break mechanism for the the current document.
+        This function enables the user break mechanism for the the current document.
         """
     @staticmethod
-    def evaluateDiesel(statement : str, /) -> str: ...
+    def evaluateDiesel(statement: str, /) -> str: ...
     @staticmethod
-    def evaluateLisp(statement : str, /) -> list: ...
+    def evaluateLisp(statement: str, /) -> list: ...
     @staticmethod
     def exceptionTest() -> str: ...
     @staticmethod
@@ -393,7 +412,7 @@ class Core:
         the type of the file, and does not attempt to append any kind of file-name extension. If
         the file you are searching for does have an extension to its name, the extension must be
         included in the fname argument. If fname is qualified by including a drive or directory
-        prefix (for example, "d:test.exp"), acedFindFile() searches only that disk or directory.
+        prefix (for example, 'd:test.exp'), acedFindFile() searches only that disk or directory.
         Otherwise, acedFindFile() searches for fname according to the current AutoCAD library path,
         which consists of the following directories, in order: The current directoryThe directory
         that contains the current drawing fileThe directories named by the ACAD environment
@@ -429,9 +448,9 @@ class Core:
     @staticmethod
     def getBlockEditMode() -> int:
         """
-          This function returns the current BlockEdit mode value. The possible values are defined
-        in the BlockEditModeFlags enum. The returned value may be a bitwise combination of the
-        various enum values.
+        This function returns the current BlockEdit mode value. The possible values are defined in
+        the BlockEditModeFlags enum. The returned value may be a bitwise combination of the various
+        enum values.
         """
     @staticmethod
     def getCfg(val: str, /) -> str:
@@ -448,16 +467,16 @@ class Core:
     @staticmethod
     def getCommands() -> dict: ...
     @staticmethod
-    def getCurVportPixelToDisplay() -> tuple[float,float]:
+    def getCurVportPixelToDisplay() -> tuple[float, float]:
         """
-          This function sets xFactor and yFactor to the x and y pixel space to display space
+        This function sets xFactor and yFactor to the x and y pixel space to display space
         conversion factors for the current viewport. These values represent the size of a pixel in
         display coordinates. If there is no current viewport, then both are set to 0.0.
         """
     @staticmethod
-    def getCurVportScreenToDisplay() -> tuple[float,float]:
+    def getCurVportScreenToDisplay() -> tuple[float, float]:
         """
-          This function sets xFactor and yFactor to the x and y screen space to display space
+        This function sets xFactor and yFactor to the x and y screen space to display space
         conversion factors for the current viewport. If there is no current viewport, then both are
         set to 0.0.
         """
@@ -465,24 +484,26 @@ class Core:
     def getCurrentSelectionSet() -> list[PyDb.ObjectId]:
         """
         This function fills sset in with the object IDs of all entities in the current selection
-        set within AutoCAD. The "current selection set" may be one of the following: a pickfirst
+        set within AutoCAD. The 'current selection set' may be one of the following: a pickfirst
         set, a selection set selected by the select command or any other command that does a
-        selection (that is, similar to the "Previous" selection option), or the most recent set
+        selection (that is, similar to the 'Previous' selection option), or the most recent set
         from an ssget. If a pickfirst set is available it will always be used. If no pickfirst set
         is available, then whichever of the other two types is available will be used. If both of
         the other two types are available, then whichever was most recently created will be used.
-        If a pickfirst selection set is "selected" by a call to this function, then the entity
+        If a pickfirst selection set is 'selected' by a call to this function, then the entity
         highlighting and grips will disappear just as they would when any AutoCAD command uses a
-        pickfirst selection set. If an ssget type of selection is "selected" by a call to this
+        pickfirst selection set. If an ssget type of selection is 'selected' by a call to this
         function, then sset will essentially be a copy of the selection set and the original ssget
         selection set will still be valid. Only certain AutoCAD commands create a selection set
-        that can be found by acdbGetCurrentSelectionSet(). These commands are listed below:
-        ACISOUT AMECONVERT ARRAY ATTEXT AUDIT BHATCH BMPOUT CHANGE CHPROP CONVERT CONVERTPOLY COPY
-        COPYCLIP CUTCLIP DIVIDE DVIEW DXFOUT (partial) ERASE EXPLODE EXTEND EXTRUDE GROUP HATCH
-        HIDE INTERFERE INTERSECT LIST MASSPROP MEASURE MIRROR MOVE MVIEW OOPS PEDIT REGION REVOLVE
+        that can be found by acdbGetCurrentSelectionSet(). These commands are listed below: ACISOUT
+        AMECONVERT ARRAY ATTEXT AUDIT BHATCH BMPOUT CHANGE CHPROP CONVERT CONVERTPOLY COPY COPYCLIP
+        CUTCLIP DIVIDE DVIEW DXFOUT (partial) ERASE EXPLODE EXTEND EXTRUDE GROUP HATCH HIDE
+        INTERFERE INTERSECT LIST MASSPROP MEASURE MIRROR MOVE MVIEW OOPS PEDIT REGION REVOLVE
         ROTATE SCALE SECTION SELECT SLICE SPELL SPLINE STLOUT STRETCH SUBTRACT TRIM UNION VPVIS
         WBLOCK WMFOUT XCLIP
         """
+    @staticmethod
+    def getCurrentView() -> PyDb.ViewTableRecord: ...
     @staticmethod
     def getDpiScalingValue() -> float:
         """
@@ -492,14 +513,12 @@ class Core:
     def getEnv(val: str, /) -> str:
         """
         Deprecated. Retrieves the value of an environment variable. Looks first in the
-        AutoCAD-specific FixedProfile/General section of the registry: HKEY_CURRENT_USER
-        Software        Autodesk            AutoCAD                R25.0
-        <Install ID>                        FixedProfile                            GeneralIf an
-        entry is not found in the registry, retrieves the value from the Windows system environment
-        table.
+        AutoCAD-specific FixedProfile/General section of the registry: HKEY_CURRENT_USER Software
+        Autodesk AutoCAD R25.0 <Install ID> FixedProfile GeneralIf an entry is not found in the
+        registry, retrieves the value from the Windows system environment table.
         """
     @staticmethod
-    def getFileD(title: str,defawlt: str,ext: str,flags: int, /) -> str:
+    def getFileD(title: str, defawlt: str, ext: str, flags: int, /) -> str:
         """
         Prompts the user for a file name with the standard AutoCAD file dialog box.WarningThis
         function must never be called in zero-document state. Always check to see if any documents
@@ -510,8 +529,8 @@ class Core:
         extension (if passed as NULL, ext defaults to *). If the default file name is NULL or
         specifies only a path, the Default button in the dialog box is disabled. Beginning with
         AutoCAD Release 13, the ext argument accepts multiple filename extensions separated by
-        semicolons, as shown in the following example call to acedGetFileD():  const char* filea =
-        "myfile.dwg";result = acutNewRb(RTSTR);acedGetFileD(filea, NULL, "dwg;eps;abc", 33,
+        semicolons, as shown in the following example call to acedGetFileD(): const char* filea =
+        'myfile.dwg';result = acutNewRb(RTSTR);acedGetFileD(filea, NULL, 'dwg;eps;abc', 33,
         result);If the dialog box gets a filename from the user, acedGetFileD() sets the string in
         the result argument to a string specifying the filename. The acedGetFileD() function
         allocates memory for the pathname string. Your program is responsible for freeing the
@@ -533,20 +552,20 @@ class Core:
         choice of proceeding with or canceling the operation.If bit 0 is not set (open) and bit 2
         is not set, only the default extension (or none) is accepted. If no extension is entered,
         the default extension is automatically used. If the user enters any extension other than
-        the default, an "Invalid filename" message box is displayed and the user is required to try
+        the default, an 'Invalid filename' message box is displayed and the user is required to try
         again or cancel.If bit 0 is set (create) and bit 2 is not set, the default extension is
         added if it is not entered as part of the file name.
         """
     @staticmethod
-    def getFileNavDialog(title: str,defawlt: str,ext: str,dlgname: str,flags: int, /) -> list:
+    def getFileNavDialog(title: str, defawlt: str, ext: str, dlgname: str, flags: int, /) -> list:
         """
         The acedGetFileNavDialog() function prompts the user for a file name using the AutoCAD file
         navigation dialog box. The title argument specifies the caption of the entire dialog box;
         default specifies the default file name (which can be null); and ext is the default file
-        name extension (if passed as null, ext defaults to "*"). The ext argument accepts multiple
+        name extension (if passed as null, ext defaults to '*'). The ext argument accepts multiple
         file name extensions separated by semicolons, as shown in the following example call to
-        acedGetFileNavDialog():  const ACHAR * filea = "myfile.dwg";const ACHAR * dlgname = "My
-        File Dialog";struct resbuf* result = NULL;acedGetFileNavDialog(filea, NULL, "dwg;eps;abc",
+        acedGetFileNavDialog(): const ACHAR * filea = 'myfile.dwg';const ACHAR * dlgname = 'My File
+        Dialog';struct resbuf* result = NULL;acedGetFileNavDialog(filea, NULL, 'dwg;eps;abc',
         dlgname, 33, &result);//... do whatever with resultacutRelRb(result); The dlgname argument
         specifies a name for the dialog. This name is used as a key in the Windows registry for
         saving dialog-persistent data such as size and position. For example, in the code above,
@@ -567,13 +586,13 @@ class Core:
         to warn the user that the file exists and to offer the choice of proceeding with or
         canceling the operation.If bit 0 is not set (open) and bit 2 is not set, only the default
         extension (or none) is accepted. If no extension is entered, the default extension is
-        automatically used. If the user enters any extension other than the default, an "Invalid
-        filename" message box is displayed and the user is required to try again or cancel.If bit 0
+        automatically used. If the user enters any extension other than the default, an 'Invalid
+        filename' message box is displayed and the user is required to try again or cancel.If bit 0
         is set (create) and bit 2 is not set, the default extension is added if it is not entered
         as part of the file name.
         """
     @staticmethod
-    def getLastCommandLines(lineCount: int,ignoreNull: bool, /) -> list[str]: ...
+    def getLastCommandLines(lineCount: int, ignoreNull: bool, /) -> list[str]: ...
     @staticmethod
     def getMousePositionUCS() -> PyGe.Point3d: ...
     @staticmethod
@@ -581,7 +600,7 @@ class Core:
     @staticmethod
     def getPredefinedHatchPatterns() -> list[str]: ...
     @staticmethod
-    def getRGB(colorIndex : int, /) -> tuple[int,...]:
+    def getRGB(colorIndex: int, /) -> tuple[int, ...]:
         """
         This function returns a RGB color value in Win32 COLORREF (0x00bbggrr) format for the color
         specified by the AutoCAD Color Index (ACI) number. The ACI number must be a value between 0
@@ -601,7 +620,7 @@ class Core:
         to null. The acedGetSym() function returns RTNORM if it succeeds and RTERROR if it fails.
         It returns RTMODELESS, if the active command was registered using the
         ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
-        a call to  AcApDocManager::sendModelessInterrupt(). When acedGetSym() fails, it sets the
+        a call to AcApDocManager::sendModelessInterrupt(). When acedGetSym() fails, it sets the
         system variable ERRNO to a value that indicates the reason for the failure.
         """
     @staticmethod
@@ -612,11 +631,11 @@ class Core:
         This function provides access to the Windows Favorites directory of the current user.
         """
     @staticmethod
-    def getVar(name:str, /) -> object:
+    def getVar(name: str, /) -> object:
         """
         Retrieves the current value of the specified AutoCAD system variable. The result argument
         must point to a resbuf structure, because the system variables consist of a variety of
-        types.  Warning The result argument must point to an allocated resbuf (it can be static,
+        types. Warning The result argument must point to an allocated resbuf (it can be static,
         automatic, or dynamically allocated). It must not be declared as just a pointer; if the
         application doesn't allocate enough space for the resbuf structure, acedGetVar() will
         return garbage or corrupt other data in memory. If the requested system variable is a
@@ -628,7 +647,7 @@ class Core:
         an error code.
         """
     @staticmethod
-    def getWinNum(ptx: int,pty: int, /) -> int:
+    def getWinNum(ptx: int, pty: int, /) -> int:
         """
         Provide coordinates in AutoCAD drawing window (in client coordinates) and this function
         will return the viewport number the coordinates correspond to. This function usually is
@@ -636,7 +655,13 @@ class Core:
         number based on Windows client coordinates.
         """
     @staticmethod
-    def grDraw(pt1: PyGe.Point2d|PyGe.Point3d,pt2: PyGe.Point2d|PyGe.Point3d,color: int,highlight: int, /) -> int:
+    def grDraw(
+        pt1: PyGe.Point2d | PyGe.Point3d,
+        pt2: PyGe.Point2d | PyGe.Point3d,
+        color: int,
+        highlight: int,
+        /,
+    ) -> int:
         """
         Draws a vector between two points in the current viewport. AutoCAD clips the vector as
         required to fit the screen. Highlighting, controlled by the hl argument, depends on the
@@ -645,17 +670,19 @@ class Core:
         returns RTNORM.
         """
     @staticmethod
-    def grDrawArc(pt1: PyGe.Point3d,pt2: PyGe.Point3d,pt3: PyGe.Point3d,numsegs: int,color: int, /) -> int: ...
+    def grDrawArc(
+        pt1: PyGe.Point3d, pt2: PyGe.Point3d, pt3: PyGe.Point3d, numsegs: int, color: int, /
+    ) -> int: ...
     @staticmethod
-    def grDrawBox(pts: list[PyGe.Point3d],color: int,highlight: int, /) -> int: ...
+    def grDrawBox(pts: list[PyGe.Point3d], color: int, highlight: int, /) -> int: ...
     @staticmethod
-    def grDrawCircle(cen: PyGe.Point3d,radius: float,numsegs: int,color: int, /) -> int: ...
+    def grDrawCircle(cen: PyGe.Point3d, radius: float, numsegs: int, color: int, /) -> int: ...
     @staticmethod
-    def grDrawPoly2d(pts: list[PyGe.Point2d],color: int, /) -> int: ...
+    def grDrawPoly2d(pts: list[PyGe.Point2d], color: int, /) -> int: ...
     @staticmethod
-    def grDrawPoly3d(pts: list[PyGe.Point3d],color: int, /) -> int: ...
+    def grDrawPoly3d(pts: list[PyGe.Point3d], color: int, /) -> int: ...
     @staticmethod
-    def grText(box: int,text: str,hl: int, /) -> int:
+    def grText(box: int, text: str, hl: int, /) -> int:
         """
         Displays the specified text in the menu, mode, or status area of the graphics screen. If
         box equals the number of a screen menu box and hl is less than 0, acedGrText() displays
@@ -678,7 +705,7 @@ class Core:
         number is out of range.
         """
     @staticmethod
-    def grVecs(resbuf: list,xform: PyGe.Matrix3d, /) -> int:
+    def grVecs(resbuf: list, xform: PyGe.Matrix3d, /) -> int:
         """
         Draws multiple vectors on the graphics screen. Result-buffer elements in the vlist can be
         as follows: A pair of points (RTPOINT or RT3DPOINT) that specify the endpoints of the
@@ -696,7 +723,7 @@ class Core:
     @staticmethod
     def hasSupplementalCursorImage() -> bool: ...
     @staticmethod
-    def hatchPalletteDialog(pattern:str,custom : bool, /) -> str: ...
+    def hatchPalletteDialog(pattern: str, custom: bool, /) -> str: ...
     @staticmethod
     def initDialog(useDialog: bool, /) -> bool:
         """
@@ -767,7 +794,7 @@ class Core:
     def isOsnapOverride() -> bool:
         """
         Informs a custom Osnap routine whether it was called by a running Osnap or an Osnap
-        override.  In other words, this function returns true if a custom Osnap routine was called
+        override. In other words, this function returns true if a custom Osnap routine was called
         by an Osnap override.
         """
     @staticmethod
@@ -781,9 +808,12 @@ class Core:
     @staticmethod
     def isUsrbrkDisabled() -> bool:
         """
-          This function returns true if the user break mechanism is enabled for the current
-        document.
+        This function returns true if the user break mechanism is enabled for the current document.
         """
+    @staticmethod
+    def lineWeightDialog(lt: PyDb.LineWeight, includeByBlockByLayer: bool, /) -> tuple: ...
+    @staticmethod
+    def linetypeDialog(id: PyDb.ObjectId, includeByBlockByLayer: bool, /) -> tuple: ...
     @staticmethod
     def loadJSScript(scr: str, /) -> None: ...
     @staticmethod
@@ -813,7 +843,7 @@ class Core:
     @staticmethod
     def menuCmd(cmd: str, /) -> int: ...
     @staticmethod
-    def osnap(pt: PyGe.Point3d,mode: str, /) -> PyGe.Point3d:
+    def osnap(pt: PyGe.Point3d, mode: str, /) -> PyGe.Point3d:
         """
         Finds a point by means of object snap. Applies the specified Object Snap modes to find the
         closest point to a reference point. The APERTURE system variable determines the allowable
@@ -847,7 +877,7 @@ class Core:
         successful; otherwise, it returns an error code.
         """
     @staticmethod
-    def putSym(sym: str,resultBuffer: list, /) -> bool:
+    def putSym(sym: str, resultBuffer: list, /) -> bool:
         """
         Sets the value of an AutoLISP symbol. Warning This command can be used in the ARX program
         environment only when AutoCAD sends the message kInvkSubrMsg to the application. To set the
@@ -856,14 +886,14 @@ class Core:
         with this name and assigns it the value.
         """
     @staticmethod
-    def redraw(id: PyDb.ObjectId,mode: int, /) -> int:
+    def redraw(id: PyDb.ObjectId, mode: int, /) -> int:
         """
         Redraws either the graphics viewport or a single entity, according to the arguments. The
         following table shows the acceptable values for mode and the effect that each has. (If ent
         is not NULL but mode is 0, the call has no effect.) Modes for acedRedraw: Redraw mode
         Action 1 Redraw entity 2 Undraw entity (blank it out) 3 Highlight entity 4 Unhighlight
-        entity  If ent is NULL, acedRedraw() is identical to the AutoCAD REDRAW command. If ent is
-        a valid entity name, and mode is nonzero, acedRedraw() affects only the specified entity.
+        entity If ent is NULL, acedRedraw() is identical to the AutoCAD REDRAW command. If ent is a
+        valid entity name, and mode is nonzero, acedRedraw() affects only the specified entity.
         acedRedraw() calls must be made in matched pairs. Every call with a mode of 2 must be
         followed at some point by a call with a mode of 1. Every call with a mode of 3 must be
         followed at some point by a call with a mode of 4. Mismatched calls such as a call with a
@@ -917,12 +947,14 @@ class Core:
         identified by strContext.
         """
     @staticmethod
-    def setCfg(sym: str,val: str, /) -> None:
+    def setCfg(sym: str, val: str, /) -> None:
         """
         Writes application data to the AppData section of the acad.cfg file.
         """
     @staticmethod
-    def setColorDialog(clr: int,bAllowMetaColor: bool,nCurLayerColor, int, /) -> tuple[bool,int]:
+    def setColorDialog(
+        clr: int, bAllowMetaColor: bool, nCurLayerColor, int, /
+    ) -> tuple[bool, int]:
         """
         This function starts the SetColor dialog within the AutoCAD editor. The value passed in via
         nColor is used as the default color index in the dialog. Upon return nColor contains the
@@ -935,7 +967,9 @@ class Core:
         Adesk::kFalse if the dialog was canceled.
         """
     @staticmethod
-    def setColorDialogTrueColor(clr: PyDb.AcCmColor,bAllowMetaColor: bool,nCurLayerColor: PyDb.AcCmColor,tab: int = 7, /) -> tuple[bool,PyDb.Color]:
+    def setColorDialogTrueColor(
+        clr: PyDb.AcCmColor, bAllowMetaColor: bool, nCurLayerColor: PyDb.AcCmColor, tab: int = 7, /
+    ) -> tuple[bool, PyDb.Color]:
         """
         This function starts the Set Color dialog box within the AutoCAD editor. The value passed
         in color is the default color in the dialog. This can affect which tab and controls are
@@ -947,7 +981,7 @@ class Core:
         the dialog box was canceled.
         """
     @staticmethod
-    def setColorPrompt(prompt: str,bAllowMetaColor: bool, /) -> PyDb.Color:
+    def setColorPrompt(prompt: str, bAllowMetaColor: bool, /) -> PyDb.Color:
         """
         Prompts the user for a color on the command line. Returns true if successful; otherwise,
         returns false.
@@ -961,30 +995,29 @@ class Core:
         Returns Acad::eOutOfRange if vpnumber isn't valid for the current environment.
         """
     @staticmethod
-    def setCurrentView(vrec: PyDb.ViewTableRecord,vp: PyDb.Viewport = None, /) -> None:
+    def setCurrentView(vrec: PyDb.ViewTableRecord, vp: PyDb.Viewport = ..., /) -> None:
         """
         This function uses the information from the AcDbViewTableRecord pointed to by pVwRec to set
         the view in the AcDbViewport pointed to by pVP (if pVP != NULL) or in the current viewport
         (if pVP == NULL).
         """
     @staticmethod
-    def setEnv(sym: str,val: str, /) -> None:
+    def setEnv(sym: str, val: str, /) -> None:
         """
         The acedSetEnv() function sets the value of an environment variable. It stores the data
         only in the AutoCAD-specific FixedProfile/General section of the registry:
-        HKEY_CURRENT_USER    Software        Autodesk            AutoCAD                R25.0
-        <Install ID>                        FixedProfile                            General If this
+        HKEY_CURRENT_USER Software Autodesk AutoCAD R25.0 <Install ID> FixedProfile General If this
         function is called on a Windows system environment variable, that variable will be
         overridden in the AutoCAD section of the registry and will remain overridden until the
         associated registry entry is manually deleted.
         """
     @staticmethod
-    def setFieldUpdateEnabled(doc: PyAp.Document,enabled: bool, /) -> None:
+    def setFieldUpdateEnabled(doc: PyAp.Document, enabled: bool, /) -> None:
         """
         Gets the flag of field update enabled.
         """
     @staticmethod
-    def setFunHelp(functionName: str,helpfile: str,topic: str,iCmd: int, /) -> int:
+    def setFunHelp(functionName: str, helpfile: str, topic: str, iCmd: int, /) -> int:
         """
         Defines a Help call that should be made if a transparent Help request is made during a
         command line prompt for the function named pszFunctionName. This function registers Help
@@ -993,7 +1026,7 @@ class Core:
         used for ObjectARX commands, as well as ObjectARX and AutoLISP commands that start with C:.
         """
     @staticmethod
-    def setStatusBarProgressMeter(lable: str,nMinPos: int,nMaxPos: int, /) -> int:
+    def setStatusBarProgressMeter(lable: str, nMinPos: int, nMaxPos: int, /) -> int:
         """
         This displays an option label and a progress meter on the AutoCAD status bar. Pass NULL or
         an empty string for the label if no label is desired. Returns 0 if it successfully creates
@@ -1007,11 +1040,11 @@ class Core:
         Returns 0 if it successfully creates the label and progress meter; otherwise, returns -1.
         """
     @staticmethod
-    def setSupplementalCursorOffset(x:int,y:int, /) -> None: ...
+    def setSupplementalCursorOffset(x: int, y: int, /) -> None: ...
     @staticmethod
     def setUndoMark(flag: bool, /) -> None: ...
     @staticmethod
-    def setVar(name:str,value, /) -> bool:
+    def setVar(name: str, value, /) -> bool:
         """
         Sets the specified AutoCAD system variable. The val argument must point to a result buffer,
         because the system variables consist of a variety of types. The result buffer must be
@@ -1035,19 +1068,23 @@ class Core:
         invalid.
         """
     @staticmethod
-    def showHTMLModalWindow(hwnd: int,uriOfHtmlPage: str,persistSizeAndPosition: bool=True, /) -> bool:
+    def showHTMLModalWindow(
+        hwnd: int, uriOfHtmlPage: str, persistSizeAndPosition: bool = True, /
+    ) -> bool:
         """
         This function can be used to launch a modal dialog with the specified URI. The window hosts
         a browser window which displays the html page.
         """
     @staticmethod
-    def showHTMLModelessWindow(hwnd: int,uriOfHtmlPage: str,persistSizeAndPosition: bool=True, /) -> int:
+    def showHTMLModelessWindow(
+        hwnd: int, uriOfHtmlPage: str, persistSizeAndPosition: bool = True, /
+    ) -> int:
         """
         This function can be used to launch a modeless dialog with the specified URI. The window
         hosts a browser window which displays the html page.
         """
     @staticmethod
-    def skipXrefNotification(db: PyDb.Database,name: str, /) -> None:
+    def skipXrefNotification(db: PyDb.Database, name: str, /) -> None:
         """
         This function directs the Xref Notification feature to ignore the update of the Xref,
         identified by its name, xrefName, for the specified host database, pHostDb. In effect, the
@@ -1058,7 +1095,7 @@ class Core:
         the empty string. Returns Acad::eKeyNotFound if the xref cannot be found.
         """
     @staticmethod
-    def textBox(resultBuffer: list, /) -> tuple[PyGe.Point3d,PyGe.Point3d]:
+    def textBox(resultBuffer: list, /) -> tuple[PyGe.Point3d, PyGe.Point3d]:
         """
         Finds the coordinates of a box that encloses a text entity. Assumes that the origin is
         (0,0) and the rotation is 0 (or 270 if the text is vertical). If the text is located at a
@@ -1102,7 +1139,7 @@ class Core:
         returns an error code.
         """
     @staticmethod
-    def trans(pt: PyGe.Point3d,rbFrom: tuple,rbTo: tuple,disp: bool, /) -> PyGe.Point3d:
+    def trans(pt: PyGe.Point3d, rbFrom: tuple, rbTo: tuple, disp: bool, /) -> PyGe.Point3d:
         """
         Translates a point or a displacement from one coordinate system into another. The from and
         to arguments can specify a coordinate system in any of the following ways: An integer code
@@ -1114,7 +1151,7 @@ class Core:
         between ECS and WCS is an identity operation. A 3D extrusion vector (restype == RT3DPOINT).
         This is another method of specifying an entity's ECS.Extrusion vectors are always
         represented in World coordinates; an extrusion vector of (0,0,1) specifies the WCS.
-        Coordinate system codes:  0 World (WCS) 1 User (current UCS) 2 Display:DCS of current
+        Coordinate system codes: 0 World (WCS) 1 User (current UCS) 2 Display:DCS of current
         viewport when used with code 0 or 1DCS of current model space viewport when used with code
         3 3 Paper space DCS (PSDCS; used only with code 2) Warning The paper space DCS (PSDCS) can
         be transformed only to or from the model space DCS. Therefore, if the from argument equals
@@ -1136,7 +1173,7 @@ class Core:
         no-operation.
         """
     @staticmethod
-    def update(vport: int,pt1: PyGe.Point2d,pt2: PyGe.Point2d, /) -> int:
+    def update(vport: int, pt1: PyGe.Point2d, pt2: PyGe.Point2d, /) -> int:
         """
         Refreshes a rectangular sub-area of the viewport. The corners must be specified in drawing
         coordinates. As long as p1 and p2 are diagonally opposite each other, it does not matter
@@ -1194,17 +1231,19 @@ class Core:
         documents are open, or if the number does not correspond to a valid viewport.
         """
     @staticmethod
-    def vpLayer(id: PyDb.ObjectId,layerIds: list[PyDb.ObjectId],operation: PyDb.VpFreezeOps, /) -> None:
+    def vpLayer(
+        id: PyDb.ObjectId, layerIds: list[PyDb.ObjectId], operation: PyDb.VpFreezeOps, /
+    ) -> None:
         """
         This function modifies the viewport specified by vpId to freeze, thaw, or reset the layers
         specified by the object IDs in layerIds. If operation is AcDb::kFreeze, the specified
         layers will be frozen in the viewport. If operation is AcDb::kThaw, the specified layers
         will be thawed in the viewport. If operation is AcDb::Reset, the specified layers whose
         VPDFLT() method returns true will be frozen in the viewport and those whose VPDFLT() method
-        returns false will be thawed in the viewport.  WarningThe viewport specified by vpId must
-        be closed when this function is called.  operation may be one of the following: kFreeze,
-        kThaw, kReset. Returns Acad::eOk if successful. Returns Acad::eInvalidInput under any of
-        the following circumstances: if vpId is NULL or is not in the current drawingif the object
+        returns false will be thawed in the viewport. WarningThe viewport specified by vpId must be
+        closed when this function is called. operation may be one of the following: kFreeze, kThaw,
+        kReset. Returns Acad::eOk if successful. Returns Acad::eInvalidInput under any of the
+        following circumstances: if vpId is NULL or is not in the current drawingif the object
         specified by vpId is not an instance of either AcDbViewport or a class derived from
         AcDbViewportif operation is not valid
         """
@@ -1212,7 +1251,7 @@ class Core:
     def vportTableRecords2Vports() -> None:
         """
         For the currenlty active drawing, this function copies the data from the
-        AcDbViewportTableRecords with the name "*ACTIVE" over into the corresponding displayed
+        AcDbViewportTableRecords with the name '*ACTIVE' over into the corresponding displayed
         viewports creating or removing display viewports if necessary. This function will result in
         a regen in all viewports. Returns Acad::eOk if successful. Returns Acad::eNotApplicable
         when called while tilemode is 0.
@@ -1239,8 +1278,8 @@ class Core:
     def vports2VportTableRecords() -> None:
         """
         For the currently active drawing, this function copies the displayed viewport data over
-        into the corresponding AcDbViewportTableRecords (those with the name "*ACTIVE"), creating
-        or erasing "*ACTIVE" AcDbViewportTableRecords as necessary. Returns Acad::eOk if
+        into the corresponding AcDbViewportTableRecords (those with the name '*ACTIVE'), creating
+        or erasing '*ACTIVE' AcDbViewportTableRecords as necessary. Returns Acad::eOk if
         successful. Returns Acad::eNotApplicable when called while tilemode is 0.
         """
     @overload
@@ -1248,7 +1287,19 @@ class Core:
     def xrefAttach(path: str, name: str, /) -> None: ...
     @overload
     @staticmethod
-    def xrefAttach(path: str, name: str, btrid: PyDb.ObjectId, refid: PyDb.ObjectId, pt: PyGe.Point3d, sc: PyGe.Scale3d, rot: float, bQuiet: bool, pHostDb: PyDb.Database, passwd: str, /) -> None: ...
+    def xrefAttach(
+        path: str,
+        name: str,
+        btrid: PyDb.ObjectId,
+        refid: PyDb.ObjectId,
+        pt: PyGe.Point3d,
+        sc: PyGe.Scale3d,
+        rot: float,
+        bQuiet: bool,
+        pHostDb: PyDb.Database,
+        passwd: str,
+        /,
+    ) -> None: ...
     @overload
     @staticmethod
     def xrefAttach(*args) -> None: ...
@@ -1257,7 +1308,9 @@ class Core:
     def xrefBind(XrefBlockname: str, /) -> None: ...
     @overload
     @staticmethod
-    def xrefBind(XrefBlockname: str,bInsertBind: bool, bQuiet: bool, pHostDb: PyDb.Database, /) -> None: ...
+    def xrefBind(
+        XrefBlockname: str, bInsertBind: bool, bQuiet: bool, pHostDb: PyDb.Database, /
+    ) -> None: ...
     @overload
     @staticmethod
     def xrefBind(*args) -> None: ...
@@ -1279,7 +1332,19 @@ class Core:
     def xrefOverlay(path: str, name: str, /) -> None: ...
     @overload
     @staticmethod
-    def xrefOverlay(path: str, name: str, btrid: PyDb.ObjectId, refid: PyDb.ObjectId, pt: PyGe.Point3d, sc: PyGe.Scale3d, rot: float, bQuiet: bool, pHostDb: PyDb.Database, passwd: str, /) -> None: ...
+    def xrefOverlay(
+        path: str,
+        name: str,
+        btrid: PyDb.ObjectId,
+        refid: PyDb.ObjectId,
+        pt: PyGe.Point3d,
+        sc: PyGe.Scale3d,
+        rot: float,
+        bQuiet: bool,
+        pHostDb: PyDb.Database,
+        passwd: str,
+        /,
+    ) -> None: ...
     @overload
     @staticmethod
     def xrefOverlay(*args) -> None: ...
@@ -1288,7 +1353,9 @@ class Core:
     def xrefReload(symbolIds: list[PyDb.ObjectId], /) -> None: ...
     @overload
     @staticmethod
-    def xrefReload(symbolIds: list[PyDb.ObjectId], bQuiet: bool, pHostDb: PyDb.Database, /) -> None: ...
+    def xrefReload(
+        symbolIds: list[PyDb.ObjectId], bQuiet: bool, pHostDb: PyDb.Database, /
+    ) -> None: ...
     @overload
     @staticmethod
     def xrefReload(name: str, /) -> None: ...
@@ -1299,7 +1366,7 @@ class Core:
     @staticmethod
     def xrefReload(*args) -> None: ...
     @staticmethod
-    def xrefResolve(db: PyDb.Database,bQuiet: bool=True, /) -> None: ...
+    def xrefResolve(db: PyDb.Database, bQuiet: bool = True, /) -> None: ...
     @overload
     @staticmethod
     def xrefUnload(XrefBlockname: str, /) -> None: ...
@@ -1314,10 +1381,13 @@ class Core:
     def xrefXBind(symbolIds: list[PyDb.ObjectId], /) -> None: ...
     @overload
     @staticmethod
-    def xrefXBind(symbolIds: list[PyDb.ObjectId], bQuiet: bool, pHostDb: PyDb.Database, /) -> None: ...
+    def xrefXBind(
+        symbolIds: list[PyDb.ObjectId], bQuiet: bool, pHostDb: PyDb.Database, /
+    ) -> None: ...
     @overload
     @staticmethod
     def xrefXBind(*args) -> None: ...
+
 class CursorType(_BoostPythonEnum):
     kNoSpecialCursor: ClassVar[Self]  # -1
     kCrosshair: ClassVar[Self]  # 0
@@ -1333,6 +1403,7 @@ class CursorType(_BoostPythonEnum):
     kEntitySelectNoPersp: ClassVar[Self]  # 10
     kPkfirstOrGrips: ClassVar[Self]  # 11
     kCrosshairDashed: ClassVar[Self]  # 12
+
 class DragStatus(_BoostPythonEnum):
     kModeless: ClassVar[Self]  # -17
     kNoChange: ClassVar[Self]  # -6
@@ -1351,13 +1422,21 @@ class DragStatus(_BoostPythonEnum):
     kKW7: ClassVar[Self]  # 7
     kKW8: ClassVar[Self]  # 8
     kKW9: ClassVar[Self]  # 9
+
 class DragStyle:
-    def __init__(self, styleTypeForOriginal: PyEd.DragStyleType, styleTypeForDragged: PyEd.DragStyleType, /) -> None: ...
+    def __init__(
+        self, styleTypeForOriginal: PyEd.DragStyleType, styleTypeForDragged: PyEd.DragStyleType, /
+    ) -> None: ...
     def __reduce__(self, /) -> Any: ...
-    def setStyleTypeForDragged(self, styleTypeForDragged: PyEd.DragStyleType, /) -> PyDb.ErrorStatus: ...
-    def setStyleTypeForOriginal(self, styleTypeForOriginal: PyEd.DragStyleType, /) -> PyDb.ErrorStatus: ...
+    def setStyleTypeForDragged(
+        self, styleTypeForDragged: PyEd.DragStyleType, /
+    ) -> PyDb.ErrorStatus: ...
+    def setStyleTypeForOriginal(
+        self, styleTypeForOriginal: PyEd.DragStyleType, /
+    ) -> PyDb.ErrorStatus: ...
     def styleTypeForDragged(self, /) -> DragStyleType: ...
     def styleTypeForOriginal(self, /) -> DragStyleType: ...
+
 class DragStyleType(_BoostPythonEnum):
     kNone: ClassVar[Self]  # 0
     kHide: ClassVar[Self]  # 1
@@ -1366,34 +1445,39 @@ class DragStyleType(_BoostPythonEnum):
     kDeletedEffect: ClassVar[Self]  # 4
     kHighlight: ClassVar[Self]  # 5
     kNotSet: ClassVar[Self]  # 6
+
 class DrawJig:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
-    def acquireAngle(self, basePnt: PyGe.Point3d=None, /) -> tuple[PyGe.DragStatus,float]: ...
-    def acquireDist(self, basePnt: PyGe.Point3d=None, /) -> tuple[PyGe.DragStatus,float]: ...
-    def acquirePoint(self, basePnt: PyGe.Point3d=None, /) -> tuple[PyGe.DragStatus,PyGe.Point3d]: ...
-    def acquireString(self, /) -> tuple[PyGe.DragStatus,str]: ...
+    def acquireAngle(self, basePnt: PyGe.Point3d = ..., /) -> tuple[PyEd.DragStatus, float]: ...
+    def acquireDist(self, basePnt: PyGe.Point3d = ..., /) -> tuple[PyEd.DragStatus, float]: ...
+    def acquirePoint(
+        self, basePnt: PyGe.Point3d = ..., /
+    ) -> tuple[PyEd.DragStatus, PyGe.Point3d]: ...
+    def acquireString(self, /) -> tuple[PyEd.DragStatus, str]: ...
     @staticmethod
     def className() -> str: ...
     def dispPrompt(self, /) -> str: ...
-    def drag(self, style: PyEd.DragStyle=None, /) -> DragStatus: ...
+    def drag(self, style: PyEd.DragStyle = ..., /) -> DragStatus: ...
     def keywordList(self, /) -> str: ...
     def sampler(self, /) -> DragStatus: ...
     def setDispPrompt(self, val: str, /) -> None: ...
     def setKeywordList(self, val: str, /) -> None: ...
     def setSpecialCursorType(self, val: PyEd.CursorType, /) -> None: ...
-    def setUserInputControls(self, val:  PyEd.UserInputControls, /) -> None: ...
+    def setUserInputControls(self, val: PyEd.UserInputControls, /) -> None: ...
     def specialCursorType(self, /) -> CursorType: ...
     def update(self, /) -> bool: ...
     def userInputControls(self, /) -> UserInputControls: ...
     def viewportDraw(self, wd: PyGi.ViewportDraw, /) -> None: ...
     def worldDraw(self, wd: PyGi.WorldDraw, /) -> bool: ...
+
 class DrawOrderCmdType(_BoostPythonEnum):
     kDrawOrderNone: ClassVar[Self]  # 0
     kDrawOrderBottom: ClassVar[Self]  # 1
     kDrawOrderTop: ClassVar[Self]  # 2
     kDrawOrderBelow: ClassVar[Self]  # 3
     kDrawOrderAbove: ClassVar[Self]  # 4
+
 class Editor:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
@@ -1421,13 +1505,65 @@ class Editor:
         """
     @overload
     @staticmethod
-    def entSel(prompt: str, /) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]: ...
+    def entSel(prompt: str, /) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]:
+        """
+        Prompts the user to select an entity by specifying a point. Pauses for user input and
+        returns both an entity name and the point that is used to select the entity. The
+        acedEntSel() function does not return the names of nongraphical objects. Some entity
+        operations require knowledge of the point by which the entity was selected. Examples are
+        the AutoCAD BREAK, TRIM, and EXTEND commands, as well as OSNAP; acedEntSel() provides the
+        same capability to ARX applications. The acedEntSel() function ignores the current OSNAP
+        setting (no object snap) unless the user specifically requests it. When the user responds
+        to acedEntSel() by specifying a complex entity, it returns the polyline or block header.
+        This differs from the function acedNEntSelP(), which returns the nearest block attribute or
+        polyline vertex. The acedEntSel() function returns RTNORM if it succeeds, RTERROR if it
+        fails, or RTCAN if the user cancels the request (by pressing [Esc]). A prior call to
+        acedInitGet() can also enable a return value of RTKWORD (see the description of
+        acedInitGet()). When acedEntSel() fails, it sets the system variable ERRNO to a value that
+        indicates the reason for the failure.
+        """
     @overload
     @staticmethod
-    def entSel(prompt: str, eType: PyRx.RxClass, /) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]: ...
+    def entSel(
+        prompt: str, eType: PyRx.RxClass, /
+    ) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]:
+        """
+        Prompts the user to select an entity by specifying a point. Pauses for user input and
+        returns both an entity name and the point that is used to select the entity. The
+        acedEntSel() function does not return the names of nongraphical objects. Some entity
+        operations require knowledge of the point by which the entity was selected. Examples are
+        the AutoCAD BREAK, TRIM, and EXTEND commands, as well as OSNAP; acedEntSel() provides the
+        same capability to ARX applications. The acedEntSel() function ignores the current OSNAP
+        setting (no object snap) unless the user specifically requests it. When the user responds
+        to acedEntSel() by specifying a complex entity, it returns the polyline or block header.
+        This differs from the function acedNEntSelP(), which returns the nearest block attribute or
+        polyline vertex. The acedEntSel() function returns RTNORM if it succeeds, RTERROR if it
+        fails, or RTCAN if the user cancels the request (by pressing [Esc]). A prior call to
+        acedInitGet() can also enable a return value of RTKWORD (see the description of
+        acedInitGet()). When acedEntSel() fails, it sets the system variable ERRNO to a value that
+        indicates the reason for the failure.
+        """
     @overload
     @staticmethod
-    def entSel(prompt: str, eTypes: list[PyRx.RxClass], /) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]: ...
+    def entSel(
+        prompt: str, eTypes: list[PyRx.RxClass], /
+    ) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]:
+        """
+        Prompts the user to select an entity by specifying a point. Pauses for user input and
+        returns both an entity name and the point that is used to select the entity. The
+        acedEntSel() function does not return the names of nongraphical objects. Some entity
+        operations require knowledge of the point by which the entity was selected. Examples are
+        the AutoCAD BREAK, TRIM, and EXTEND commands, as well as OSNAP; acedEntSel() provides the
+        same capability to ARX applications. The acedEntSel() function ignores the current OSNAP
+        setting (no object snap) unless the user specifically requests it. When the user responds
+        to acedEntSel() by specifying a complex entity, it returns the polyline or block header.
+        This differs from the function acedNEntSelP(), which returns the nearest block attribute or
+        polyline vertex. The acedEntSel() function returns RTNORM if it succeeds, RTERROR if it
+        fails, or RTCAN if the user cancels the request (by pressing [Esc]). A prior call to
+        acedInitGet() can also enable a return value of RTKWORD (see the description of
+        acedInitGet()). When acedEntSel() fails, it sets the system variable ERRNO to a value that
+        indicates the reason for the failure.
+        """
     @overload
     @staticmethod
     def entSel(*args) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d]:
@@ -1448,7 +1584,7 @@ class Editor:
         indicates the reason for the failure.
         """
     @staticmethod
-    def getAngle(basePt: PyGe.Point3d,prompt: str, /) -> tuple[PyEd.PromptStatus, float]:
+    def getAngle(basePt: PyGe.Point3d, prompt: str, /) -> tuple[PyEd.PromptStatus, float]:
         """
         Gets user input for an angle, taking into account the current value of the ANGBASE system
         variable. The AutoCAD user can specify the angle by entering a number in the current
@@ -1459,8 +1595,8 @@ class Editor:
         plane of the current UCS (acedGetAngle() ignores the Z field of pt). The direction of
         angular increase is always counterclockwise. The acedGetAngle() function is almost
         identical to acedGetOrient(), but it takes into account the current value of the ANGBASE
-        system variable. For acedGetOrient(), the 0 angle is always to the right: "east" or "3
-        o'clock." For acedGetAngle(), the 0 angle is the value of ANGBASE, which can be set to any
+        system variable. For acedGetOrient(), the 0 angle is always to the right: 'east' or '3
+        o'clock.' For acedGetAngle(), the 0 angle is the value of ANGBASE, which can be set to any
         of the four 90-degree quadrants. Both acedGetAngle() and acedGetOrient() return a (real)
         angle value in radians measured counterclockwise from a base (0) angle. For acedGetAngle(),
         the base equals ANGBASE; for acedGetOrient(), the base is at the right. Both functions
@@ -1469,10 +1605,10 @@ class Editor:
         ANGDIR is set to 1 (clockwise direction for increasing angles), as shown in the figure that
         accompanies the following table, then given these conditions, the values returned by
         acedGetAngle() and acedGetOrient() will be as shown in the table. Results from acedGetAngle
-        and acedGetOrient:  User input (degrees) acedGetAngle() returns acedGetOrient() returns 0
-        0.0 1.5708 -90 1.5708 3.14159 180 3.14159 4.71239 90 4.71239 0.0  The user cannot respond
-        to acedGetAngle() by entering an AutoLISP expression. You can use acedGetAngle() to obtain
-        a rotation amount for a block insertion, because an input of 0 degrees always returns 0
+        and acedGetOrient: User input (degrees) acedGetAngle() returns acedGetOrient() returns 0
+        0.0 1.5708 -90 1.5708 3.14159 180 3.14159 4.71239 90 4.71239 0.0 The user cannot respond to
+        acedGetAngle() by entering an AutoLISP expression. You can use acedGetAngle() to obtain a
+        rotation amount for a block insertion, because an input of 0 degrees always returns 0
         radians. You can use acedGetOrient() to obtain the baseline angle for a text entity to be
         aligned with other objects. The acedGetAngle() function returns RTNORM if it succeeds,
         RTERROR if it fails, or RTCAN if the user cancels the request (by pressing [Esc] ). It
@@ -1483,7 +1619,7 @@ class Editor:
         pt or prompt is not used, pass a null pointer for these arguments.
         """
     @staticmethod
-    def getCorner(basePt: PyGe.Point3d,prompt: str, /) -> tuple[PyEd.PromptStatus, PyGe.Point3d]:
+    def getCorner(basePt: PyGe.Point3d, prompt: str, /) -> tuple[PyEd.PromptStatus, PyGe.Point3d]:
         """
         Gets user input for the corner of a rectangle. The AutoCAD user can specify the corner by
         entering a point in the current units format; acedGetCorner() treats pt as a
@@ -1504,21 +1640,21 @@ class Editor:
     def getCurrentSelectionSet() -> list[PyDb.ObjectId]:
         """
         This function fills sset in with the object IDs of all entities in the current selection
-        set within AutoCAD. The "current selection set" may be one of the following: a pickfirst
+        set within AutoCAD. The 'current selection set' may be one of the following: a pickfirst
         set, a selection set selected by the select command or any other command that does a
-        selection (that is, similar to the "Previous" selection option), or the most recent set
+        selection (that is, similar to the 'Previous' selection option), or the most recent set
         from an ssget. If a pickfirst set is available it will always be used. If no pickfirst set
         is available, then whichever of the other two types is available will be used. If both of
         the other two types are available, then whichever was most recently created will be used.
-        If a pickfirst selection set is "selected" by a call to this function, then the entity
+        If a pickfirst selection set is 'selected' by a call to this function, then the entity
         highlighting and grips will disappear just as they would when any AutoCAD command uses a
-        pickfirst selection set. If an ssget type of selection is "selected" by a call to this
+        pickfirst selection set. If an ssget type of selection is 'selected' by a call to this
         function, then sset will essentially be a copy of the selection set and the original ssget
         selection set will still be valid. Only certain AutoCAD commands create a selection set
-        that can be found by acdbGetCurrentSelectionSet(). These commands are listed below:
-        ACISOUT AMECONVERT ARRAY ATTEXT AUDIT BHATCH BMPOUT CHANGE CHPROP CONVERT CONVERTPOLY COPY
-        COPYCLIP CUTCLIP DIVIDE DVIEW DXFOUT (partial) ERASE EXPLODE EXTEND EXTRUDE GROUP HATCH
-        HIDE INTERFERE INTERSECT LIST MASSPROP MEASURE MIRROR MOVE MVIEW OOPS PEDIT REGION REVOLVE
+        that can be found by acdbGetCurrentSelectionSet(). These commands are listed below: ACISOUT
+        AMECONVERT ARRAY ATTEXT AUDIT BHATCH BMPOUT CHANGE CHPROP CONVERT CONVERTPOLY COPY COPYCLIP
+        CUTCLIP DIVIDE DVIEW DXFOUT (partial) ERASE EXPLODE EXTEND EXTRUDE GROUP HATCH HIDE
+        INTERFERE INTERSECT LIST MASSPROP MEASURE MIRROR MOVE MVIEW OOPS PEDIT REGION REVOLVE
         ROTATE SCALE SECTION SELECT SLICE SPELL SPLINE STLOUT STRETCH SUBTRACT TRIM UNION VPVIS
         WBLOCK WMFOUT XCLIP
         """
@@ -1531,10 +1667,48 @@ class Editor:
         """
     @overload
     @staticmethod
-    def getDist(prompt: str, /) -> tuple[PyEd.PromptStatus, float]: ...
+    def getDist(prompt: str, /) -> tuple[PyEd.PromptStatus, float]:
+        """
+        Gets user input for a linear distance. The AutoCAD user can specify the distance by
+        entering a number in the current units format. The user can set the distance also by
+        specifying two locations on the graphics screen. AutoCAD draws a rubber-band line from the
+        first point to the current crosshair position to help the user visualize the distance. If
+        the pt argument is not null, AutoCAD uses this value as the first of the two points. By
+        default, acedGetDist() treats pt and result as three-dimensional points. A prior call to
+        acedInitGet() can force pt to be two dimensional, ensuring that acedGetDist() returns
+        result as a planar distance. Regardless of the method used to specify the distance, or the
+        current linear units (for example, feet and inches), acedGetDist() always sets result to a
+        double-precision floating-point value. The user cannot respond to acedGetDist() by entering
+        an AutoLISP expression. The acedGetDist() function returns one of the following: RTNORM if
+        it succeeds, RTERROR if it fails, or RTCAN if the user cancels the request (by pressing
+        [Esc]). It returns RTMODELESS, if the active command was registered using the
+        ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
+        a call to AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
+        enable return values of RTNONE or RTKWORD. If pt or prompt is not used, pass a null pointer
+        for these arguments.
+        """
     @overload
     @staticmethod
-    def getDist(basePt: PyGe.Point3d, prompt: str, /) -> tuple[PyEd.PromptStatus, float]: ...
+    def getDist(basePt: PyGe.Point3d, prompt: str, /) -> tuple[PyEd.PromptStatus, float]:
+        """
+        Gets user input for a linear distance. The AutoCAD user can specify the distance by
+        entering a number in the current units format. The user can set the distance also by
+        specifying two locations on the graphics screen. AutoCAD draws a rubber-band line from the
+        first point to the current crosshair position to help the user visualize the distance. If
+        the pt argument is not null, AutoCAD uses this value as the first of the two points. By
+        default, acedGetDist() treats pt and result as three-dimensional points. A prior call to
+        acedInitGet() can force pt to be two dimensional, ensuring that acedGetDist() returns
+        result as a planar distance. Regardless of the method used to specify the distance, or the
+        current linear units (for example, feet and inches), acedGetDist() always sets result to a
+        double-precision floating-point value. The user cannot respond to acedGetDist() by entering
+        an AutoLISP expression. The acedGetDist() function returns one of the following: RTNORM if
+        it succeeds, RTERROR if it fails, or RTCAN if the user cancels the request (by pressing
+        [Esc]). It returns RTMODELESS, if the active command was registered using the
+        ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
+        a call to AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
+        enable return values of RTNONE or RTKWORD. If pt or prompt is not used, pass a null pointer
+        for these arguments.
+        """
     @overload
     @staticmethod
     def getDist(*args) -> tuple[PyEd.PromptStatus, float]:
@@ -1553,20 +1727,22 @@ class Editor:
         it succeeds, RTERROR if it fails, or RTCAN if the user cancels the request (by pressing
         [Esc]). It returns RTMODELESS, if the active command was registered using the
         ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
-        a call to  AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
+        a call to AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
         enable return values of RTNONE or RTKWORD. If pt or prompt is not used, pass a null pointer
         for these arguments.
         """
     @staticmethod
-    def getDouble(prompt: str,condition :PyEd.PromptCondition = PyEd.PromptCondition.eNone, /) -> tuple[PyEd.PromptStatus, float]:
+    def getDouble(
+        prompt: str, condition: PyEd.PromptCondition = PyEd.PromptCondition.eNone, /
+    ) -> tuple[PyEd.PromptStatus, float]:
         """
         Gets user input for a real value. The AutoCAD user can enter any valid real value, but the
         user cannot respond to acedGetReal() by entering an AutoLISP expression. The acedGetReal()
         function returns one of the following: RTNORM if it succeeds, RTERROR if it fails, or RTCAN
         if the user cancels the request (by pressing [Esc]). It returns RTMODELESS, if the active
         command was registered using the ACRX_CMD_INTERRUPTIBLE flag and the document has received
-        a modeless interrupt signal from a call to  AcApDocManager::sendModelessInterrupt(). A
-        prior call to acedInitGet() can also enable return values of RTNONE or RTKWORD.
+        a modeless interrupt signal from a call to AcApDocManager::sendModelessInterrupt(). A prior
+        call to acedInitGet() can also enable return values of RTNONE or RTKWORD.
         """
     @staticmethod
     def getInput() -> str:
@@ -1594,7 +1770,9 @@ class Editor:
         AcApDocManager::sendModelessInterrupt().
         """
     @staticmethod
-    def getInteger(prompt: str,condition :PyEd.PromptCondition = PyEd.PromptCondition.eNone, /) -> tuple[PyEd.PromptStatus, int]:
+    def getInteger(
+        prompt: str, condition: PyEd.PromptCondition = PyEd.PromptCondition.eNone, /
+    ) -> tuple[PyEd.PromptStatus, int]:
         """
         Gets user input for an integer. The AutoCAD user can enter any valid 32-bit integer. The
         user cannot respond to acedGetInt() by entering an AutoLISP expression. The acedGetInt()
@@ -1603,7 +1781,7 @@ class Editor:
         enable return values of RTNONE or RTKWORD.
         """
     @staticmethod
-    def getKword(keyword: str, /) -> tuple[int, str]:
+    def getKword(keyword: str, /) -> tuple[PyEd.PromptStatus, str]:
         """
         Deprecated. Function acedGetFullKword() is an alternate form of acedGetKword(). Instead of
         truncating any characters beyond the 131, acedGetFullKword() returns a new copy of the
@@ -1616,10 +1794,38 @@ class Editor:
         """
     @overload
     @staticmethod
-    def getPoint(prompt: str, /) -> tuple[PyEd.PromptStatus, PyGe.Point3d]: ...
+    def getPoint(prompt: str, /) -> tuple[PyEd.PromptStatus, PyGe.Point3d]:
+        """
+        Gets user input for a point. The AutoCAD user can specify the point by entering a
+        coordinate in the current units format; acedGetPoint() treats pt and result as
+        three-dimensional points. The user can specify the point also by specifying a location on
+        the graphics screen. If the pt argument is not null, AutoCAD draws a rubber-band line from
+        pt to the current crosshair position. The coordinates of the point stored in result are
+        expressed in terms of the current UCS. The user cannot respond to acedGetPoint() by
+        entering an AutoLISP expression. The acedGetPoint() function returns one of the following:
+        RTNORM if it succeeds, RTERROR if it fails, or RTCAN if the user cancels the request (by
+        pressing [Esc]). It returns RTMODELESS, if the active command was registered using the
+        ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
+        a call to AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
+        enable return values of RTNONE or RTKWORD.
+        """
     @overload
     @staticmethod
-    def getPoint(basePt: PyGe.Point3d, prompt: str, /) -> tuple[PyEd.PromptStatus, PyGe.Point3d]: ...
+    def getPoint(basePt: PyGe.Point3d, prompt: str, /) -> tuple[PyEd.PromptStatus, PyGe.Point3d]:
+        """
+        Gets user input for a point. The AutoCAD user can specify the point by entering a
+        coordinate in the current units format; acedGetPoint() treats pt and result as
+        three-dimensional points. The user can specify the point also by specifying a location on
+        the graphics screen. If the pt argument is not null, AutoCAD draws a rubber-band line from
+        pt to the current crosshair position. The coordinates of the point stored in result are
+        expressed in terms of the current UCS. The user cannot respond to acedGetPoint() by
+        entering an AutoLISP expression. The acedGetPoint() function returns one of the following:
+        RTNORM if it succeeds, RTERROR if it fails, or RTCAN if the user cancels the request (by
+        pressing [Esc]). It returns RTMODELESS, if the active command was registered using the
+        ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
+        a call to AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
+        enable return values of RTNONE or RTKWORD.
+        """
     @overload
     @staticmethod
     def getPoint(*args) -> tuple[PyEd.PromptStatus, PyGe.Point3d]:
@@ -1634,32 +1840,58 @@ class Editor:
         RTNORM if it succeeds, RTERROR if it fails, or RTCAN if the user cancels the request (by
         pressing [Esc]). It returns RTMODELESS, if the active command was registered using the
         ACRX_CMD_INTERRUPTIBLE flag and the document has received a modeless interrupt signal from
-        a call to  AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
+        a call to AcApDocManager::sendModelessInterrupt(). A prior call to acedInitGet() can also
         enable return values of RTNONE or RTKWORD.
         """
     @staticmethod
-    def getReal(prompt: str,condition :PyEd.PromptCondition = PyEd.PromptCondition.eNone, /) -> tuple[PyEd.PromptStatus, float]:
+    def getReal(
+        prompt: str, condition: PyEd.PromptCondition = PyEd.PromptCondition.eNone, /
+    ) -> tuple[PyEd.PromptStatus, float]:
         """
         Gets user input for a real value. The AutoCAD user can enter any valid real value, but the
         user cannot respond to acedGetReal() by entering an AutoLISP expression. The acedGetReal()
         function returns one of the following: RTNORM if it succeeds, RTERROR if it fails, or RTCAN
         if the user cancels the request (by pressing [Esc]). It returns RTMODELESS, if the active
         command was registered using the ACRX_CMD_INTERRUPTIBLE flag and the document has received
-        a modeless interrupt signal from a call to  AcApDocManager::sendModelessInterrupt(). A
-        prior call to acedInitGet() can also enable return values of RTNONE or RTKWORD.
+        a modeless interrupt signal from a call to AcApDocManager::sendModelessInterrupt(). A prior
+        call to acedInitGet() can also enable return values of RTNONE or RTKWORD.
         """
     @overload
     @staticmethod
-    def getString(prompt: str, /) -> tuple[PyEd.PromptStatus, str]: ...
+    def getString(prompt: str, /) -> tuple[PyEd.PromptStatus, str]:
+        """
+        Gets user input for a string, cronly If nonzero, the string can contain blanks and the user
+        must terminate it by entering [Return]; if zero, entering either a blank or [Return]
+        terminates the string
+        """
     @overload
     @staticmethod
-    def getString(prompt: str, condition :PyEd.PromptCondition, /) -> tuple[PyEd.PromptStatus, str]: ...
+    def getString(
+        prompt: str, condition: PyEd.PromptCondition, /
+    ) -> tuple[PyEd.PromptStatus, str]:
+        """
+        Gets user input for a string, cronly If nonzero, the string can contain blanks and the user
+        must terminate it by entering [Return]; if zero, entering either a blank or [Return]
+        terminates the string
+        """
     @overload
     @staticmethod
-    def getString(cronly: int, prompt: str, /) -> tuple[PyEd.PromptStatus, str]: ...
+    def getString(cronly: int, prompt: str, /) -> tuple[PyEd.PromptStatus, str]:
+        """
+        Gets user input for a string, cronly If nonzero, the string can contain blanks and the user
+        must terminate it by entering [Return]; if zero, entering either a blank or [Return]
+        terminates the string
+        """
     @overload
     @staticmethod
-    def getString(cronly: int, prompt: str, condition :PyEd.PromptCondition, /) -> tuple[PyEd.PromptStatus, str]: ...
+    def getString(
+        cronly: int, prompt: str, condition: PyEd.PromptCondition, /
+    ) -> tuple[PyEd.PromptStatus, str]:
+        """
+        Gets user input for a string, cronly If nonzero, the string can contain blanks and the user
+        must terminate it by entering [Return]; if zero, entering either a blank or [Return]
+        terminates the string
+        """
     @overload
     @staticmethod
     def getString(*args) -> tuple[PyEd.PromptStatus, str]:
@@ -1669,7 +1901,7 @@ class Editor:
         terminates the string
         """
     @staticmethod
-    def getViewportNumber(ptx: int,pty: int, /) -> int:
+    def getViewportNumber(ptx: int, pty: int, /) -> int:
         """
         Provide coordinates in AutoCAD drawing window (in client coordinates) and this function
         will return the viewport number the coordinates correspond to. This function usually is
@@ -1677,26 +1909,44 @@ class Editor:
         number based on Windows client coordinates.
         """
     @staticmethod
-    def initGet(val: int,keyword: str, /) -> PromptStatus:
+    def initGet(val: int, keyword: str, /) -> PromptStatus:
         """
         Initializes the options used by the next call to a user-input function, such as
         acedGetXxx(), acedDragGen(), acedEntSel(), acedNEntSelP(), or acedNEntSel().
         """
     @staticmethod
-    def nEntSelP(prompt: str,selpt: PyGe.Point3d=None, /) -> tuple[PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d,PyGe.Matrix3d,list[PyDb.ObjectId]]: ...
+    def nEntSelP(
+        prompt: str, selpt: PyGe.Point3d = ..., /
+    ) -> tuple[
+        PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d, PyGe.Matrix3d, list[PyDb.ObjectId]
+    ]: ...
     @overload
     @staticmethod
-    def nEntSelPEx(prompt: str, flags: int, /) -> tuple[PyEd.PromptStatus,PyDb.ObjectId,PyGe.Point3d,PyGe.Matrix3d,int,list[PyDb.ObjectId]]: ...
+    def nEntSelPEx(
+        prompt: str, flags: int, /
+    ) -> tuple[
+        PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d, PyGe.Matrix3d, int, list[PyDb.ObjectId]
+    ]: ...
     @overload
     @staticmethod
-    def nEntSelPEx(prompt: str, selpt: PyGe.Point3d, flags: int, /) -> tuple[PyEd.PromptStatus,PyDb.ObjectId,PyGe.Point3d,PyGe.Matrix3d,int,list[PyDb.ObjectId]]: ...
+    def nEntSelPEx(
+        prompt: str, selpt: PyGe.Point3d, flags: int, /
+    ) -> tuple[
+        PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d, PyGe.Matrix3d, int, list[PyDb.ObjectId]
+    ]: ...
     @overload
     @staticmethod
-    def nEntSelPEx(*args) -> tuple[PyEd.PromptStatus,PyDb.ObjectId,PyGe.Point3d,PyGe.Matrix3d,int,list[PyDb.ObjectId]]: ...
+    def nEntSelPEx(
+        *args,
+    ) -> tuple[
+        PyEd.PromptStatus, PyDb.ObjectId, PyGe.Point3d, PyGe.Matrix3d, int, list[PyDb.ObjectId]
+    ]: ...
     @staticmethod
     def regen() -> None: ...
     @staticmethod
-    def select(filter:Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def select(
+        filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1707,7 +1957,9 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def selectAll(filter: Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectAll(
+        filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1718,7 +1970,9 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def selectFence(points:Collection[PyGe.Point3d],filter:Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectFence(
+        points: Collection[PyGe.Point3d], filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1731,7 +1985,9 @@ class Editor:
     @staticmethod
     def selectImplied() -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]: ...
     @staticmethod
-    def selectLast(filter:Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectLast(
+        filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1742,7 +1998,9 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def selectPrevious(filter:Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectPrevious(
+        filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1753,7 +2011,9 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def selectPrompt(addPromt: str,remPromt: str,filter: Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectPrompt(
+        addPromt: str, remPromt: str, filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1764,7 +2024,9 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def selectWindow(pt1: PyGe.Point3d,pt2: PyGe.Point3d,filter: Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectWindow(
+        pt1: PyGe.Point3d, pt2: PyGe.Point3d, filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1775,7 +2037,9 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def selectWindowPolygon(points:Collection[PyGe.Point3d],filter: Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def selectWindowPolygon(
+        points: Collection[PyGe.Point3d], filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1786,7 +2050,7 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def setAllowDuplicateSelection(doc: PyAp.Document,flag: bool, /) -> None:
+    def setAllowDuplicateSelection(doc: PyAp.Document, flag: bool, /) -> None:
         """
         This function allows and disallows duplicate entities in selection sets. If flag is true, a
         reference counter is incremented that, when non-zero, enables duplicate selection. If flag
@@ -1803,11 +2067,13 @@ class Editor:
         """
         This function sets the current UCS from the 3D matrix mat. The first row of the matrix is
         the UCS X-axis (in WCS coordinates), the second row is the UCS Y-axis, and the third row is
-        the UCS Z-axis. This function must not be used while acedCommand is active.  Always returns
+        the UCS Z-axis. This function must not be used while acedCommand is active. Always returns
         Acad::eOk.
         """
     @staticmethod
-    def ssget(mode: str,arg1: object,arg2: object,filter:Collection[tuple[int, Any]]=None, /) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
+    def ssget(
+        mode: str, arg1: object, arg2: object, filter: Collection[tuple[int, Any]] = ..., /
+    ) -> tuple[PyEd.PromptStatus, PyEd.SelectionSet]:
         """
         Returns a selection set obtained by specifying one of the AutoCAD selection modes. A
         selection mode is specified either by prompting the AutoCAD user or by filtering the
@@ -1818,7 +2084,7 @@ class Editor:
         through ObjectARX.
         """
     @staticmethod
-    def traceBoundary(point: PyGe.Point3d,detectIslands: bool, /) -> list[PyDb.Polyline]:
+    def traceBoundary(point: PyGe.Point3d, detectIslands: bool, /) -> list[PyDb.Polyline]:
         """
         Performs a boundary trace on the given seedPoint, and returns a set of AcDbPolyline *
         objects that represent the boundary found. To succeed, the entities that form the boundary
@@ -1840,6 +2106,7 @@ class Editor:
         """
         Returns the Y-axis direction of the current UCS.
         """
+
 class EditorReactor:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
@@ -1862,19 +2129,27 @@ class EditorReactor:
     def beginDxfIn(self, db: PyDb.Database, /) -> None: ...
     def beginDxfOut(self, db: PyDb.Database, /) -> None: ...
     @overload
-    def beginInsert(self, dbTo: PyDb.Database, pBlockName: str, dbFrom: PyDb.Database, /) -> None: ...
+    def beginInsert(
+        self, dbTo: PyDb.Database, pBlockName: str, dbFrom: PyDb.Database, /
+    ) -> None: ...
     @overload
-    def beginInsert(self, dbTo: PyDb.Database, xform: PyGe.Matrix3d, dbFrom: PyDb.Database, /) -> None: ...
+    def beginInsert(
+        self, dbTo: PyDb.Database, xform: PyGe.Matrix3d, dbFrom: PyDb.Database, /
+    ) -> None: ...
     @overload
     def beginInsert(self, *args) -> None: ...
     def beginQuit(self, /) -> None: ...
     def beginRestore(self, dbTo: PyDb.Database, val: str, dbFrom: PyDb.Database, /) -> None: ...
     def beginRightClick(self, pt: PyGe.Point3d, /) -> None: ...
     def beginSave(self, db: PyDb.Database, fname: str, /) -> None: ...
-    def beginWblock(self, dbTo: PyDb.Database, dbFrom: PyDb.Database, id: PyDb.ObjectId, /) -> None: ...
+    def beginWblock(
+        self, dbTo: PyDb.Database, dbFrom: PyDb.Database, id: PyDb.ObjectId, /
+    ) -> None: ...
     def beginWblockObjects(self, dbTo: PyDb.Database, idMap: PyDb.IdMapping, /) -> None: ...
     def cmdIUnkModified(self, command: str, /) -> None: ...
-    def comandeered(self, dbTo: PyDb.Database, id: PyDb.ObjectId, dbFrom: PyDb.Database, /) -> None: ...
+    def comandeered(
+        self, dbTo: PyDb.Database, id: PyDb.ObjectId, dbFrom: PyDb.Database, /
+    ) -> None: ...
     def commandCancelled(self, cmdStr: str, /) -> None: ...
     def commandEnded(self, cmdStr: str, /) -> None: ...
     def commandFailed(self, cmdStr: str, /) -> None: ...
@@ -1906,8 +2181,12 @@ class EditorReactor:
     def modelessOperationWillStart(self, context: str, /) -> None: ...
     def objectsLazyLoaded(self, ids: list[PyDb.ObjectId], /) -> None: ...
     def otherAttach(self, dbTo: PyDb.Database, dbFrom: PyDb.Database, /) -> None: ...
-    def otherInsert(self, dbTo: PyDb.Database, idMap: PyDb.IdMapping, dbFrom: PyDb.Database, /) -> None: ...
-    def otherWblock(self, dbTo: PyDb.Database, idMap: PyDb.IdMapping, dbFrom: PyDb.Database, /) -> None: ...
+    def otherInsert(
+        self, dbTo: PyDb.Database, idMap: PyDb.IdMapping, dbFrom: PyDb.Database, /
+    ) -> None: ...
+    def otherWblock(
+        self, dbTo: PyDb.Database, idMap: PyDb.IdMapping, dbFrom: PyDb.Database, /
+    ) -> None: ...
     def partialOpenNotice(self, db: PyDb.Database, /) -> None: ...
     def pickfirstModified(self, /) -> None: ...
     def preXrefLockFile(self, id: PyDb.ObjectId, /) -> None: ...
@@ -1931,12 +2210,25 @@ class EditorReactor:
     def viewChanged(self, /) -> None: ...
     def wblockNotice(self, db: PyDb.Database, /) -> None: ...
     def xrefSubcommandAttachItem(self, db: PyDb.Database, activity: int, path: str, /) -> None: ...
-    def xrefSubcommandBindItem(self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /) -> None: ...
-    def xrefSubcommandDetachItem(self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /) -> None: ...
-    def xrefSubcommandOverlayItem(self, db: PyDb.Database, activity: int, path: str, /) -> None: ...
-    def xrefSubcommandPathItem(self, activity: int, blockId: PyDb.ObjectId, path: str, /) -> None: ...
-    def xrefSubcommandReloadItem(self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /) -> None: ...
-    def xrefSubcommandUnloadItem(self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /) -> None: ...
+    def xrefSubcommandBindItem(
+        self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /
+    ) -> None: ...
+    def xrefSubcommandDetachItem(
+        self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /
+    ) -> None: ...
+    def xrefSubcommandOverlayItem(
+        self, db: PyDb.Database, activity: int, path: str, /
+    ) -> None: ...
+    def xrefSubcommandPathItem(
+        self, activity: int, blockId: PyDb.ObjectId, path: str, /
+    ) -> None: ...
+    def xrefSubcommandReloadItem(
+        self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /
+    ) -> None: ...
+    def xrefSubcommandUnloadItem(
+        self, db: PyDb.Database, activity: int, blockId: PyDb.ObjectId, /
+    ) -> None: ...
+
 class InputPoint:
     def __init__(self) -> None:
         """
@@ -1964,10 +2256,14 @@ class InputPoint:
     def pointComputed(self, /) -> bool: ...
     def rawPoint(self, /) -> PyGe.Point3d: ...
     def tooltipString(self, /) -> str: ...
+
 class InputPointFilter:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
-    def processInputPoint(self, input: PyEd.InputPoint, output: PyEd.InputPointFilterResult, /) -> PyDb.ErrorStatus: ...
+    def processInputPoint(
+        self, input: PyEd.InputPoint, output: PyEd.InputPointFilterResult, /
+    ) -> PyDb.ErrorStatus: ...
+
 class InputPointFilterResult:
     def __init__(self) -> None:
         """
@@ -1979,10 +2275,11 @@ class InputPointFilterResult:
     def newPoint(self, /) -> PyGe.Point3d: ...
     def newTooltipString(self, /) -> str: ...
     def retry(self, /) -> bool: ...
-    def setDisplayOsnapGlyph(self, val : bool, /) -> None: ...
-    def setNewPoint(self, val : PyGe.Point3d, /) -> None: ...
-    def setNewTooltipString(self, val : str, /) -> None: ...
-    def setRetry(self, val : bool, /) -> None: ...
+    def setDisplayOsnapGlyph(self, val: bool, /) -> None: ...
+    def setNewPoint(self, val: PyGe.Point3d, /) -> None: ...
+    def setNewTooltipString(self, val: str, /) -> None: ...
+    def setRetry(self, val: bool, /) -> None: ...
+
 class InputPointManager:
     def __init__(self) -> None:
         """
@@ -1990,24 +2287,28 @@ class InputPointManager:
         This class cannot be instantiated from Python.
         """
     def __reduce__(self, /) -> Any: ...
-    def addPointMonitor(self, monitor : PyEd.InputPointMonitor, /) -> None: ...
+    def addPointMonitor(self, monitor: PyEd.InputPointMonitor, /) -> None: ...
     def disableSystemCursorGraphics(self, /) -> bool: ...
     def enableMultiSubentPathSelection(self, /) -> None: ...
     def enableSystemCursorGraphics(self, /) -> bool: ...
     def forcedPickCount(self, /) -> int: ...
     def hasFilter(self, /) -> bool: ...
     def mouseHasMoved(self, /) -> int: ...
-    def registerPointFilter(self, filter : PyEd.InputPointFilter, /) -> None: ...
-    def removePointMonitor(self, monitor : PyEd.InputPointMonitor, /) -> None: ...
+    def registerPointFilter(self, filter: PyEd.InputPointFilter, /) -> None: ...
+    def removePointMonitor(self, monitor: PyEd.InputPointMonitor, /) -> None: ...
     def revokePointFilter(self, /) -> None: ...
     def systemCursorDisableCount(self, /) -> int: ...
     def turnOffForcedPick(self, /) -> bool: ...
     def turnOffSubentityWindowSelection(self, /) -> bool: ...
     def turnOnSubentityWindowSelection(self, /) -> bool: ...
+
 class InputPointMonitor:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
-    def monitorInputPoint(self, input : PyEd.InputPoint, output : PyEd.InputPointMonitorResult, /) -> PyDb.ErrorStatus: ...
+    def monitorInputPoint(
+        self, input: PyEd.InputPoint, output: PyEd.InputPointMonitorResult, /
+    ) -> PyDb.ErrorStatus: ...
+
 class InputPointMonitorResult:
     def __init__(self) -> None:
         """
@@ -2017,28 +2318,32 @@ class InputPointMonitorResult:
     def __reduce__(self, /) -> Any: ...
     def additionalTooltipString(self, /) -> str: ...
     def appendToTooltipStr(self, /) -> bool: ...
-    def setAdditionalTooltipString(self, val : str, /) -> None: ...
+    def setAdditionalTooltipString(self, val: str, /) -> None: ...
+
 class Jig:
     def __init__(self, entity: PyDb.Entity, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
-    def acquireAngle(self, basePnt: PyGe.Point3d=None, /) -> tuple[PyGe.DragStatus,float]: ...
-    def acquireDist(self, basePnt: PyGe.Point3d=None, /) -> tuple[PyGe.DragStatus,float]: ...
-    def acquirePoint(self, basePnt: PyGe.Point3d=None, /) -> tuple[PyGe.DragStatus,PyGe.Point3d]: ...
-    def acquireString(self, /) -> tuple[PyGe.DragStatus,str]: ...
+    def acquireAngle(self, basePnt: PyGe.Point3d = ..., /) -> tuple[PyEd.DragStatus, float]: ...
+    def acquireDist(self, basePnt: PyGe.Point3d = ..., /) -> tuple[PyEd.DragStatus, float]: ...
+    def acquirePoint(
+        self, basePnt: PyGe.Point3d = ..., /
+    ) -> tuple[PyEd.DragStatus, PyGe.Point3d]: ...
+    def acquireString(self, /) -> tuple[PyEd.DragStatus, str]: ...
     def append(self, /) -> PyDb.ObjectId: ...
     @staticmethod
     def className() -> str: ...
     def dispPrompt(self, /) -> str: ...
-    def drag(self, style: PyEd.DragStyle=None, /) -> DragStatus: ...
+    def drag(self, style: PyEd.DragStyle = ..., /) -> DragStatus: ...
     def keywordList(self, /) -> str: ...
     def sampler(self, /) -> DragStatus: ...
     def setDispPrompt(self, val: str, /) -> None: ...
     def setKeywordList(self, val: str, /) -> None: ...
     def setSpecialCursorType(self, val: PyEd.CursorType, /) -> None: ...
-    def setUserInputControls(self, val:  PyEd.UserInputControls, /) -> None: ...
+    def setUserInputControls(self, val: PyEd.UserInputControls, /) -> None: ...
     def specialCursorType(self, /) -> CursorType: ...
     def update(self, /) -> bool: ...
     def userInputControls(self, /) -> UserInputControls: ...
+
 class PointHistory(_BoostPythonEnum):
     eTablet: ClassVar[Self]  # 1
     eNotDigitizer: ClassVar[Self]  # 2
@@ -2065,11 +2370,13 @@ class PointHistory(_BoostPythonEnum):
     eNotInteractive: ClassVar[Self]  # 1048576
     eDirectDistance: ClassVar[Self]  # 2097152
     eGizmoConstrainted: ClassVar[Self]  # 4194304
+
 class PromptCondition(_BoostPythonEnum):
     eNone: ClassVar[Self]  # 0
     eNoZero: ClassVar[Self]  # 1
     eNoEmpty: ClassVar[Self]  # 1
-    eNoNegitive: ClassVar[Self]  # 2
+    eNoNegative: ClassVar[Self]  # 2
+
 class PromptStatus(_BoostPythonEnum):
     eNone: ClassVar[Self]  # 5000
     eModeless: ClassVar[Self]  # 5027
@@ -2082,18 +2389,26 @@ class PromptStatus(_BoostPythonEnum):
     eFailed: ClassVar[Self]  # -5004
     eKeyword: ClassVar[Self]  # -5005
     eDirect: ClassVar[Self]  # -5999
+
 class SelectionSet:
     def __init__(self, /) -> None: ...
-    def __iter__(self, /) -> Iterator[PyDb.ObjectId]: ...
+    def __iter__(self, /) -> SelectionSetIterator: ...
     def __reduce__(self, /) -> Any: ...
     def add(self, id: PyDb.ObjectId, /) -> None: ...
     def adsname(self, /) -> PyDb.AdsName: ...
     def clear(self, /) -> None: ...
+    def getAt(self, val: int, /) -> PyDb.ObjectId: ...
     def hasMember(self, id: PyDb.ObjectId, /) -> bool: ...
     def isInitialized(self, /) -> bool: ...
     def keepAlive(self, flag: bool, /) -> None: ...
     @overload
-    def objectIds(self, desc: PyRx.RxClass=PyDb.Entity, /) -> list[PyDb.ObjectId]: ...
+    def objectIdArray(self, desc: PyRx.RxClass = PyDb.Entity, /) -> PyDb.ObjectIdArray: ...
+    @overload
+    def objectIdArray(self, descList: list[PyRx.RxClass], /) -> PyDb.ObjectIdArray: ...
+    @overload
+    def objectIdArray(self, *args) -> PyDb.ObjectIdArray: ...
+    @overload
+    def objectIds(self, desc: PyRx.RxClass = PyDb.Entity, /) -> list[PyDb.ObjectId]: ...
     @overload
     def objectIds(self, descList: list[PyRx.RxClass], /) -> list[PyDb.ObjectId]: ...
     @overload
@@ -2103,22 +2418,37 @@ class SelectionSet:
     def ssNameX(self, val: int = 0, /) -> list: ...
     def ssSetFirst(self, /) -> bool: ...
     def ssXform(self, xform: PyGe.Matrix3d, /) -> PromptStatus: ...
+    def subentLength(self, index: int, /) -> int: ...
+    def subentName(self, index: int, subentIndex: int, /) -> PyDb.FullSubentPath: ...
+    def subentNameX(self, index: int, subentIndex: int, flags: int, /) -> list: ...
     def toList(self, /) -> list[PyDb.ObjectId]: ...
+
+class SelectionSetIterator:
+    def __init__(self) -> None:
+        """
+        Raises an exception.
+        This class cannot be instantiated from Python.
+        """
+    def __iter__(self, /) -> SelectionSetIterator: ...
+    def __next__(self, /) -> PyDb.ObjectId: ...
+    def __reduce__(self, /) -> Any: ...
+
 class UIContext:
     def OnUpdateMenu(self, /) -> None: ...
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
     @staticmethod
-    def addDefaultContextMenu(context: PyEd.UIContext,appName: str=None, /) -> bool: ...
+    def addDefaultContextMenu(context: PyEd.UIContext, appName: str = ..., /) -> bool: ...
     @staticmethod
-    def addObjectContextMenu(val: PyRx.RxClass,context: PyEd.UIContext, /) -> bool: ...
+    def addObjectContextMenu(val: PyRx.RxClass, context: PyEd.UIContext, /) -> bool: ...
     def getMenuContext(self, val: PyRx.RxClass, ids: list[PyDb.ObjectId], /) -> object: ...
     def hitPoint(self, /) -> PyGe.Point3d: ...
     def onCommand(self, mnuCmd: int, /) -> None: ...
     @staticmethod
     def removeDefaultContextMenu(context: PyEd.UIContext, /) -> bool: ...
     @staticmethod
-    def removeObjectContextMenu(val: PyRx.RxClass,context: PyEd.UIContext, /) -> bool: ...
+    def removeObjectContextMenu(val: PyRx.RxClass, context: PyEd.UIContext, /) -> bool: ...
+
 class UserInputControls(_BoostPythonEnum):
     kGovernedByOrthoMode: ClassVar[Self]  # 1
     kNullResponseAccepted: ClassVar[Self]  # 2
@@ -2137,22 +2467,25 @@ class UserInputControls(_BoostPythonEnum):
     kImpliedFaceForUCSChange: ClassVar[Self]  # 16384
     kUseBasePointElevation: ClassVar[Self]  # 32768
     kDisableDirectDistanceInput: ClassVar[Self]  # 65536
+
 class UserInteraction:
-    def __init__(self, doc:PyAp.Document='current', isPrompting:bool=True, /) -> None: ...
+    def __init__(self, doc: PyAp.Document = "current", isPrompting: bool = True, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
+
 class Util:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
     @staticmethod
-    def angle(pt1: PyGe.Point3d,pt2: PyGe.Point3d, /) -> float: ...
+    def angle(pt1: PyGe.Point3d, pt2: PyGe.Point3d, /) -> float: ...
     @staticmethod
-    def cvUnit(val: float,oldunit: str,newunit: str, /) -> float: ...
+    def cvUnit(val: float, oldunit: str, newunit: str, /) -> float: ...
     @staticmethod
-    def distance(pt1: PyGe.Point3d,pt2: PyGe.Point3d, /) -> float: ...
+    def distance(pt1: PyGe.Point3d, pt2: PyGe.Point3d, /) -> float: ...
     @staticmethod
-    def polar(pt1: PyGe.Point3d,angle: float,dist: float, /) -> PyGe.Point3d: ...
+    def polar(pt1: PyGe.Point3d, angle: float, dist: float, /) -> PyGe.Point3d: ...
     @staticmethod
-    def wcMatch(string: str,pattern: str,ignoreCase: bool, /) -> bool: ...
+    def wcMatch(string: str, pattern: str, ignoreCase: bool, /) -> bool: ...
+
 def print(*args) -> None:
     """
     print( (object)arg1) -> None :

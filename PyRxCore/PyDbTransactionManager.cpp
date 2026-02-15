@@ -11,7 +11,7 @@ void makePyDbTransactionManager()
 {
     PyDocString DS("TransactionManager");
     class_<PyDbTransactionManager, bases<PyRxObject>>("TransactionManager")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.ARGS(9783)))
         .def("startTransaction", &PyDbTransactionManager::startTransaction, DS.ARGS())
         .def("endTransaction", &PyDbTransactionManager::endTransaction, DS.ARGS())
         .def("abortTransaction", &PyDbTransactionManager::abortTransaction, DS.ARGS())
@@ -40,51 +40,51 @@ PyDbTransactionManager::PyDbTransactionManager(AcDbTransactionManager* ptr)
 {
 }
 
-PyTransaction PyDbTransactionManager::startTransaction()
+PyTransaction PyDbTransactionManager::startTransaction() const
 {
     return PyTransaction(impObj()->startTransaction());
 }
 
-void PyDbTransactionManager::endTransaction()
+void PyDbTransactionManager::endTransaction() const
 {
     return PyThrowBadEs(impObj()->endTransaction());
 }
 
-void PyDbTransactionManager::abortTransaction()
+void PyDbTransactionManager::abortTransaction() const
 {
     return PyThrowBadEs(impObj()->abortTransaction());
 }
 
-int PyDbTransactionManager::numActiveTransactions()
+int PyDbTransactionManager::numActiveTransactions() const
 {
     return impObj()->numActiveTransactions();
 }
 
-int PyDbTransactionManager::numOpenedObjects()
+int PyDbTransactionManager::numOpenedObjects() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->numOpenedObjects();
 #endif
 }
 
-PyTransaction PyDbTransactionManager::topTransaction()
+PyTransaction PyDbTransactionManager::topTransaction() const
 {
     return PyTransaction(impObj()->topTransaction());
 }
 
-void PyDbTransactionManager::addNewlyCreatedDBRObject1(PyDbObject& obj)
+void PyDbTransactionManager::addNewlyCreatedDBRObject1(PyDbObject& obj) const
 {
     return PyThrowBadEs(impObj()->addNewlyCreatedDBRObject(obj.impObj()));
 }
 
-void PyDbTransactionManager::addNewlyCreatedDBRObject2(PyDbObject& obj, bool add)
+void PyDbTransactionManager::addNewlyCreatedDBRObject2(PyDbObject& obj, bool add) const
 {
     return PyThrowBadEs(impObj()->addNewlyCreatedDBRObject(obj.impObj(), add));
 }
 
-boost::python::list PyDbTransactionManager::getAllObjects()
+boost::python::list PyDbTransactionManager::getAllObjects() const
 {
     PyAutoLockGIL lock;
     AcArray<AcDbObject*> objs;
@@ -95,24 +95,24 @@ boost::python::list PyDbTransactionManager::getAllObjects()
     return pyObjs;
 }
 
-PyDbObject PyDbTransactionManager::getObject1(const PyDbObjectId& id)
+PyDbObject PyDbTransactionManager::getObject1(const PyDbObjectId& id) const
 {
     return getObject3(id, AcDb::kForRead, false);
 }
 
-PyDbObject PyDbTransactionManager::getObject2(const PyDbObjectId& id, AcDb::OpenMode mode)
+PyDbObject PyDbTransactionManager::getObject2(const PyDbObjectId& id, AcDb::OpenMode mode) const
 {
     return getObject3(id, mode, false);
 }
 
-PyDbObject PyDbTransactionManager::getObject3(const PyDbObjectId& id, AcDb::OpenMode mode, bool openErasedObject)
+PyDbObject PyDbTransactionManager::getObject3(const PyDbObjectId& id, AcDb::OpenMode mode, bool openErasedObject) const
 {
     AcDbObject* obj = nullptr;
     PyThrowBadEs(impObj()->getObject(obj, id.m_id, mode, openErasedObject));
     return PyDbObject(obj, true);
 }
 
-void PyDbTransactionManager::queueForGraphicsFlush()
+void PyDbTransactionManager::queueForGraphicsFlush() const
 {
     return PyThrowBadEs(impObj()->queueForGraphicsFlush());
 }
@@ -141,7 +141,7 @@ void makePyTransactionManagerManager()
 {
     PyDocString DS("TransactionManager");
     class_<PyTransactionManager, bases<PyDbTransactionManager>>("TransactionManager")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.ARGS(16289)))
         .def("flushGraphics", &PyTransactionManager::flushGraphics, DS.ARGS())
         .def("enableGraphicsFlush", &PyTransactionManager::enableGraphicsFlush, DS.ARGS({ "val: bool" }))
         .def("desc", &PyTransactionManager::desc, DS.SARGS(15560)).staticmethod("desc")
@@ -159,12 +159,12 @@ PyTransactionManager::PyTransactionManager(AcTransactionManager* ptr)
 {
 }
 
-void PyTransactionManager::enableGraphicsFlush(bool doEnable)
+void PyTransactionManager::enableGraphicsFlush(bool doEnable) const
 {
     return PyThrowBadEs(impObj()->enableGraphicsFlush(doEnable));
 }
 
-void PyTransactionManager::flushGraphics()
+void PyTransactionManager::flushGraphics() const
 {
     return impObj()->flushGraphics();
 }
@@ -208,24 +208,24 @@ PyTransaction::PyTransaction(AcTransaction* ptr)
 {
 }
 
-PyDbObject PyTransaction::getObject1(const PyDbObjectId& id)
+PyDbObject PyTransaction::getObject1(const PyDbObjectId& id) const
 {
     return getObject3(id, AcDb::kForRead, false);
 }
 
-PyDbObject PyTransaction::getObject2(const PyDbObjectId& id, AcDb::OpenMode mode)
+PyDbObject PyTransaction::getObject2(const PyDbObjectId& id, AcDb::OpenMode mode) const
 {
     return getObject3(id, mode, false);
 }
 
-PyDbObject PyTransaction::getObject3(const PyDbObjectId& id, AcDb::OpenMode mode, bool openErasedObject)
+PyDbObject PyTransaction::getObject3(const PyDbObjectId& id, AcDb::OpenMode mode, bool openErasedObject) const
 {
     AcDbObject* obj = nullptr;
     PyThrowBadEs(impObj()->getObject(obj, id.m_id, mode, openErasedObject));
     return PyDbObject(obj, true);
 }
 
-boost::python::list PyTransaction::getAllObjects()
+boost::python::list PyTransaction::getAllObjects() const
 {
     PyAutoLockGIL lock;
     AcArray<AcDbObject*> objs;
@@ -236,9 +236,9 @@ boost::python::list PyTransaction::getAllObjects()
     return pyObjs;
 }
 
-int PyTransaction::numOpenedObjects()
+int PyTransaction::numOpenedObjects() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->numOpenedObjects();

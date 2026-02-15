@@ -1,7 +1,10 @@
 from __future__ import annotations
-from typing import ClassVar, Self, Any
+
+from typing import Any, ClassVar, Self
+
 from pyrx import Rx as PyRx
 from pyrx.doc_utils.boost_meta import _BoostPythonEnum
+
 kAngle: LispType  # 5004
 kDottedPair: LispType  # 5018
 kDouble: LispType  # 5001
@@ -25,6 +28,7 @@ kText: LispType  # 5005
 kVector2d: LispType  # 5002
 kVector3d: LispType  # 5009
 kVoid: LispType  # 5014
+
 class LispType(_BoostPythonEnum):
     kAngle: ClassVar[Self]  # 5004
     kDottedPair: ClassVar[Self]  # 5018
@@ -45,11 +49,13 @@ class LispType(_BoostPythonEnum):
     kText: ClassVar[Self]  # 5005
     kVoid: ClassVar[Self]  # 5014
     kSelectionSet: ClassVar[Self]  # 5007
+
 class Ordering(_BoostPythonEnum):
     kLessThan: ClassVar[Self]  # -1
     kEqual: ClassVar[Self]  # 0
     kGreaterThan: ClassVar[Self]  # 1
     kNotOrderable: ClassVar[Self]  # 2
+
 class Overrule(PyRx.RxObject):
     def __init__(self) -> None:
         """
@@ -58,9 +64,11 @@ class Overrule(PyRx.RxObject):
         """
     def __reduce__(self, /) -> Any: ...
     @staticmethod
-    def addOverrule(rxClass: PyRx.RxClass,overrule: PyRx.Overrule, /) -> None: ...
+    def addOverrule(rxClass: PyRx.RxClass, overrule: PyRx.Overrule, /) -> None: ...
     @staticmethod
-    def addOverruleLast(rxClass: PyRx.RxClass,overrule: PyRx.Overrule,addLast: bool, /) -> None: ...
+    def addOverruleLast(
+        rxClass: PyRx.RxClass, overrule: PyRx.Overrule, addLast: bool, /
+    ) -> None: ...
     @staticmethod
     def className() -> str: ...
     @staticmethod
@@ -78,13 +86,14 @@ class Overrule(PyRx.RxObject):
         by the returned pointer was created by an ObjectARX application that will not be unloaded.
         """
     @staticmethod
-    def hasOverrule(subject: PyRx.RxObject,rxClass: PyRx.RxClass, /) -> bool: ...
+    def hasOverrule(subject: PyRx.RxObject, rxClass: PyRx.RxClass, /) -> bool: ...
     @staticmethod
     def isOverruling() -> bool: ...
     @staticmethod
-    def removeOverrule(rxClass: PyRx.RxClass,overrule: PyRx.Overrule, /) -> None: ...
+    def removeOverrule(rxClass: PyRx.RxClass, overrule: PyRx.Overrule, /) -> None: ...
     @staticmethod
     def setIsOverruling(flag: bool, /) -> None: ...
+
 class RxClass(PyRx.RxObject):
     def __init__(self) -> None:
         """
@@ -98,7 +107,7 @@ class RxClass(PyRx.RxObject):
         ACRX_DXF_DEFINE_MEMBERS macro and is also the last parameter to the global newAcRxClass()
         pseudo-constructor. This string is used as the application identifier in the error dialog
         that is displayed whenever an object of the class is loaded and the application is not
-        present.  WarningAs the const qualifier indicates, no attempt should be made to deallocate
+        present. WarningAs the const qualifier indicates, no attempt should be made to deallocate
         the returned string.
         """
     @staticmethod
@@ -122,10 +131,10 @@ class RxClass(PyRx.RxObject):
         This function returns a pointer to the DXF name for the class. This string is only required
         to be non-NULL for classes derived from AcDbObject. Other classes may set this via the
         second to the last parameter of the global newAcRxClass() pseudo-constructor. If the
-        dxfName string has not been set, then this function will return NULL.  WarningAs the const
+        dxfName string has not been set, then this function will return NULL. WarningAs the const
         qualifier indicates, no attempt should be made to deallocate the string.
         """
-    def isDerivedFrom(self, other : PyRx.RxClass, /) -> bool:
+    def isDerivedFrom(self, other: PyRx.RxClass, /) -> bool:
         """
         Static method for checking if first (left) class arg is derived from second (right) one.
         """
@@ -137,10 +146,10 @@ class RxClass(PyRx.RxObject):
     def name(self, /) -> str:
         """
         This function returns a pointer to a string that is the name of the C++ class represented
-        by this AcRxClass object.  WarningAs the const qualifier indicates, no attempt should be
+        by this AcRxClass object. WarningAs the const qualifier indicates, no attempt should be
         made to deallocate the string.
         """
-    def queryX(self, rhs :  PyRx.RxClass, /) -> RxObject:
+    def queryX(self, protocolClass: PyRx.RxClass, /) -> RxObject:
         """
         This function returns the protocol extension object stored with the key pProtocolClass. If
         there is no such object specific to the class represented by this AcRxClass object, then
@@ -150,6 +159,7 @@ class RxClass(PyRx.RxObject):
         AcRxClass objects, then this function will return NULL. This function does the real work
         for AcRxObject::queryX() and is invoked from it.
         """
+
 class RxObject:
     def __hash__(self, /) -> int: ...
     def __init__(self) -> None:
@@ -157,7 +167,6 @@ class RxObject:
         Raises an exception.
         This class cannot be instantiated from Python.
         """
-    def __ne__(self, rhs: PyRx.RxObject, /) -> bool: ...
     def __reduce__(self, /) -> Any: ...
     @staticmethod
     def className() -> str: ...
@@ -178,7 +187,7 @@ class RxObject:
         Function usage: Copies the contents of other into the messaged object, whenever feasible.
         Function implementation in derived classes: If implemented, this function needs to be able
         to read the data in the object pointed to by other and copy any or all data as appropriate
-        into this object.  There is no requirement that the object pointed to by other and this
+        into this object. There is no requirement that the object pointed to by other and this
         object be of the same class, but that is the generally assumed condition. Default
         implementation: Because this function must be overridden to have any meaning, a fatal error
         will be caused when calling the default implementation.
@@ -207,22 +216,22 @@ class RxObject:
         which this method is called. For classes not registered with ObjectARX, this method has no
         meaning. Function implementation in derived classes: This function is overridden in all
         derived classes. The AcRx macros declare and define this function, so that the override is
-        taken care of as part of using the macros.  The implementation of this function is simply
-        to return ::desc(). For example. the implementation for AcDbLine would be: return
-        AcDbLine::desc(); Default implementation for AcRxObject:  { return AcRxObject::desc(); }
+        taken care of as part of using the macros. The implementation of this function is simply to
+        return ::desc(). For example. the implementation for AcDbLine would be: return
+        AcDbLine::desc(); Default implementation for AcRxObject: { return AcRxObject::desc(); }
         """
-    def isDerivedFrom(self, other : PyRx.RxClass, /) -> bool:
+    def isDerivedFrom(self, other: PyRx.RxClass, /) -> bool:
         """
         Static method for checking if first (left) class arg is derived from second (right) one.
         """
     def isKindOf(self, rhs: PyRx.RxClass, /) -> bool:
         """
-        Returns true if "this" object is of a member of either the class represented by aClass, or
+        Returns true if 'this' object is of a member of either the class represented by aClass, or
         a class derived from aClass.
         """
     def isNullObj(self, /) -> bool: ...
     def keepAlive(self, flag: bool, /) -> None: ...
-    def queryX(self, rhs: PyRx.RxClass, /) -> RxObject:
+    def queryX(self, protocolClass: PyRx.RxClass, /) -> RxObject:
         """
         This method searches for a protocol extension object associated with this object. The
         method begins the search by examining the AcRxClass object associated with this object, and
@@ -232,11 +241,13 @@ class RxObject:
         the class's isA() method. If the search for a protocol extension object is unsuccessful,
         then NULL is returned.
         """
+
 class stderr:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
     def flush(self, /) -> None: ...
     def write(self, /) -> None: ...
+
 class stdout:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...

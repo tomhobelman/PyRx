@@ -44,6 +44,7 @@ class PyAcadPopupMenus;
 class PyAcadMenuGroups;
 class PyAcadToolbars;
 class PyAcadToolbar;
+class PyAcadBlock;
 
 //----------------------------------------------------------------------------------------
 //PyAcadAcCmColor
@@ -53,6 +54,8 @@ class PyAcadAcCmColor
 {
 public:
     PyAcadAcCmColor();
+    PyAcadAcCmColor(PyAcColor colorindex);
+    PyAcadAcCmColor(const std::string& val);
     PyAcadAcCmColor(Adesk::UInt8 r, Adesk::UInt8 g, Adesk::UInt8 b);
     PyAcadAcCmColor(std::shared_ptr<PyIAcadAcCmColorImpl> ptr);
     virtual ~PyAcadAcCmColor() = default;
@@ -60,6 +63,8 @@ public:
     long            entityColor() const;
     std::string     colorName() const;
     std::string     bookName() const;
+    std::string     toHTMLColor() const;
+    void            fromHTMLColor(const std::string& code) const;
     void            setNames(const std::string& colorName, const std::string& bookName) const;
     void            clear() const;
     long            red() const;
@@ -136,8 +141,8 @@ public:
     void                    setGenerationOptions(PyAcSectionGeneration val) const;
     boost::python::list     sourceObjects() const;
     void                    setSourceObjects(const boost::python::list& ids) const;
-    //PyAcadBlock             destinationBlock() const;
-    //void                    setDestinationBlock(const PyAcadBlock& val) const;
+    PyAcadBlock             destinationBlock() const;
+    void                    setDestinationBlock(const PyAcadBlock& val) const;
     std::string             destinationFile() const;
     void                    setDestinationFile(const std::string& val) const;
     PyAcadAcCmColor         intersectionBoundaryColor() const;

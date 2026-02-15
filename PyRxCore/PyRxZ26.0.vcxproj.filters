@@ -424,6 +424,18 @@
     <ClCompile Include="PyAcadTableImpl.cpp">
       <Filter>Source Files\PyAx</Filter>
     </ClCompile>
+    <ClCompile Include="PyDbGraph.cpp">
+      <Filter>Source Files\PyDb</Filter>
+    </ClCompile>
+    <ClCompile Include="PyGePoint3dTree.cpp">
+      <Filter>Source Files\PyGe</Filter>
+    </ClCompile>
+    <ClCompile Include="PyDbAssocAction.cpp">
+      <Filter>Source Files\PyDb</Filter>
+    </ClCompile>
+    <ClCompile Include="PyRxOverrulableEntity.cpp">
+      <Filter>Source Files\PyRxApp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PyDbDatabase.h">
@@ -854,6 +866,27 @@
     </ClInclude>
     <ClInclude Include="PyAcadTableImpl.h">
       <Filter>Header Files\PyAx</Filter>
+    </ClInclude>
+    <ClInclude Include="PyDbGraph.h">
+      <Filter>Header Files\PyDb</Filter>
+    </ClInclude>
+    <ClInclude Include="PyGePoint3dTree.h">
+      <Filter>Header Files\PyGe</Filter>
+    </ClInclude>
+    <ClInclude Include="PyDbAssocAction.h">
+      <Filter>Header Files\PyDb</Filter>
+    </ClInclude>
+    <ClInclude Include="PyRxOverrulableEntity.h">
+      <Filter>Header Files\PyRxApp</Filter>
+    </ClInclude>
+    <ClInclude Include="delaunator.h">
+      <Filter>Header Files\PyRxApp</Filter>
+    </ClInclude>
+    <ClInclude Include="nanoflann.hpp">
+      <Filter>Header Files\PyRxApp</Filter>
+    </ClInclude>
+    <ClInclude Include="concaveman.h">
+      <Filter>Header Files\PyRxApp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

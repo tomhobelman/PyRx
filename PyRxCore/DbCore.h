@@ -100,6 +100,9 @@ public:
     static void                 reloadXrefs2(PyDbDatabase& db, const boost::python::list& ids, bool bQuiet);
     static boost::python::list  resbufTest(const boost::python::list& list);
     static std::string          stringTest(const std::string& val);
+    static std::string          stringtolower(const std::string& val);
+    static std::string          stringtoupper(const std::string& val);
+    static bool                 icompare(const std::string& left, const std::string& right);
     static void                 setEnableTightExtents(bool bEnable);
     static bool                 snValid(const std::string& tbstr, int pipeTest);
     static PyDbSymUtilServices  symUtil();
@@ -126,6 +129,9 @@ public:
     static bool                 ecs2Wcs2(const AcGeVector3d& p, const AcGeVector3d& normal, AcGeVector3d& q);
     static Acad::ErrorStatus    evaluateFields1();
     static Acad::ErrorStatus    evaluateFields2(const boost::python::object& ids, int context);
+    static void                 resolveCurrentXRefs(const PyDbDatabase& db, bool useThreadEngine, bool doNewOnly);
+    static AcDb::DwgDataType    groupCodeToType(AcDb::DxfCode pCode);
+    static bool                 isVisible(const PyDbObjectId& id);
 };
 
 #pragma pack (pop)

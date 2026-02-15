@@ -10,6 +10,7 @@ class PyAutoDocLock;
 //-----------------------------------------------------------------------------------------
 //PyApDocManagerReactor
 void makePyApDocManagerReactorWrapper();
+
 class PyApDocManagerReactor :public AcApDocManagerReactor, public boost::python::wrapper<PyApDocManagerReactor>
 {
 public:
@@ -148,7 +149,8 @@ public:
     Acad::ErrorStatus   beginExecuteInCommandContext(const boost::python::object& func, const boost::python::object& data) const;
     Acad::ErrorStatus   beginExecuteInApplicationContext(const boost::python::object& func, const boost::python::object& data) const;
 
-    static PyAutoDocLock autoLock();
+    static PyAutoDocLock autoLock1();
+    static PyAutoDocLock autoLock2(const PyApDocument& doc);
     static std::string  className();
 
     using ExecData = std::pair<const boost::python::object, const boost::python::object>;
@@ -168,6 +170,7 @@ class PyAutoDocLockImp
 public:
     PyAutoDocLockImp();
     ~PyAutoDocLockImp();
+    PyAutoDocLockImp(AcApDocument* doc);
     AcApDocument* pDoc = nullptr;
 };
 
@@ -175,10 +178,13 @@ class PyAutoDocLock
 {
 public:
     PyAutoDocLock();
+    PyAutoDocLock(const PyApDocument& doc);
     ~PyAutoDocLock() = default;
+    PyApDocument doc() const;
     static std::string className();
 public:
-    std::shared_ptr<PyAutoDocLockImp> imp;
+    AcApDocument* impObj(const std::source_location& src = std::source_location::current()) const;
+    std::shared_ptr<PyAutoDocLockImp> m_pyImp;
 };
 
 #pragma pack (pop)

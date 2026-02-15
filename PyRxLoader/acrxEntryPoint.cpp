@@ -40,6 +40,17 @@ constexpr const wchar_t* PYRXPATHLIB_EMEDDED = _T("pyrx");
 constexpr const wchar_t* WXPYTHONPATHLIB_EMEDDED = _T("wx");
 constexpr const wchar_t* APPDATA_PYTHONPATH = _T("Programs\\Python\\Python312");
 
+
+//-----------------------------------------------------------------------------
+//----- pyrx_locale
+_locale_t& pyrx_locale()
+{
+    // TODO: set form OS? or pyrx_config 
+    // this is only used in toupper & tolower
+    static _locale_t pyrx_locale = _create_locale(LC_ALL, "en_US.UTF-8");
+    return pyrx_locale;
+}
+
 //-----------------------------------------------------------------------------
 //----- ObjectARX EntryPoint
 class PyRxLoader : public AcRxArxApp
@@ -59,6 +70,7 @@ public:
     {
         AcRx::AppRetCode retCode = AcRxArxApp::On_kInitAppMsg(pkt);
         acrxLockApplication(pkt);
+#if !defined(_IRXTARGET)
         std::array<wchar_t, 8> buffer = { 0 };
         if (acedGetEnv(_T("PYRX_LOG"), buffer.data(), buffer.size()) == RTNORM)
         {
@@ -69,6 +81,7 @@ public:
         }
         PyRxLoader_loader();
         envToRestoreFrom = getPathEnvironmentVariable();
+#endif
         return (retCode);
     }
 
@@ -82,6 +95,27 @@ public:
     virtual AcRx::AppRetCode On_kLoadDwgMsg(void* pkt) override
     {
         AcRx::AppRetCode retCode = AcRxDbxApp::On_kLoadDwgMsg(pkt);
+#if defined(_IRXTARGET)
+        static bool once = false;
+        if (!once)
+        {
+            const AcString fname = curDoc()->fileName();
+            if (!fname.isEmpty())
+            {
+                once = true;
+                std::array<wchar_t, 8> buffer = { 0 };
+                if (acedGetEnv(_T("PYRX_LOG"), buffer.data(), buffer.size()) == RTNORM)
+                {
+                    if (_wtoi(buffer.data()) == 1)
+                        PYRX_LOG = 1;
+                    else
+                        PYRX_LOG = 0;
+                }
+                PyRxLoader_loader();
+                envToRestoreFrom = getPathEnvironmentVariable();
+            }
+        }
+#endif  
         return retCode;
     }
 
@@ -103,20 +137,28 @@ public:
         return L"PyRx25.0.arx";
 #elif defined(_ARXTARGET) && _ARXTARGET == 251
         return L"PyRx25.1.arx";
+#elif defined(_ARXTARGET) && _ARXTARGET == 260
+        return L"PyRx26.0.arx";
 #elif defined(_BRXTARGET) && _BRXTARGET == 240
         return L"PyRxV24.0.brx";
 #elif defined(_BRXTARGET) && _BRXTARGET == 250
         return L"PyRxV25.0.brx";
+#elif defined(_BRXTARGET) && _BRXTARGET == 260
+        return L"PyRxV26.0.brx";
 #elif defined(_GRXTARGET) && _GRXTARGET == 240
         return L"PyRxG24.0.grx";
 #elif defined(_GRXTARGET) && _GRXTARGET == 250
         return L"PyRxG25.0.grx";
+#elif defined(_GRXTARGET) && _GRXTARGET == 260
+        return L"PyRxG26.0.grx";
 #elif defined(_ZRXTARGET) && _ZRXTARGET == 240
         return L"PyRxZ24.0.Zrx";
 #elif defined(_ZRXTARGET) && _ZRXTARGET == 250
         return L"PyRxZ25.0.Zrx";
 #elif defined(_ZRXTARGET) && _ZRXTARGET == 260
         return L"PyRxZ26.0.Zrx";
+#elif defined(_IRXTARGET) && _IRXTARGET == 140
+        return L"PyRxI14.1.Irx";
 #endif
         acutPrintf(_T("Error in getNameOfModuleToLoad: "));
         return L"!ERROR!";
@@ -251,7 +293,7 @@ public:
         {
             std::error_code ec;
             const std::wstring exepath = (path / PYTHONEXEC);
-            if (std::filesystem::exists(exepath,ec))
+            if (std::filesystem::exists(exepath, ec))
                 acedSetEnv(_T("PYRX_PYEXE_PATH"), exepath.c_str());
             else
                 appendLog(std::format(_T("PyExePath Failed @ {} {} {}"), __FUNCTIONW__, __LINE__, path.c_str()));
@@ -300,7 +342,11 @@ public:
         if (buffer.find(pathToAddLower) == std::string::npos)
         {
             buffer = pathToAddLower + buffer;
+#if defined(_IRXTARGET) && _IRXTARGET == 140
+            if (acedSetEnv(_T("PATH"), buffer.c_str()) == RTNORM)
+#else
             if (SetEnvironmentVariable(_T("PATH"), buffer.data()) == 0)
+#endif
             {
                 appendLog(std::format(_T("Failed @ {} {} {}"), __FUNCTIONW__, __LINE__, pathToAdd.c_str()));
                 return false;
@@ -379,6 +425,14 @@ public:
 
     static void PyRxLoader_loader(void)
     {
+#ifdef NEVER
+        CString ver = _T("26.1.3.0");
+        if (!checkFileVersionInfo(ver))
+        {
+            acutPrintf(_T("\nWrong version!"));
+            return;
+        }
+#endif
         std::error_code ec;
         bool envSet = false;
 
@@ -389,7 +443,6 @@ public:
         const auto [wxpythonPathFound, wxpythonPath] = tryFindWxPythonPath();
 
         std::filesystem::current_path(modulePath, ec);
-        acedSetEnv(_T("PYRX_VIRTUAL_ENV"), L""); //TODO: remove this after a couple of releases, so we know it's removed
         acedSetEnv(_T("PYRX_PYEXE_PATH"), L"");
 
         std::time_t now_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());

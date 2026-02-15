@@ -9,7 +9,7 @@ using namespace boost::python;
 //NOTE curve1, curve2 are not overloads
 void makePyGeCurveCurveInt3dWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
@@ -24,7 +24,7 @@ void makePyGeCurveCurveInt3dWrapper()
         .def(init<const PyGeCurve3d&, const PyGeCurve3d&>())
         .def(init<const PyGeCurve3d&, const PyGeCurve3d&, const AcGeVector3d&, const AcGeTol&>())
         .def(init<const PyGeCurve3d&, const PyGeCurve3d&, const PyGeInterval&, const PyGeInterval&>())
-        .def(init<const PyGeCurve3d&, const PyGeCurve3d&, const PyGeInterval&, const PyGeInterval&, const AcGeVector3d&, const AcGeTol&>(DS.CTOR(ctor)))
+        .def(init<const PyGeCurve3d&, const PyGeCurve3d&, const PyGeInterval&, const PyGeInterval&, const AcGeVector3d&, const AcGeTol&>(DS.CTOR(ctor, 11912)))
         .def("curve1", &PyGeCurveCurveInt3d::curve1, DS.ARGS())//not overload
         .def("curve2", &PyGeCurveCurveInt3d::curve2, DS.ARGS())//not overload
         .def("getIntRanges", &PyGeCurveCurveInt3d::getIntRanges, DS.ARGS())
@@ -45,6 +45,7 @@ void makePyGeCurveCurveInt3dWrapper()
         .def("changeCurveOrder", &PyGeCurveCurveInt3d::changeCurveOrder, DS.ARGS())
         .def("orderWrt1", &PyGeCurveCurveInt3d::orderWrt1, DS.ARGS())//not overload
         .def("orderWrt2", &PyGeCurveCurveInt3d::orderWrt2, DS.ARGS())//not overload
+        .def("set", &PyGeCurveCurveInt3d::set1, DS.ARGS({"c1: PyGe.Curve3d","c2: PyGe.Curve3d" }))
         .def("cast", &PyGeCurveCurveInt3d::cast, DS.SARGS({ "otherObject: PyGe.Entity3d" })).staticmethod("cast")
         .def("copycast", &PyGeCurveCurveInt3d::copycast, DS.SARGS({ "otherObject: PyGe.Entity3d" })).staticmethod("copycast")
         .def("className", &PyGeCurveCurveInt3d::className, DS.SARGS()).staticmethod("className")
@@ -52,7 +53,7 @@ void makePyGeCurveCurveInt3dWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeCurveCurveInt3d::PyGeCurveCurveInt3d()
     : PyGeEntity3d(new AcGeCurveCurveInt3d())
 {
@@ -98,7 +99,7 @@ PyGeCurve3d PyGeCurveCurveInt3d::curve2() const
     return PyGeCurve3d(impObj()->curve2());
 }
 
-boost::python::tuple PyGeCurveCurveInt3d::getIntRanges()
+boost::python::tuple PyGeCurveCurveInt3d::getIntRanges() const
 {
     PyAutoLockGIL lock;
     PyGeInterval range1;
@@ -193,19 +194,24 @@ boost::python::tuple PyGeCurveCurveInt3d::getOverlapRanges(int overlapNum) const
     return boost::python::make_tuple(range1, range2);
 }
 
-void PyGeCurveCurveInt3d::changeCurveOrder()
+void PyGeCurveCurveInt3d::changeCurveOrder() const
 {
     impObj()->changeCurveOrder();
 }
 
-PyGeCurveCurveInt3d PyGeCurveCurveInt3d::orderWrt1()
+PyGeCurveCurveInt3d PyGeCurveCurveInt3d::orderWrt1() const
 {
     return PyGeCurveCurveInt3d(impObj()->orderWrt1());
 }
 
-PyGeCurveCurveInt3d PyGeCurveCurveInt3d::orderWrt2()
+PyGeCurveCurveInt3d PyGeCurveCurveInt3d::orderWrt2() const
 {
     return PyGeCurveCurveInt3d(impObj()->orderWrt2());
+}
+
+void PyGeCurveCurveInt3d::set1(const PyGeCurve3d& curve1, const PyGeCurve3d& curve2)
+{
+    impObj()->set(*curve1.impObj(), *curve2.impObj());
 }
 
 PyGeCurveCurveInt3d PyGeCurveCurveInt3d::cast(const PyGeEntity3d& src)

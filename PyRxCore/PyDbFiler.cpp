@@ -9,7 +9,7 @@ using namespace boost::python;
 void makePyDbSnoopDwgFilerWrapper()
 {
     PyDocString DS("SnoopDwgFiler");
-    class_<PyDbSnoopDwgFiler>("SnoopDwgFiler")
+    class_<PyDbSnoopDwgFiler, boost::noncopyable>("SnoopDwgFiler")
         .def(init<>())
         .def(init<AcDb::FilerType>(DS.ARGS({ "filerType: PyDb.FilerType" })))
         .def("buffer", &PyDbSnoopDwgFiler::buffer, DS.ARGS())
@@ -106,11 +106,14 @@ Acad::ErrorStatus PyDbSnoopDwgFiler::writeInt8(Adesk::Int8 val)
     return eOk;
 }
 
+#if defined(_ARXTARGET) && (_ARXTARGET >= 260)
+//depreciated
+#else
 Acad::ErrorStatus PyDbSnoopDwgFiler::readString(ACHAR** pVal)
 {
     return eOk;
 }
-
+#endif
 Acad::ErrorStatus PyDbSnoopDwgFiler::readString(AcString& val)
 {
     return eOk;
@@ -387,7 +390,7 @@ boost::python::object PyDbSnoopDwgFiler::getitem(int idx)
 void makePyDbSnoopDxfFilerrWrapper()
 {
     PyDocString DS("SnoopDxfFiler");
-    class_<PyDbSnoopDxfFiler>("SnoopDxfFiler")
+    class_<PyDbSnoopDxfFiler, boost::noncopyable>("SnoopDxfFiler")
         .def(init<>())
         .def("buffer", &PyDbSnoopDxfFiler::buffer, DS.ARGS())
         .def("__getitem__", &PyDbSnoopDwgFiler::getitem, DS.ARGS())
@@ -573,4 +576,3 @@ boost::python::object PyDbSnoopDxfFiler::getitem(int idx)
 {
     return m_list[idx];
 }
-

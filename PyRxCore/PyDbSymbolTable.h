@@ -27,13 +27,15 @@ public:
     PyDbSymbolTable(AcDbSymbolTable* ptr, bool autoDelete);
     PyDbSymbolTable(const PyDbObjectId& id);
     PyDbSymbolTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbSymbolTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbSymbolTable() override = default;
-    PyDbObjectId        getAt(const std::string& entryName);
-    bool                has1(const std::string& entryName);
-    bool                has2(const PyDbObjectId& entryid);
-    PyDbObjectId        add(const PyDbSymbolTableRecord& pRecord);
-    boost::python::list recordIds();
-    boost::python::dict toDict();
+    PyDbObjectId        getAt(const std::string& entryName) const;
+    PyDbObjectId        getAtEx(const std::string& entryName) const;
+    bool                has1(const std::string& entryName) const;
+    bool                has2(const PyDbObjectId& entryid) const;
+    PyDbObjectId        add(const PyDbSymbolTableRecord& pRecord) const;
+    boost::python::list recordIds() const;
+    boost::python::dict toDict() const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbSymbolTable cloneFrom(const PyRxObject& src);
@@ -41,13 +43,6 @@ public:
 
 public:
     AcDbSymbolTable* impObj(const std::source_location& src = std::source_location::current()) const;
-
-    // TODO: iterator buffer, I don't know how to expose AcDbBlockTableRecordIterator
-    // memory hog? at least we're in cache... BTY. end is called first
-    void filliterator();
-    std::vector<PyDbObjectId>::iterator begin();
-    std::vector<PyDbObjectId>::iterator end();
-    std::vector<PyDbObjectId> m_iterable{ 0 };
 };
 
 //---------------------------------------------------------------------------------------- -
@@ -60,8 +55,10 @@ public:
     PyDbDimStyleTable(AcDbDimStyleTable* ptr, bool autoDelete);
     PyDbDimStyleTable(const PyDbObjectId& id);
     PyDbDimStyleTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbDimStyleTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
+
     virtual ~PyDbDimStyleTable() override = default;
-    PyDbObjectId        add(const PyDbDimStyleTableRecord& entry);
+    PyDbObjectId        add(const PyDbDimStyleTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbDimStyleTable cloneFrom(const PyRxObject& src);
@@ -81,8 +78,10 @@ public:
     PyDbBlockTable(AcDbBlockTable* ptr, bool autoDelete);
     PyDbBlockTable(const PyDbObjectId& id);
     PyDbBlockTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbBlockTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
+
     virtual ~PyDbBlockTable() override = default;
-    PyDbObjectId        add(const PyDbBlockTableRecord& entry);
+    PyDbObjectId        add(const PyDbBlockTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbBlockTable cloneFrom(const PyRxObject& src);
@@ -102,8 +101,10 @@ public:
     PyDbTextStyleTable(AcDbTextStyleTable* ptr, bool autoDelete);
     PyDbTextStyleTable(const PyDbObjectId& id);
     PyDbTextStyleTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbTextStyleTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
+
     virtual ~PyDbTextStyleTable() override = default;
-    PyDbObjectId        add(const PyDbTextStyleTableRecord& entry);
+    PyDbObjectId        add(const PyDbTextStyleTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbTextStyleTable cloneFrom(const PyRxObject& src);
@@ -123,8 +124,10 @@ public:
     PyDbLinetypeTable(AcDbLinetypeTable* ptr, bool autoDelete);
     PyDbLinetypeTable(const PyDbObjectId& id);
     PyDbLinetypeTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbLinetypeTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
+
     virtual ~PyDbLinetypeTable() override = default;
-    PyDbObjectId        add(const PyDbLinetypeTableRecord& entry);
+    PyDbObjectId        add(const PyDbLinetypeTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbLinetypeTable cloneFrom(const PyRxObject& src);
@@ -144,8 +147,9 @@ public:
     PyDbRegAppTable(AcDbRegAppTable* ptr, bool autoDelete);
     PyDbRegAppTable(const PyDbObjectId& id);
     PyDbRegAppTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbRegAppTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbRegAppTable() override = default;
-    PyDbObjectId        add(const PyDbRegAppTableRecord& entry);
+    PyDbObjectId        add(const PyDbRegAppTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbRegAppTable cloneFrom(const PyRxObject& src);
@@ -165,8 +169,9 @@ public:
     PyDbUCSTable(AcDbUCSTable* ptr, bool autoDelete);
     PyDbUCSTable(const PyDbObjectId& id);
     PyDbUCSTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbUCSTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbUCSTable() override = default;
-    PyDbObjectId        add(const PyDbUCSTableRecord& entry);
+    PyDbObjectId        add(const PyDbUCSTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbUCSTable cloneFrom(const PyRxObject& src);
@@ -186,8 +191,9 @@ public:
     PyDbLayerTable(AcDbLayerTable* ptr, bool autoDelete);
     PyDbLayerTable(const PyDbObjectId& id);
     PyDbLayerTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbLayerTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbLayerTable() override = default;
-    PyDbObjectId        add(const PyDbLayerTableRecord& entry);
+    PyDbObjectId        add(const PyDbLayerTableRecord& entry) const;
     static std::string  className();
     static PyRxClass    desc();
     static PyDbLayerTable cloneFrom(const PyRxObject& src);
@@ -207,6 +213,7 @@ public:
     PyDbAbstractViewTable(AcDbAbstractViewTable* ptr, bool autoDelete);
     PyDbAbstractViewTable(const PyDbObjectId& id);
     PyDbAbstractViewTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbAbstractViewTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbAbstractViewTable() override = default;
     PyDbObjectId        add(const PyDbAbstractViewTableRecord& entry);
     static std::string  className();
@@ -229,6 +236,7 @@ public:
     PyDbViewportTable(AcDbViewportTable* ptr, bool autoDelete);
     PyDbViewportTable(const PyDbObjectId& id);
     PyDbViewportTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbViewportTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbViewportTable() override = default;
     PyDbObjectId        add(const PyDbViewportTableRecord& entry);
     static std::string  className();
@@ -250,6 +258,7 @@ public:
     PyDbViewTable();
     PyDbViewTable(const PyDbObjectId& id);
     PyDbViewTable(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbViewTable(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     PyDbViewTable(AcDbViewTable* ptr, bool autoDelete);
     virtual ~PyDbViewTable() override = default;
     PyDbObjectId        add(const PyDbViewTableRecord& entry);

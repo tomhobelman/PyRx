@@ -9,15 +9,15 @@ void makePyGeLinearEnt2dWrapper()
     PyDocString DS("LinearEnt2d");
     class_<PyGeLinearEnt2d, bases<PyGeCurve2d>>("LinearEnt2d", boost::python::no_init)
         .def("intersectWith", &PyGeLinearEnt2d::intersectWith1)
-        .def("intersectWith", &PyGeLinearEnt2d::intersectWith2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol=None" }))
+        .def("intersectWith", &PyGeLinearEnt2d::intersectWith2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol = ..." }))
         .def("overlap", &PyGeLinearEnt2d::overlap1)
-        .def("overlap", &PyGeLinearEnt2d::overlap2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol=None" }))
+        .def("overlap", &PyGeLinearEnt2d::overlap2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol = ..." }))
         .def("isParallelTo", &PyGeLinearEnt2d::isParallelTo1)
-        .def("isParallelTo", &PyGeLinearEnt2d::isParallelTo2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol=None" }))
+        .def("isParallelTo", &PyGeLinearEnt2d::isParallelTo2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol = ..." }))
         .def("isPerpendicularTo", &PyGeLinearEnt2d::isPerpendicularTo1)
-        .def("isPerpendicularTo", &PyGeLinearEnt2d::isPerpendicularTo2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol=None" }))
+        .def("isPerpendicularTo", &PyGeLinearEnt2d::isPerpendicularTo2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol = ..." }))
         .def("isColinearTo", &PyGeLinearEnt2d::isColinearTo1)
-        .def("isColinearTo", &PyGeLinearEnt2d::isColinearTo2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol=None" }))
+        .def("isColinearTo", &PyGeLinearEnt2d::isColinearTo2, DS.ARGS({ "other: PyGe.LinearEnt2d","tol: PyGe.Tol = ..." }))
         .def("getPerpLine", &PyGeLinearEnt2d::getPerpLine, DS.ARGS({ "pt: PyGe.Point2d" }))
         .def("getLine", &PyGeLinearEnt2d::getLine, DS.ARGS())
         .def("pointOnLine", &PyGeLinearEnt2d::pointOnLine, DS.ARGS())
@@ -33,7 +33,7 @@ PyGeLinearEnt2d::PyGeLinearEnt2d(AcGeEntity2d* pEnt)
 {
 }
 
-boost::python::tuple PyGeLinearEnt2d::intersectWith1(const PyGeLinearEnt2d& line)
+boost::python::tuple PyGeLinearEnt2d::intersectWith1(const PyGeLinearEnt2d& line) const
 {
     PyAutoLockGIL lock;
     AcGePoint2d p1;
@@ -41,7 +41,7 @@ boost::python::tuple PyGeLinearEnt2d::intersectWith1(const PyGeLinearEnt2d& line
     return make_tuple(flag, p1);
 }
 
-boost::python::tuple PyGeLinearEnt2d::intersectWith2(const PyGeLinearEnt2d& line, const AcGeTol& tol)
+boost::python::tuple PyGeLinearEnt2d::intersectWith2(const PyGeLinearEnt2d& line, const AcGeTol& tol) const
 {
     PyAutoLockGIL lock;
     AcGePoint2d p1;
@@ -148,18 +148,18 @@ void makePyGeLine2dWrapper()
 {
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
-        "- start: PyGe.Point3d, direction: PyGe.Vector2d\n"
-        "- start: PyGe.Point3d, end: PyGe.Point3d\n";
+        "- start: PyGe.Point2d, direction: PyGe.Vector2d\n"
+        "- start: PyGe.Point2d, end: PyGe.Point2d\n";
 
     constexpr const std::string_view setOverloads = "Overloads:\n"
-        "- start: PyGe.Point3d, direction: PyGe.Vector2d\n"
-        "- start: PyGe.Point3d, end: PyGe.Point3d\n";
+        "- start: PyGe.Point2d, direction: PyGe.Vector2d\n"
+        "- start: PyGe.Point2d, end: PyGe.Point2d\n";
 
     PyDocString DS("Line2d");
     class_<PyGeLine2d, bases<PyGeLinearEnt2d>>("Line2d")
         .def(init<>())
         .def(init<const AcGePoint2d&, const AcGeVector2d&>())
-        .def(init<const AcGePoint2d&, const AcGePoint2d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint2d&, const AcGePoint2d&>(DS.CTOR(ctor, 12239)))
         .add_static_property("kXAxis", PyGeLine2d::kXAxis)
         .add_static_property("kYAxis", PyGeLine2d::kYAxis)
         .def("set", &PyGeLine2d::set1)
@@ -205,18 +205,18 @@ PyGeLine2d PyGeLine2d::kYAxis()
     return PyGeLine2d(AcGeLine2d::kYAxis);
 }
 
-void PyGeLine2d::set1(const AcGePoint2d& pnt, const AcGeVector2d& vec)
+void PyGeLine2d::set1(const AcGePoint2d& pnt, const AcGeVector2d& vec) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt, vec);
 #endif
 }
 
-void PyGeLine2d::set2(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2)
+void PyGeLine2d::set2(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt1, pnt2);
@@ -270,7 +270,7 @@ void makePyGeLineSeg2dWrapper()
     class_<PyGeLineSeg2d, bases<PyGeLinearEnt2d>>("LineSeg2d")
         .def(init<>())
         .def(init<const AcGePoint2d&, const AcGeVector2d&>())
-        .def(init<const AcGePoint2d&, const AcGePoint2d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint2d&, const AcGePoint2d&>(DS.CTOR(ctor, 12278)))
         .def("set", &PyGeLineSeg2d::set1)
         .def("set", &PyGeLineSeg2d::set2)
         .def("set", &PyGeLineSeg2d::set3)
@@ -314,27 +314,27 @@ PyGeLineSeg2d::PyGeLineSeg2d(const AcGePoint2d& pnt, const AcGeVector2d& vec)
 {
 }
 
-void PyGeLineSeg2d::set1(const AcGePoint2d& pnt, const AcGeVector2d& vec)
+void PyGeLineSeg2d::set1(const AcGePoint2d& pnt, const AcGeVector2d& vec) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt, vec);
 #endif
 }
 
-void PyGeLineSeg2d::set2(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2)
+void PyGeLineSeg2d::set2(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt1, pnt2);
 #endif
 }
 
-void PyGeLineSeg2d::set3(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2)
+void PyGeLineSeg2d::set3(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     double param1, param2;
@@ -345,9 +345,9 @@ void PyGeLineSeg2d::set3(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2)
 #endif
 }
 
-void PyGeLineSeg2d::set4(const PyGeCurve2d& curve, const AcGePoint2d& point)
+void PyGeLineSeg2d::set4(const PyGeCurve2d& curve, const AcGePoint2d& point) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     double param1;
@@ -440,7 +440,7 @@ void makePyGeRay2dWrapper()
     class_<PyGeRay2d, bases<PyGeLinearEnt2d>>("Ray2d")
         .def(init<>())
         .def(init<const AcGePoint2d&, const AcGeVector2d&>())
-        .def(init<const AcGePoint2d&, const AcGePoint2d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint2d&, const AcGePoint2d&>(DS.CTOR(ctor, 12667)))
         .def("set", &PyGeRay2d::set1)
         .def("set", &PyGeRay2d::set2, DS.OVRL(setOverloads))
         .def("cast", &PyGeRay2d::cast, DS.SARGS({ "otherObject: PyGe.Entity2d" })).staticmethod("cast")
@@ -474,18 +474,18 @@ PyGeRay2d::PyGeRay2d(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2)
 {
 }
 
-void PyGeRay2d::set1(const AcGePoint2d& pnt, const AcGeVector2d& vec)
+void PyGeRay2d::set1(const AcGePoint2d& pnt, const AcGeVector2d& vec) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt, vec);
 #endif
 }
 
-void PyGeRay2d::set2(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2)
+void PyGeRay2d::set2(const AcGePoint2d& pnt1, const AcGePoint2d& pnt2) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt1, pnt2);

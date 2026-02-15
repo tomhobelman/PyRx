@@ -18,7 +18,7 @@ static CString formatFileNameforCommandGroup(const TCHAR* modulename)
     CString _modulename = _T("PY_");
     _modulename.Append(modulename);
     _modulename.Replace(' ', '_');
-    _modulename.MakeUpper();
+    towupper(_modulename);
     return _modulename;
 }
 
@@ -27,7 +27,7 @@ static AcString moduleNameFromPath(const std::filesystem::path& path)
     std::filesystem::path tmp = path;
     tmp.replace_extension();
     AcString val = tmp.filename().c_str();
-    val.makeUpper();
+    towupper(val);
     return val;
 }
 
@@ -41,20 +41,39 @@ static int getFileDia()
 
 bool showNavFileDialog(PyModulePath& path)
 {
+    static wxString lastPath;
     if (getFileDia() == 1)
     {
-        struct resbuf* pResBuf = nullptr;
-        int ret = acedGetFileNavDialog(_T("Select Python File"), nullptr, _T("py;pyc"), _T("Browse Python File"), 0, &pResBuf);
-        if (ret != RTNORM || pResBuf == nullptr)
+        CAcModuleResourceOverride resourceOverride;
+
+        wxFileDialog OpenDialog(
+            nullptr,
+            _T("Select Python File"), lastPath, wxEmptyString,
+            _T("Python Files (*.py;*.pyc)|*.py;*.pyc"),
+            wxFD_OPEN|wxFD_FILE_MUST_EXIST, wxDefaultPosition);
+
+        switch (OpenDialog.ShowModal())
         {
-            acutPrintf(_T("\nFailed to read file: "));
-            return false;
+            case wxID_OK:
+            {
+                std::filesystem::path _path = (const TCHAR*)OpenDialog.GetPath();
+                path.fullPath = _path;
+                path.moduleName = moduleNameFromPath(_path);
+                path.modulePath = _path.remove_filename();
+                lastPath = path.modulePath.c_str();
+                return true;
+            }
+            case wxID_CANCEL:
+            {
+                acutPrintf(_T("\nCanceled: "));
+                return false;
+            }
+            default:
+            {
+                acutPrintf(_T("\nFailed to open file: "));
+                return false;
+            }
         }
-        std::filesystem::path _path{ pResBuf->resval.rstring };
-        path.fullPath = _path;
-        path.moduleName = moduleNameFromPath(_path);
-        path.modulePath = _path.remove_filename();
-        acutRelRb(pResBuf);
     }
     else
     {
@@ -65,8 +84,22 @@ bool showNavFileDialog(PyModulePath& path)
         path.fullPath = outstr.buf;
         path.moduleName = moduleNameFromPath(_path);
         path.modulePath = _path.remove_filename();
+        return true;
     }
-    return true;
+    return false;
+}
+
+boost::python::object PyUsingDecorator()
+{
+    struct UsingObject
+    {
+        static void usingfunc(const boost::python::object& _pyfunc)
+        {
+            PyAutoLockGIL lock;
+            boost::python::call<void>(_pyfunc.ptr());
+        }
+    };
+    return boost::python::make_function(UsingObject::usingfunc);
 }
 
 boost::python::object PyCommandDecorator1(int flags /*= kMODAL*/)
@@ -96,7 +129,7 @@ boost::python::object PyCommandDecorator2(const std::string& name, int flags)
                     return _pyfunc;
                 m_cmdname = PyUnicode_AsWideCharString(funcName.get(), nullptr);
             }
-            m_cmdname.makeUpper();
+            towupper(m_cmdname);
             PyObjectPtr moduleName(PyObject_GetAttrString(_pyfunc.ptr(), "__module__"));
             if (moduleName == nullptr)
                 return _pyfunc;
@@ -148,7 +181,7 @@ boost::python::object PyLispFuncDecorator2(const std::string& name)
                     return _pyfunc;
                 m_lspname = PyUnicode_AsWideCharString(funcName.get(), nullptr);
             }
-            m_lspname.makeUpper();
+            towupper(m_lspname);
             PyObjectPtr moduleName(PyObject_GetAttrString(_pyfunc.ptr(), "__module__"));
             if (moduleName == nullptr)
                 return _pyfunc;
@@ -171,7 +204,7 @@ void regcommand(const std::string& fullpath, const std::string& modulename, cons
 {
     AcString m_name = utf8_to_wstr(name).c_str();
     std::filesystem::path modulePath = utf8_to_wstr(fullpath).c_str();
-    m_name.makeUpper();
+    towupper(m_name);
     auto& rxApp = PyRxApp::instance();
     if (rxApp.commands.contains(m_name))
         rxApp.commands.at(m_name) = func.ptr();
@@ -188,7 +221,7 @@ void regcommand(const std::string& fullpath, const std::string& modulename, cons
 void removecommand(const std::string& modulename, const std::string& name)
 {
     AcString m_name = utf8_to_wstr(name).c_str();
-    m_name.makeUpper();
+    towupper(m_name);
     auto& rxApp = PyRxApp::instance();
     if (rxApp.commands.contains(m_name))
         rxApp.commands.erase(m_name);
@@ -266,10 +299,10 @@ static void loadCommands(PyRxMethod& method, const PyModulePath& path)
     PyObject* pKey = nullptr, * pValue = nullptr;
     for (Py_ssize_t i = 0; PyDict_Next(method.mdict, &i, &pKey, &pValue);)
     {
-        const AcString key = utf8_to_wstr(PyUnicode_AsUTF8(pKey)).c_str();
+        const AcString key = PyUnicode_AsAcString(pKey);
         if (key.find(PyCommandPrefix) != -1)
         {
-            const AcString commandName = key.substr(PyCommandPrefix.length(), key.length() - 1).makeUpper();
+            const AcString commandName = towupper(key.substr(PyCommandPrefix.length(), key.length() - 1));
             if (PyFunction_Check(pValue))
             {
                 const int commandFlags = PyCmd::getCommandFlags(pValue);
@@ -291,10 +324,10 @@ static void reloadCommands(PyRxMethod& method, const PyModulePath& path)
     PyObject* pKey = nullptr, * pValue = nullptr;
     for (Py_ssize_t i = 0; PyDict_Next(method.mdict, &i, &pKey, &pValue);)
     {
-        AcString key = utf8_to_wstr(PyUnicode_AsUTF8(pKey)).c_str();
+        const AcString key = PyUnicode_AsAcString(pKey);
         if (key.find(PyCommandPrefix) != -1)
         {
-            const AcString commandName = key.substr(PyCommandPrefix.length(), key.length() - 1).makeUpper();
+            const AcString commandName = towupper(key.substr(PyCommandPrefix.length(), key.length() - 1));
             if (PyFunction_Check(pValue))
             {
                 if (rxApp.commands.contains(commandName))
@@ -321,19 +354,21 @@ bool loadPythonModule(const PyModulePath& path, bool silent)
 {
     std::error_code ec;
     auto& rxApp = PyRxApp::instance();
-    std::unique_ptr<AutoCWD> pAutoCWD(new AutoCWD(path.modulePath));
+    AutoCWD pAutoCWD(path.modulePath);
 
     if (rxApp.funcNameMap.contains(path.moduleName))
     {
         if (!silent)
             acutPrintf(_T("\nModule %ls Already loaded, use pyreload"), (const TCHAR*)path.moduleName);
-        return true;
+        return false;
     }
     PyRxMethod method; // wants the file name, no extension, in the same case as existing
-    PyRxApp::appendSearchPath(path.modulePath,true);
+    PyRxApp::appendSearchPath(path.modulePath, true);
     method.modname.reset(wstr_to_py(path.fullPath.filename().replace_extension()));
     method.mod.reset(PyImport_Import(method.modname.get()));
-    PyRxApp::popFrontSearchPath(path.modulePath);
+    if (PyErr_Occurred() != NULL)
+        acutPrintf(_T("\nPyErr %ls: "), PyRxApp::the_error().c_str());
+    PyRxApp::popFrontSearchPath(path.modulePath);//(#294) 
 
     if (method.mod != nullptr)
     {
@@ -358,11 +393,6 @@ bool loadPythonModule(const PyModulePath& path, bool silent)
     }
     else
     {
-        if (PyErr_Occurred() != NULL)
-        {
-            acutPrintf(_T("\nPyErr %ls: "), PyRxApp::the_error().c_str());
-            return false;
-        }
         if (!silent)
             acutPrintf(_T("\nFailed to import %ls module: "), (const TCHAR*)path.moduleName);
         rxApp.funcNameMap.erase(path.moduleName);
@@ -373,12 +403,14 @@ bool loadPythonModule(const PyModulePath& path, bool silent)
 bool reloadPythonModule(const PyModulePath& path, bool silent)
 {
     auto& rxApp = PyRxApp::instance();
-    std::unique_ptr<AutoCWD> pAutoCWD(new AutoCWD(path.modulePath));
+    AutoCWD pAutoCWD(path.modulePath);
     if (rxApp.funcNameMap.contains(path.moduleName))
     {
         callOnPyUnloadAppBeforeReloading(path.moduleName);
         PyRxMethod& method = rxApp.funcNameMap.at(path.moduleName);
         method.mod.reset(PyImport_ReloadModule(method.mod.get()));
+        if (PyErr_Occurred() != NULL)
+            acutPrintf(_T("\nPyErr %ls: "), PyRxApp::the_error().c_str());
         if (method.mod != nullptr)
         {
             method.mdict = PyModule_GetDict(method.mod.get());
@@ -395,11 +427,6 @@ bool reloadPythonModule(const PyModulePath& path, bool silent)
         else
         {
             rxApp.funcNameMap.erase(path.moduleName);
-            if (PyErr_Occurred() != NULL)
-            {
-                acutPrintf(_T("\nPyErr %ls: "), PyRxApp::the_error().c_str());
-                return false;
-            }
             if (!silent)
                 acutPrintf(_T("\nFailed to import %ls module: "), (const TCHAR*)path.moduleName);
             return false;
@@ -412,7 +439,7 @@ bool reloadPythonModule(const PyModulePath& path, bool silent)
     }
 }
 
-bool ads_loadPythonModule(const std::filesystem::path& pypath)
+bool ads_loadPythonModule(const std::filesystem::path& pypath, bool silent)
 {
     try
     {
@@ -422,7 +449,7 @@ bool ads_loadPythonModule(const std::filesystem::path& pypath)
         modulePath.fullPath = pypath;
         modulePath.moduleName = moduleNameFromPath(_path);
         modulePath.modulePath = _path.remove_filename();
-        return loadPythonModule(modulePath, true);
+        return loadPythonModule(modulePath, silent);
     }
     catch (...)
     {
@@ -431,7 +458,7 @@ bool ads_loadPythonModule(const std::filesystem::path& pypath)
     return false;
 }
 
-bool ads_reloadPythonModule(const std::filesystem::path& pypath)
+bool ads_reloadPythonModule(const std::filesystem::path& pypath, bool silent)
 {
     try
     {
@@ -441,7 +468,7 @@ bool ads_reloadPythonModule(const std::filesystem::path& pypath)
         modulePath.fullPath = pypath;
         modulePath.moduleName = moduleNameFromPath(_path);
         modulePath.modulePath = _path.remove_filename();
-        return reloadPythonModule(modulePath, true);
+        return reloadPythonModule(modulePath, silent);
     }
     catch (...)
     {

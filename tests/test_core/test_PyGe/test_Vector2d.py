@@ -1,12 +1,18 @@
 from __future__ import annotations
-from pyrx import Ge
+
 import math
+
+from pyrx import Ge
 
 
 class TestVector2d:
     def test_repr(self):
         val = Ge.Vector2d(1.2, 2.3)
         assert val.__repr__() == "PyGe.Vector2d(1.20000000000000,2.30000000000000)"
+
+    def test_vector2d_len(self):
+        pO = Ge.Vector2d(1, 1)
+        assert len(pO) == 2
 
     def test_vector2d_mul2(self):
         v = Ge.Vector2d(1, 1)
@@ -43,7 +49,7 @@ class TestVector2d:
         ans = v1.isParallelTo(v2, Ge.Tol.current())
         assert ans == True
 
-    def test_vector2d_isParallelTo(self):
+    def test_vector2d_isPerpendicularTo(self):
         v1 = Ge.Vector2d.kXAxis
         v2 = Ge.Vector2d.kYAxis
         ans = v1.isPerpendicularTo(v2)

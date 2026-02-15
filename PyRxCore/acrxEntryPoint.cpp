@@ -31,9 +31,14 @@
 #include "PyRxModuleLoader.h"
 #include "PyApApplication.h"
 #include "PyRxAppSettings.h"
+#include "PyAcRx.h"
+#include "acedCmdNF.h"
+#include "AcDbAssocAction.h"
 
 //for testing
-#include "PyAcadApplication.h"
+#ifdef PYRXDEBUG
+#include "PyRxOverrulableEntity.h"
+#endif
 
 //-----------------------------------------------------------------------------
 #define szRDS _RXST("")
@@ -45,6 +50,7 @@
 #else
 #define ADSPREFIX(x) ads_ ## x
 #endif
+
 
 //-----------------------------------------------------------------------------
 //----- ObjectARX EntryPoint
@@ -62,6 +68,7 @@ public:
         loadDBXModules();
         acrxLockApplication(pkt);
         PyRxApp::instance().appPkt = pkt;
+        PyRxApp::instance().MAIN_THREAD_ID = std::this_thread::get_id();
         initPyRx();
         acedRegisterOnIdleWinMsg(PyRxOnIdleMsgFn);
         acedRegisterWatchWinMsg(PyWatchWinMsgFn);
@@ -72,6 +79,8 @@ public:
     {
         AcRx::AppRetCode retCode = AcRxArxApp::On_kUnloadAppMsg(pkt);
         acdbModelerEnd();
+        acedRemoveOnIdleWinMsg(PyRxOnIdleMsgFn);
+        acedRemoveWatchWinMsg(PyWatchWinMsgFn);
         try
         {
             if (PyRxApp::instance().funcNameMap.size() != 0)
@@ -86,6 +95,7 @@ public:
                     }
                 }
             }
+            PyRxApp::instance().uninit();
         }
         catch (...) { /*@exit*/ }
         return (retCode);
@@ -110,7 +120,6 @@ public:
             }
             PyRxApp::instance().lispService.On_kLoadDwgMsg();
             internalLoad_host_init_py();
-            internalLoad_onloadpy();
             handleCmdArgOnLoadInDocContext();
         }
         catch (...) { acutPrintf(_T("\nException %ls: "), __FUNCTIONW__); }
@@ -150,9 +159,9 @@ public:
         const auto acismobj = std::format(_T("acismobj{}.dbx"), version);
         const auto acMPolygonObj = std::format(_T("AcMPolygonObj{}.dbx"), version);
         if (const auto result = acrxLoadModule(acismobj.c_str(), false, false); !result)
-            acutPrintf(_T("Faled to load %ls: "), acismobj.c_str());
+            acutPrintf(_T("Failed to load %ls: "), acismobj.c_str());
         if (const auto result = acrxLoadModule(acMPolygonObj.c_str(), false, false); !result)
-            acutPrintf(_T("Faled to load %ls: "), acismobj.c_str());
+            acutPrintf(_T("Failed to load %ls: "), acMPolygonObj.c_str());
 #endif
     }
 
@@ -163,7 +172,7 @@ public:
         {
             printPyRxBuldVersion();
             if (!PyRxApp::instance().init())
-                acutPrintf(_T("\nPyInit Failed"));
+                acedAlert(_T("\nPyInit Failed"));
             doneOnce = true;
         }
     }
@@ -179,6 +188,7 @@ public:
 
     static void PyRxOnIdleMsgFn()
     {
+        flushPromptBuffer();
         PyApApplication::PyOnIdleMsgFn();
     }
 
@@ -198,8 +208,7 @@ public:
             {
                 if (_wcsicmp(iter->c_str(), _T("/ld")) == 0)
                 {
-                    auto nx = std::next(iter, 1);
-                    if (nx != v.end())
+                    if (auto nx = std::next(iter, 1); nx != v.end())
                     {
                         if (AcString foundPath; acdbHostApplicationServices()->findFile(foundPath, nx->c_str()) == eOk)
                         {
@@ -210,23 +219,6 @@ public:
                     }
                 }
             }
-        }
-    }
-
-    static void internalLoad_onloadpy()
-    {
-        try
-        {
-            static bool loaded = false;
-            if (!loaded)
-            {
-                loaded = true;
-                PyRxApp::instance().load_pyrx_onload();
-            }
-        }
-        catch (...)
-        {
-            acutPrintf(_T("\nException %ls: "), __FUNCTIONW__);
         }
     }
 
@@ -297,6 +289,13 @@ public:
         printPyRxBuldVersion();
     }
 
+    static void AcRxPyApp_pyrxdoc(void)
+    {
+        printPyRxBuldVersion();
+        AutoCmdEcho cmdEcho;
+        acedCommandS(RTSTR, _T("_BROWSER"), RTSTR, L"https://github.com/CEXT-Dan/PyRx/blob/main/Doc/README.MD", RTNONE);
+    }
+
     static void AcRxPyApp_pycmdprompt(void)
     {
         try
@@ -331,8 +330,7 @@ public:
         if (pArgs != nullptr && pArgs->restype == RTSTR)
         {
             std::filesystem::path pypath = pArgs->resval.rstring;
-            bool flag = ads_loadPythonModule(pypath);
-            flag ? acedRetT() : acedRetNil();
+            ads_loadPythonModule(pypath) ? acedRetT() : acedRetNil();
         }
         return RSRSLT;
     }
@@ -345,8 +343,7 @@ public:
         if (pArgs != nullptr && pArgs->restype == RTSTR)
         {
             std::filesystem::path pypath = pArgs->resval.rstring;
-            bool flag = ads_reloadPythonModule(pypath);
-            flag ? acedRetT() : acedRetNil();
+            ads_reloadPythonModule(pypath) ? acedRetT() : acedRetNil();
         }
         return RSRSLT;
     }
@@ -389,60 +386,81 @@ public:
         return RSRSLT;
     }
 
-#ifdef PYPERFPROFILER
-    static void AcRxPyApp_pyprofiler(void)
-    {
-    }
-    static void AcRxPyApp_pyprofilerend(void)
-    {
-        PyRxApp::instance().perfTimerEx.end();
-    }
-    static void AcRxPyApp_pyprofilerreset(void)
-    {
-        PyRxApp::instance().perfTimerEx.reset();
-    }
-#endif
-
 #ifdef PYRXDEBUG
     //-- utilities 
-    static auto entsel()
+    static AcDbObjectId getblockModelSpaceId(AcDbDatabase* pDb)
+    {
+        AcDbObjectId recid;
+        AcDbBlockTablePointer bt(pDb->blockTableId());
+        bt->getIdAt(L"*MODEL_SPACE", recid);
+        return recid;
+    }
+
+    static auto entsel(const TCHAR* msg = L"\nSelect Entity: ", const AcRxClass* desc = AcDbEntity::desc())
+        -> std::tuple<Acad::PromptStatus, AcDbObjectId, AcGePoint3d>
     {
         AcDbObjectId id;
         AcGePoint3d pnt;
         ads_name name = { 0L };
-        int res = acedEntSel(L"\nSelect it: ", name, asDblArray(pnt));
+        int res = acedEntSel(msg, name, asDblArray(pnt));
         if (auto es = acdbGetObjectId(id, name); es != eOk)
             return std::make_tuple(Acad::PromptStatus::eError, id, pnt);
+        if (!id.objectClass()->isDerivedFrom(desc))
+            return std::make_tuple(Acad::PromptStatus::eRejected, id, pnt);
         return std::make_tuple(Acad::PromptStatus(res), id, pnt);
     }
 
-    static auto ssget()
+    static Acad::ErrorStatus acedGetCurrentSelectionSet(ads_name ssname, AcDbObjectIdArray& ids)
+    {
+        AcDbObjectId id;
+        Adesk::Int32 nsize = 0;
+        acedSSLength(ssname, &nsize);
+        ids.setPhysicalLength(nsize);
+        for (size_t i = 0; i < nsize; i++)
+        {
+            ads_name ename = { 0 };
+            if (acedSSName(ssname, i, ename) == RTNORM) [[likely]]
+            {
+                if (acdbGetObjectId(id, ename) == eOk) [[likely]]
+                    ids.append(id);
+            }
+        }
+        return eOk;
+    }
+
+    static auto ssget(resbuf* pFilter = nullptr) -> std::tuple<Acad::PromptStatus, AcDbObjectIdArray>
     {
         AcDbObjectIdArray ids;
         ads_name ssname = { 0L };
-        AcResBufPtr pfilter/*(acutBuildList(RTDXF0, _T("LWPOLYLINE"), NULL))*/;
-        int res = acedSSGet(NULL, NULL, NULL, pfilter.get(), ssname);
-        if (res != RTNORM)
+        int res = acedSSGet(NULL, NULL, NULL, pFilter, ssname);
+        if (res != RTNORM || acedGetCurrentSelectionSet(ssname, ids) != eOk)
             return std::make_tuple(Acad::PromptStatus::eError, ids);
-        if (acedGetCurrentSelectionSet(ids) != eOk)
-            return std::make_tuple(Acad::PromptStatus::eError, ids);
-        return std::make_tuple(Acad::PromptStatus(res), ids);
+        acedSSFree(ssname);
+        return std::make_tuple(Acad::PromptStatus(res), std::move(ids));
     }
 
-    static auto postToModelSpace(AcDbEntity& pEnt)
+    static auto getPoint() -> std::tuple<Acad::PromptStatus, AcGePoint3d>
     {
+        AcGePoint3d pnt;
+        int res = acedGetPoint(NULL, _T("\nGet Point: "), asDblArray(pnt));;
+        return std::make_tuple(Acad::PromptStatus(res), pnt);
+    }
+
+    static auto postToModelSpace(AcDbEntity* pEnt)
+    {
+        if (pEnt == nullptr)
+            return std::make_tuple(Acad::eNullEntityPointer, AcDbObjectId::kNull);
         AcDbObjectId id;
         AcDbDatabase* pDb = acdbCurDwg();
-        AcDbBlockTableRecordPointer model(acdbSymUtil()->blockModelSpaceId(pDb), AcDb::OpenMode::kForWrite);
-        Acad::ErrorStatus es = model->appendAcDbEntity(id, &pEnt);
+        AcDbBlockTableRecordPointer model(getblockModelSpaceId(pDb), AcDb::OpenMode::kForWrite);
+        Acad::ErrorStatus es = model->appendAcDbEntity(id, pEnt);
         return std::make_tuple(es, id);
     }
 
-    static void AcRxPyApp_idoit(void)
+    static void AcRxPyApp_idoit1(void)
     {
-        PyAcadApplication::runTest();
+        acutPrintf(L"HI");
     }
-
 #endif
 };
 
@@ -452,6 +470,7 @@ public:
 IMPLEMENT_ARX_ENTRYPOINT(AcRxPyApp)
 ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyload, pyload, ACRX_CMD_SESSION, NULL)
 ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyreload, pyreload, ACRX_CMD_SESSION, NULL)
+ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyrxdoc, pyrxdoc, ACRX_CMD_TRANSPARENT, NULL)
 ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyrxver, pyrxver, ACRX_CMD_TRANSPARENT, NULL)
 ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pycmdprompt, pycmdprompt, ACRX_CMD_TRANSPARENT, NULL)
 // lisp
@@ -461,12 +480,7 @@ ACED_ADSSYMBOL_ENTRY_AUTO(AcRxPyApp, adspyloaded, false)
 //test
 ACED_ADSSYMBOL_ENTRY_AUTO(AcRxPyApp, pyrxlispsstest, false)
 ACED_ADSSYMBOL_ENTRY_AUTO(AcRxPyApp, pyrxlisprttest, false)
-#ifdef PYPERFPROFILER
-ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyprofiler, pyprofiler, ACRX_CMD_MODAL, NULL)
-ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyprofilerend, pyprofilerend, ACRX_CMD_MODAL, NULL)
-ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _pyprofilerreset, pyprofilerreset, ACRX_CMD_MODAL, NULL)
-#endif
 #ifdef PYRXDEBUG
-ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _idoit, idoit, ACRX_CMD_MODAL, NULL)
+ACED_ARXCOMMAND_ENTRY_AUTO(AcRxPyApp, AcRxPyApp, _idoit1, idoit1, ACRX_CMD_MODAL, NULL)
 #endif //PYRXDEBUG
 #pragma warning( pop )

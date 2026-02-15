@@ -18,11 +18,11 @@ void makePyDbObjectWrapper()
         "- field: PyDb.Field\n"
         "- propName: str, field: PyDb.Field\n";
 
-    PyDocString DS("PyDb.DbObject");
+    PyDocString DS("DbObject");
     class_<PyDbObject, bases<PyGiDrawable>>("DbObject", boost::python::no_init)
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" }, 7021)))
         .def("addContext", &PyDbObject::addContext, DS.ARGS({ "obj : PyDb.ObjectContext" }))
         .def("removeContext", &PyDbObject::removeContext, DS.ARGS({ "obj : PyDb.ObjectContext" }))
         .def("isAnnotative", &PyDbObject::isAnnotative, DS.ARGS())
@@ -32,10 +32,6 @@ void makePyDbObjectWrapper()
         .def("setOwnerId", &PyDbObject::setOwnerId, DS.ARGS({ "owner: PyDb.ObjectId" }, 7232))
         .def("database", &PyDbObject::database, DS.ARGS(7160))
         .def("databaseToUse", &PyDbObject::databaseToUse, DS.ARGS(7161))
-#ifdef NEVER
-        .def("intendedDatabase", &PyDbObject::intendedDatabase)
-        .def("setIntendedDatabase", &PyDbObject::setIntendedDatabase)
-#endif
         .def("createExtensionDictionary", &PyDbObject::createExtensionDictionary, DS.ARGS(7159))
         .def("extensionDictionary", &PyDbObject::extensionDictionary, DS.ARGS(7178))
         .def("releaseExtensionDictionary", &PyDbObject::releaseExtensionDictionary, DS.ARGS(7223))
@@ -48,11 +44,11 @@ void makePyDbObjectWrapper()
         .def("close", &PyDbObject::close, DS.ARGS(7155))
         .def("cancel", &PyDbObject::cancel, DS.ARGS(7152))
         .def("handOverTo", &PyDbObject::handOverTo, DS.ARGS({ "newObject: PyDb.DbObject", "keepXData: bool", "keepExtDict: bool" }, 7187))
-        .def("swapIdWith", &PyDbObject::swapIdWith, DS.ARGS({ "otherId: PyDb.DbObject", "swapXdata: bool", "swapExtDict: bool" }, 7247))
+        .def("swapIdWith", &PyDbObject::swapIdWith, DS.ARGS({ "otherId: PyDb.ObjectId", "swapXdata: bool", "swapExtDict: bool" }, 7247))
         .def("hasXData", &PyDbObject::hasXData, DS.ARGS({ "appname: str" }))
         .def("setXData", &PyDbObject::setXData, DS.ARGS({ "xdata: list[tuple[int,Any]]" }, 7233))
         .def("xData", &PyDbObject::xData1)
-        .def("xData", &PyDbObject::xData2, DS.ARGS({ "appname: str = None" }, 7254))
+        .def("xData", &PyDbObject::xData2, DS.ARGS({ "appname: str = ..." }, 7254))
         .def("xDataTransformBy", &PyDbObject::xDataTransformBy, DS.ARGS({ "xform: PyGe.Matrix3d" }, 7255))
         .def("isEraseStatusToggled", &PyDbObject::isEraseStatusToggled, DS.ARGS(7197))
         .def("isErased", &PyDbObject::isErased, DS.ARGS(7196))
@@ -192,18 +188,6 @@ PyDbDatabase PyDbObject::databaseToUse() const
     return PyDbDatabase(imp->database());
 }
 
-#ifdef NEVER //AutoCAD bug
-PyDbDatabase PyDbObject::intendedDatabase()
-{
-    return PyDbDatabase(impObj()->intendedDatabase());
-}
-
-void PyDbObject::setIntendedDatabase(PyDbDatabase& pDb)
-{
-    return PyThrowBadEs(impObj()->setIntendedDatabase(pDb.impObj()));
-}
-#endif
-
 void PyDbObject::createExtensionDictionary() const
 {
     return PyThrowBadEs(impObj()->createExtensionDictionary());
@@ -221,7 +205,13 @@ void PyDbObject::releaseExtensionDictionary() const
 
 void PyDbObject::close() const
 {
-    return PyThrowBadEs(impObj()->close());
+    PyThrowBadEs(impObj()->close());
+#if defined(_IRXTARGET140)
+    // Other CADs allow access the pointer after close is called;
+    // this is to prevent PyRxObjectDeleter from crashing when checking 
+    // if the object is DBRO
+    this->forceKeepAlive(true);
+#endif
 }
 
 void PyDbObject::upgradeOpen() const

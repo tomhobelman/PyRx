@@ -22,14 +22,14 @@ class TestDocstringsManager:
         assert row1.value.startswith("This class describes the interface that must be implemented")
 
         row4 = rows[3]
-        assert row4.value == " Returns the name of the tree node.   "  # \xa0 → " "
+        assert row4.value == "Returns the name of the tree node."
 
     @pytest.mark.parametrize(
         "key, expected",
         (
-            pytest.param(4, " Returns the name of the tree node.   ", id="001"),
+            pytest.param(4, "Returns the name of the tree node.", id="001"),
             pytest.param(
-                7, " Returns the graphic identifiers included in this tree node.   ", id="002"
+                7, "Returns the graphic identifiers included in this tree node.", id="002"
             ),
             pytest.param(20000, None, id="003"),
         ),
@@ -51,7 +51,7 @@ class TestReturnTypesManager:
         assert row1.module == "PyEd"
         assert row1.cls == "Editor"
         assert row1.func == "getKword"
-        assert row1.value == "tuple[int, str]"
+        assert row1.value == "tuple[PyEd.PromptStatus, str]"
 
         row22 = rows[21]
         assert row22.module is None
@@ -69,14 +69,14 @@ class TestReturnTypesManager:
         dict_ = return_types.rows_dict
         assert dict_ is return_types.rows_dict
 
-        assert dict_[("PyEd", "Editor", "getKword")] == "tuple[int, str]"
+        assert dict_[("PyEd", "Editor", "getKword")] == "tuple[PyEd.PromptStatus, str]"
         assert dict_[("PyDb", None, "explode")] == "list[PyDb.Entity]"
         assert dict_[(None, None, "objectIds")] == "list[PyDb.ObjectId]"
 
     @pytest.mark.parametrize(
         "module, cls, func, expected",
         (
-            pytest.param("PyEd", "Editor", "getKword", "tuple[int, str]", id="001"),
+            pytest.param("PyEd", "Editor", "getKword", "tuple[PyEd.PromptStatus, str]", id="001"),
             pytest.param("PyDb", "Entity", "explode", "list[PyDb.Entity]", id="002"),
             pytest.param("PyDb", "BlockTableRecord", "objectIds", "list[PyDb.ObjectId]", id="003"),
             pytest.param("PyDb", "BlockTableRecord", "unknown_func", None, id="004"),

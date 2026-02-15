@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import pytest
-from tests import HOST
-from pyrx import Ap, Ax
+
+from pyrx import Ap
 
 
+@pytest.mark.known_failure_IRX
 class TestAxSummaryInfo:
 
     def setup_class(self):
@@ -79,7 +81,7 @@ class TestAxSummaryInfo:
         count = axInfo.numCustomInfo()
         axInfo.removeCustomByIndex(4)
         assert axInfo.numCustomInfo() == count - 1
-        
+
     def test_removeCustomByKey(self):
         axInfo = self.axDoc.summaryInfo()
         count = axInfo.numCustomInfo()

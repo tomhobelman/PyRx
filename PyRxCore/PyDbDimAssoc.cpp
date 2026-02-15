@@ -8,6 +8,12 @@ using namespace boost::python;
 
 void makePyDbDimAssocWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     constexpr const std::string_view assocFlagOverload = "Overloads:\n"
         "- None: Any\n"
         "- ptType: int\n";
@@ -16,12 +22,12 @@ void makePyDbDimAssocWrapper()
         "- flag: int\n"
         "- flag: int, val: bool\n";
 
-    PyDocString DS("PyDb.DimAssoc");
+    PyDocString DS("DimAssoc");
     class_<PyDbDimAssoc, bases<PyDbObject>>("DimAssoc")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 3811)))
         .def("dimObjId", &PyDbDimAssoc::dimObjId, DS.ARGS(3817))
         .def("setDimObjId", &PyDbDimAssoc::setDimObjId, DS.ARGS({ "id : PyDb.ObjectId" }, 3836))
         .def("setAssocFlag", &PyDbDimAssoc::setAssocFlag1)
@@ -67,7 +73,6 @@ void makePyDbDimAssocWrapper()
         ;
 }
 
-
 PyDbDimAssoc::PyDbDimAssoc()
     : PyDbDimAssoc(new AcDbDimAssoc(), true)
 {
@@ -98,17 +103,17 @@ PyDbObjectId PyDbDimAssoc::dimObjId() const
     return PyDbObjectId(impObj()->dimObjId());
 }
 
-void PyDbDimAssoc::setDimObjId(const PyDbObjectId& dimId)
+void PyDbDimAssoc::setDimObjId(const PyDbObjectId& dimId) const
 {
     PyThrowBadEs(impObj()->setDimObjId(dimId.m_id));
 }
 
-void PyDbDimAssoc::setAssocFlag1(int ptType, bool value)
+void PyDbDimAssoc::setAssocFlag1(int ptType, bool value) const
 {
     PyThrowBadEs(impObj()->setAssocFlag(ptType, value));
 }
 
-void PyDbDimAssoc::setAssocFlag2(int assocFlg)
+void PyDbDimAssoc::setAssocFlag2(int assocFlg) const
 {
     impObj()->setAssocFlag(assocFlg);
 }
@@ -118,12 +123,12 @@ bool PyDbDimAssoc::assocFlag2(int ptType) const
     return impObj()->assocFlag(ptType);
 }
 
-int PyDbDimAssoc::assocFlag1(void)
+int PyDbDimAssoc::assocFlag1(void) const
 {
     return impObj()->assocFlag();
 }
 
-void PyDbDimAssoc::setPointRef(int ptType, PyDbPointRef& ptRef)
+void PyDbDimAssoc::setPointRef(int ptType, PyDbPointRef& ptRef) const
 {
     PyThrowBadEs(impObj()->setPointRef(ptType, ptRef.impObj()));
     ptRef.forceKeepAlive(true);
@@ -136,7 +141,7 @@ PyDbPointRef PyDbDimAssoc::pointRef(int ptType) const
 
 PyDbOsnapPointRef PyDbDimAssoc::osnapPointRef(int ptType) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     const AcDbPointRef* ref = impObj()->pointRef(ptType);
@@ -148,9 +153,9 @@ PyDbOsnapPointRef PyDbDimAssoc::osnapPointRef(int ptType) const
 #endif
 }
 
-void PyDbDimAssoc::setRotatedDimType(AcDbDimAssoc::RotatedDimType dimType)
+void PyDbDimAssoc::setRotatedDimType(AcDbDimAssoc::RotatedDimType dimType) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->setRotatedDimType(dimType));
@@ -159,54 +164,54 @@ void PyDbDimAssoc::setRotatedDimType(AcDbDimAssoc::RotatedDimType dimType)
 
 AcDbDimAssoc::RotatedDimType PyDbDimAssoc::rotatedDimType() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->rotatedDimType();
 #endif
 }
 
-void PyDbDimAssoc::addToPointRefReactor()
+void PyDbDimAssoc::addToPointRefReactor() const
 {
     PyThrowBadEs(impObj()->addToPointRefReactor());
 }
 
-void PyDbDimAssoc::addToDimensionReactor1()
+void PyDbDimAssoc::addToDimensionReactor1() const
 {
     PyThrowBadEs(impObj()->addToDimensionReactor());
 }
 
-void PyDbDimAssoc::addToDimensionReactor2(bool isAdd)
+void PyDbDimAssoc::addToDimensionReactor2(bool isAdd) const
 {
     PyThrowBadEs(impObj()->addToDimensionReactor(isAdd));
 }
 
-void PyDbDimAssoc::removePointRef(int ptType)
+void PyDbDimAssoc::removePointRef(int ptType) const
 {
     PyThrowBadEs(impObj()->removePointRef(ptType));
 }
 
-void PyDbDimAssoc::updateDimension1()
+void PyDbDimAssoc::updateDimension1() const
 {
     PyThrowBadEs(impObj()->updateDimension());
 }
 
-void PyDbDimAssoc::updateDimension2(bool update)
+void PyDbDimAssoc::updateDimension2(bool update) const
 {
     PyThrowBadEs(impObj()->updateDimension(update));
 }
 
-void PyDbDimAssoc::updateDimension3(bool update, bool skipReactors)
+void PyDbDimAssoc::updateDimension3(bool update, bool skipReactors) const
 {
     PyThrowBadEs(impObj()->updateDimension(update, skipReactors));
 }
 
-void PyDbDimAssoc::removeAssociativity1()
+void PyDbDimAssoc::removeAssociativity1() const
 {
     PyThrowBadEs(impObj()->removeAssociativity());
 }
 
-void PyDbDimAssoc::removeAssociativity2(bool force)
+void PyDbDimAssoc::removeAssociativity2(bool force) const
 {
     PyThrowBadEs(impObj()->removeAssociativity(force));
 }
@@ -216,46 +221,46 @@ bool PyDbDimAssoc::isTransSpatial() const
     return impObj()->isTransSpatial();
 }
 
-void PyDbDimAssoc::setTransSpatial(bool value)
+void PyDbDimAssoc::setTransSpatial(bool value) const
 {
     PyThrowBadEs(impObj()->setTransSpatial(value));
 }
 
-void PyDbDimAssoc::startCmdWatcher()
+void PyDbDimAssoc::startCmdWatcher() const
 {
     PyThrowBadEs(impObj()->startCmdWatcher());
 }
 
-void PyDbDimAssoc::startOopsWatcher1()
+void PyDbDimAssoc::startOopsWatcher1() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->startOopsWatcher());
 #endif
 }
 
-void PyDbDimAssoc::startOopsWatcher2(bool bAddAll)
+void PyDbDimAssoc::startOopsWatcher2(bool bAddAll) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->startOopsWatcher(bAddAll));
 #endif
 }
 
-void PyDbDimAssoc::removeOopsWatcher(void)
+void PyDbDimAssoc::removeOopsWatcher(void) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->removeOopsWatcher();
 #endif
 }
 
-void PyDbDimAssoc::restoreAssocFromOopsWatcher(void)
+void PyDbDimAssoc::restoreAssocFromOopsWatcher(void) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->restoreAssocFromOopsWatcher());
@@ -264,21 +269,21 @@ void PyDbDimAssoc::restoreAssocFromOopsWatcher(void)
 
 bool PyDbDimAssoc::hasOopsWatcher(void) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->hasOopsWatcher();
 #endif
 }
 
-PyDbObjectId PyDbDimAssoc::post1(const PyDbObjectId& dimId)
+PyDbObjectId PyDbDimAssoc::post1(const PyDbObjectId& dimId) const
 {
     PyDbObjectId id;
     PyThrowBadEs(impObj()->post(dimId.m_id, id.m_id));
     return id;
 }
 
-PyDbObjectId PyDbDimAssoc::post2(const PyDbObjectId& dimId, bool isActive)
+PyDbObjectId PyDbDimAssoc::post2(const PyDbObjectId& dimId, bool isActive) const
 {
     PyDbObjectId id;
     PyThrowBadEs(impObj()->post(dimId.m_id, id.m_id, isActive));
@@ -297,50 +302,50 @@ bool PyDbDimAssoc::isAllGeomErased() const
     return impObj()->isAllGeomErased();
 }
 
-void PyDbDimAssoc::swapReferences(const PyDbIdMapping& idMap)
+void PyDbDimAssoc::swapReferences(const PyDbIdMapping& idMap) const
 {
     PyThrowBadEs(impObj()->swapReferences(*idMap.impObj()));
 }
 
-void PyDbDimAssoc::updateFillet(const boost::python::list& ids)
+void PyDbDimAssoc::updateFillet(const boost::python::list& ids) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->updateFillet(PyListToObjectIdArray(ids)));
 #endif
 }
 
-void PyDbDimAssoc::updateAssociativity(const boost::python::list& ids)
+void PyDbDimAssoc::updateAssociativity(const boost::python::list& ids) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->updateAssociativity(PyListToObjectIdArray(ids)));
 #endif
 }
 
-void PyDbDimAssoc::updateXrefSubentPath()
+void PyDbDimAssoc::updateXrefSubentPath() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->updateXrefSubentPath());
 #endif
 }
 
-void PyDbDimAssoc::updateSubentPath(PyDbIdMapping& idMap)
+void PyDbDimAssoc::updateSubentPath(PyDbIdMapping& idMap) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->updateSubentPath(*idMap.impObj()));
 #endif
 }
 
-void PyDbDimAssoc::updateDueToMirror(bool wasInMirror)
+void PyDbDimAssoc::updateDueToMirror(bool wasInMirror) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->updateDueToMirror(wasInMirror);

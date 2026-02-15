@@ -7,13 +7,15 @@ from pathlib import Path
 from types import ModuleType
 from typing import Iterable
 
-from pyrx import Ap, Ax, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm
+from pyrx import Ap, Ax, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm, reload
 from pyrx.doc_utils.misc import DocstringsManager, ReturnTypesManager
 from pyrx.doc_utils.pyi_gen import gen_pyi
-from pyrx.doc_utils.rx_meta import PyRxModule, RX_BOOST_TYPES
+from pyrx.doc_utils.rx_meta import RX_BOOST_TYPES, build_py_boost_modules
 
 if "BRX" in Ap.Application.hostAPI():
     from pyrx import Bim, Brx, Cv
+
+reload("pyrx")
 
 
 def PyRxCmd_gen_pyi_brx():
@@ -33,7 +35,7 @@ def PyRxCmd_gen_pyi():
 def _run(all_modules: Iterable[ModuleType], log_filename: str = "gen_pyi.log") -> None:
     logging.basicConfig(filename=log_filename, filemode="w", force=True)
     PYI_DIR = Path(__file__).parent / "pyrx"
-    all_py_rx_modules = [PyRxModule(module) for module in all_modules]
+    all_py_rx_modules = build_py_boost_modules(all_modules)
     docstrings = DocstringsManager.from_json()
     return_types = ReturnTypesManager.from_json()
     for module in all_modules:
@@ -44,14 +46,64 @@ def _run(all_modules: Iterable[ModuleType], log_filename: str = "gen_pyi.log") -
             return_types=return_types,
             boost_types=RX_BOOST_TYPES,
         ).gen()
-        with open(PYI_DIR / f"{module.__name__}.pyi", "w", encoding="utf-8") as f:
-            f.write(res)
 
-    subprocess.run(["ruff", "check", "--fix", "pyrx"], check=True)
+        pyi_file = PYI_DIR / f"{module.__name__}.pyi"
+
+        def write_pyi():
+            with open(pyi_file, "w", encoding="utf-8") as f:
+                f.write(res)
+
+        write_pyi()
+
+        try:
+            subprocess.run(
+                ["ruff", "check", "--fix", str(pyi_file)],
+                check=True,
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Ruff check failed:\n{e.stderr}\n{e.stdout}")
+            write_pyi()
+
+        try:
+            subprocess.run(
+                ["ruff", "format", str(pyi_file)],
+                check=True,
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Ruff format failed:\n{e.stderr}\n{e.stdout}")
+            write_pyi()
+
+        try:
+            subprocess.run(
+                [
+                    "mypy",
+                    str(pyi_file),
+                    "--disallow-any-generics",
+                    "--ignore-missing-imports",
+                    "--disable-error-code",
+                    "overload-cannot-match",  # TODO: we need to look into this, I think
+                    # the signature ``def meth(self, *args) -> None: ...`` is unnecessary
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Mypy check failed:\n{e.stderr}\n{e.stdout}")
 
 
 def runBRX() -> None:
-    _run(all_modules=(Ap, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm, Ax, Cv, Bim, Brx), log_filename="gen_pyi_brx.log")
+    _run(
+        all_modules=(Ap, Ax, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm, Cv, Bim, Brx),
+        log_filename="gen_pyi_brx.log",
+    )
 
 
 def runARX() -> None:

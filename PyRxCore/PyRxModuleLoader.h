@@ -32,13 +32,14 @@ boost::python::object PyCommandDecorator1(int flags = CmdFlags::kMODAL);
 boost::python::object PyCommandDecorator2(const std::string& name = "", int flags = CmdFlags::kMODAL);
 boost::python::object PyLispFuncDecorator1();
 boost::python::object PyLispFuncDecorator2(const std::string& name);
+boost::python::object PyUsingDecorator();
 
 void regcommand(const std::string& fullpath, const std::string& modulename, const std::string& name, const boost::python::object& func, int flags);
 void removecommand(const std::string& modulename, const std::string& name);
 
 bool loadPythonModule(const PyModulePath& path, bool silent);
 bool reloadPythonModule(const PyModulePath& path, bool silent);
-bool ads_loadPythonModule(const std::filesystem::path& pypath);
-bool ads_reloadPythonModule(const std::filesystem::path& pypath);
+bool ads_loadPythonModule(const std::filesystem::path& pypath,  bool silent = true);
+bool ads_reloadPythonModule(const std::filesystem::path& pypath, bool silent = true);
 
 #pragma pack (pop)

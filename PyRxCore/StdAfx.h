@@ -77,6 +77,9 @@
 #if defined(_GRXTARGET) && (_GRXTARGET <= 250)
 #define _GRXTARGET250 250
 #endif
+#if defined(_GRXTARGET) && (_GRXTARGET <= 260)
+#define _GRXTARGET260 260
+#endif
 
 #if defined(_BRXTARGET) && (_BRXTARGET <= 240)
 #define _BRXTARGET240 240
@@ -84,12 +87,26 @@
 #if defined(_BRXTARGET) && (_BRXTARGET <= 250)
 #define _BRXTARGET250 250
 #endif
+#if defined(_BRXTARGET) && (_BRXTARGET <= 260)
+#define _BRXTARGET260 260
+#endif
 
 #if defined(_ARXTARGET) && (_ARXTARGET <= 243)
 #define _ARXTARGET240 240
 #endif
 #if defined(_ARXTARGET) && (_ARXTARGET == 251)
 #define _ARXTARGET250 250
+#endif
+#if defined(_ARXTARGET) && (_ARXTARGET <= 260)
+#define _ARXTARGET260 260
+#endif
+
+#if defined(_IRXTARGET) && (_IRXTARGET <= 140)
+#define _IRXTARGET140 140
+#endif
+
+#if defined(_IRXTARGET140)
+#define eNotImplemented eNotImplementedYet
 #endif
 
 //- ObjectARX and OMF headers needs this
@@ -111,7 +128,9 @@
 #include <unordered_set>
 #include <cwctype>
 #include <ranges>
-
+#include <queue>
+#include<execution>
+#include <numbers>
 
 //-----------------------------------------------------------------------------
 #include <afxwin.h>				//- MFC core and standard components
@@ -160,25 +179,27 @@
 //for PyApApplication::hostFullVersion
 #pragma comment( lib , "version.lib" )
 
+// python
 #include <Python.h>
-#pragma comment( lib , "python312.lib" )
 
+// boost
 #include <boost/python.hpp>
 #include <boost/python/list.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/functional/hash.hpp>
 
+// us
 #include "RxPyString.h"
 #include "PyException.h"
 
 #ifdef PYRXDEBUG
 #define PYRX_IN_PROGRESS_GS_GI 
+//#define PYRX_IN_PROGRESS
 //#define PYRX_IN_PROGRESS_INPLACE_TEXT_EDITOR not in BRX
 #endif
 
-//#define PYPERFPROFILER
-#ifdef PYPERFPROFILER
-#pragma message ("PYPERFPROFILER is on")
+#ifdef PYRXDEBUG
+//#define WXMSWWINDOWPROC 1
 #endif
 
 #if defined(_ARXTARGET)
@@ -194,12 +215,17 @@
 #pragma comment( lib , "axdb.lib" )
 #endif
 
+#if defined(_BRXTARGET)
+#include "AcGi.h"
+#pragma comment( lib , "Ice.lib" )
+#endif
+
 #if defined(_BRXTARGET) && (_BRXTARGET == 240)
 #pragma comment( lib , "BrxATIL24.lib" )
-#pragma comment( lib , "Ice.lib" )
 #elif defined(_BRXTARGET) && (_BRXTARGET == 250)
 #pragma comment( lib , "BrxATIL25.lib" )
-#pragma comment( lib , "Ice.lib" )
+#elif defined(_BRXTARGET) && (_BRXTARGET == 260)
+#pragma comment( lib , "BrxATIL26.lib" )
 #endif
 
 #if defined(_GRXTARGET)
@@ -224,6 +250,10 @@
 #pragma comment( lib , "ZwGs.lib" )
 #pragma comment( lib , "ZwImaging.lib" )
 #pragma comment( lib , "ZwAuto.lib" )
+#endif
+
+#if defined(_IRXTARGET)
+#pragma comment( lib , "IcArxImg.lib" )
 #endif
 
 static inline const AcString PyCommandPrefix = _T("PyRxCmd_");
@@ -258,7 +288,12 @@ extern AcApDataManager<CDocData> DocVars;
 const TCHAR* getappname();
 const AcString getPyRxBuldVersion();
 
-using AcRxClassArray = AcArray<AcRxClass*>;
+constexpr auto makeBlockRefIterator = [](const AcDbBlockTableRecord& record)
+    {
+        AcDbBlockReferenceIdIterator* pIter = nullptr;
+        Acad::ErrorStatus es = record.newBlockReferenceIdIterator(pIter);
+        return std::make_tuple(es, std::unique_ptr<AcDbBlockReferenceIdIterator>(pIter));
+    };
 
 template<typename IteratorType>
 constexpr auto makeIterator = [](const auto& record)
@@ -270,6 +305,55 @@ constexpr auto makeIterator = [](const auto& record)
 constexpr auto makeAcDbSymbolTableIterator = makeIterator<AcDbSymbolTableIterator>;
 constexpr auto makeBlockTableIterator = makeIterator<AcDbBlockTableIterator>;
 constexpr auto makeBlockTableRecordIterator = makeIterator<AcDbBlockTableRecordIterator>;
+
+constexpr bool isInt16_t(int32_t val) noexcept
+{
+    return val >= std::numeric_limits<int16_t>::min() &&
+        val <= std::numeric_limits<int16_t>::max();
+}
+
+//-----------------------------------------------------------------------------
+// LifeTime for testing;
+struct LifeTime
+{
+    LifeTime()
+    {
+        acutPrintf(L"\nDefault constructor called");
+    }
+    explicit LifeTime(int value) : data(value)
+    {
+        acutPrintf(L"\nParameterized constructor called");
+    }
+    LifeTime(const LifeTime& other) : data(other.data)
+    {
+        acutPrintf(L"\nCopy constructor called");
+    }
+    LifeTime(LifeTime&& other) noexcept : data(other.data)
+    {
+        acutPrintf(L"\nMove constructor called");
+    }
+    ~LifeTime()
+    {
+        acutPrintf(L"\nDestructor called");
+    }
+    LifeTime& operator=(const LifeTime& other)
+    {
+        acutPrintf(L"\nCopy assignment operator called");
+        if (&other == this)
+            return *this;
+        data = other.data;
+        return *this;
+    }
+    LifeTime& operator=(LifeTime&& other) noexcept
+    {
+        acutPrintf(L"\nMove assignment operator called");
+        if (&other == this)
+            return *this;
+        data = other.data;
+        return *this;
+    }
+    int data = 0;
+};
 
 class PerfTimer
 {
@@ -317,12 +401,21 @@ using AcDbObjectUPtr = std::unique_ptr < T, decltype([](T* ptr) noexcept
     }) > ;
 
 using AcDbEntityUPtr = AcDbObjectUPtr<AcDbEntity>;
+using AcDbAcDbPolylineUPtr = AcDbObjectUPtr<AcDbPolyline>;
+using AcDbObjectIteratorUPtr = std::unique_ptr<AcDbObjectIterator>;
 
+//-------------------------------------------------------------------------------------
+//AcDbObjectPointer
+using AcDbAttributePointer = AcDbObjectPointer<AcDbAttribute>;
+
+//-------------------------------------------------------------------------------------
 // Import Python and wxPython headers
 #include <wxPython/sip.h>
 #include <wxPython/wxpy_api.h>
 #include "PyDocString.h"
 
+//-------------------------------------------------------------------------------------
+// PyAutoLockGIL
 struct PyAutoLockGIL
 {
     PyAutoLockGIL() noexcept
@@ -344,12 +437,16 @@ struct PyAutoLockGIL
     PyGILState_STATE gstate = PyGILState_UNLOCKED;
     inline static bool canLock = false;
 };
-typedef PyAutoLockGIL WxPyAutoLock;
 
+//-------------------------------------------------------------------------------------
+// PyObjectPtr
 inline void PyDecRef(PyObject* ptr) noexcept
 {
-    PyAutoLockGIL lock;
-    Py_XDECREF(ptr);
+    if (PyAutoLockGIL::canLock)
+    {
+        PyAutoLockGIL lock;
+        Py_XDECREF(ptr);
+    }
 }
 
 using PyObjectPtr = std::unique_ptr < PyObject, decltype([](PyObject* ptr) noexcept
@@ -405,6 +502,58 @@ struct AutoCWD
     std::error_code _Ec;
     std::filesystem::path pathToRestore = std::filesystem::current_path(_Ec);
 };
+
+//-----------------------------------------------------------------------------------
+// AutoCmdEcho
+class AutoCmdEcho
+{
+public:
+    AutoCmdEcho(int mode = 0) noexcept
+    {
+        get(m_old);
+        set(mode);
+    }
+    ~AutoCmdEcho() noexcept
+    {
+        set(m_old);
+    }
+    Adesk::Int16 old() const noexcept
+    {
+        return m_old;
+    }
+    bool set(Adesk::Int16 mode) const noexcept
+    {
+        resbuf buf{};
+        buf.restype = RTSHORT;
+        buf.resval.rint = mode;
+        return acedSetVar(_cmdecho, &buf) == RTNORM;
+    }
+    bool get(Adesk::Int16& mode) const noexcept
+    {
+        resbuf buf;
+        if (acedGetVar(_cmdecho, &buf) == RTNORM) [[likely]]
+        {
+            mode = buf.resval.rint;
+            return true;
+        }
+        return false;
+    }
+private:
+    static constexpr auto _cmdecho{ L"CMDECHO" };
+    Adesk::Int16 m_old = 0;
+};
+
+//-----------------------------------------------------------------------------------
+//vector_indexing_suite
+inline bool operator == (const AcGiPixelBGRA32& lhs, const AcGiPixelBGRA32& rhs) noexcept
+{
+    return std::addressof(lhs) == std::addressof(rhs);
+}
+
+typedef std::vector<AcGiPixelBGRA32> PyGiPixelBGRA32Array;
+typedef std::vector<AcGePoint2d> PyGePoint2dArray;
+typedef std::vector<AcGePoint3d> PyGePoint3dArray;
+typedef AcArray<AcRxClass*> AcRxClassArray;
 
 //-----------------------------------------------------------------------------------
 //AcGe converters
@@ -694,4 +843,3 @@ inline boost::python::tuple ColorRefToPyTuple(COLORREF val)
 //
 
 #pragma pack (pop)
-

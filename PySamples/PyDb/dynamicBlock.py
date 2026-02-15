@@ -1,8 +1,11 @@
-from pyrx_imp import Ap, Db, Ed, Ge, Gi, Gs, Rx
+import traceback
+
+from pyrx import Ap, Db, Ed, Ge
 
 print("added command = pydynprops")
 print("added command = pymoddynprops")
 print("added command = pyflip")
+
 
 def print_value(item):
     dataType = item.getType()
@@ -20,8 +23,8 @@ def print_value(item):
         case _:
             print("oops")
 
-
-def PyRxCmd_pydynprops():
+@Ap.Command()
+def pydynprops():
     try:
         ssresult = Ed.Editor.entSel("\nSelect block ref: ")
         if ssresult[0] != Ed.PromptStatus.eNormal:
@@ -52,7 +55,8 @@ def PyRxCmd_pydynprops():
 
 
 # use the dynamic block sample drawing (North Arrow)
-def PyRxCmd_pymoddynprops():
+@Ap.Command()
+def pymoddynprops():
     try:
         ssresult = Ed.Editor.entSel("\nSelect block ref: ")
         if ssresult[0] != Ed.PromptStatus.eNormal:
@@ -80,17 +84,18 @@ def PyRxCmd_pymoddynprops():
 
 
 # use the dynamic block sample drawing (flip)
-def PyRxCmd_pyflip():
+@Ap.Command()
+def pyflip():
     try:
         # python does not have a int32 or int16
         # flip actions want an int16
         # an alternative is to use setInt16
-        
-        fon = Db.EvalVariant(1,True)
-        #fon.setInt16(Db.DxfCode.kDxfInt16, 1)
-        
-        foff = Db.EvalVariant(0,True) #isInt16
-        #foff.setInt16(Db.DxfCode.kDxfInt16, 0) 
+
+        fon = Db.EvalVariant(1, True)
+        # fon.setInt16(Db.DxfCode.kDxfInt16, 1)
+
+        foff = Db.EvalVariant(0, True)  # isInt16
+        # foff.setInt16(Db.DxfCode.kDxfInt16, 0)
 
         ssresult = Ed.Editor.entSel("\nSelect block ref: ")
         if ssresult[0] != Ed.PromptStatus.eNormal:
@@ -117,3 +122,41 @@ def PyRxCmd_pyflip():
 
     except Exception as err:
         print(err)
+
+
+@Ap.Command()
+def pyinsert():
+    try:
+        db = Db.curDb()
+        ps, id, _ = Ed.Editor.entSel("\nPick a block", Db.BlockReference.desc())
+        if ps != Ed.PromptStatus.eOk:
+            raise RuntimeError("Selection Error! {}: ".format(ps))
+
+        # check if it's dynamic
+        dynref = Db.DynBlockReference(id)
+        if not dynref.isDynamicBlock():
+            print("oof")
+            return
+
+        # this should return the effective name
+        ref = Db.BlockReference(id)
+        print("\n{}".format(ref.getBlockName()))
+
+        # better to put this in its own function for a GC scope and remove the close()
+        newref = Db.BlockReference(Ge.Point3d(2229, 1390, 0), dynref.dynamicBlockTableRecord())
+        newref.setScaleFactors(Ge.Scale3d(25.4))
+        newrefid = db.addToModelspace(newref)
+        newref.close()
+
+        # create a new DynBlockReference from the new reference
+        # and set the properties
+        newdynref = Db.DynBlockReference(newrefid)
+        props = newdynref.getBlockProperties()
+        for prop in props:
+            if prop.propertyName() == "Distance":
+                prop.setValue(Db.EvalVariant(50.08))
+            if prop.propertyName() == "Distance1":
+                prop.setValue(Db.EvalVariant(48.8156))
+
+    except Exception as err:
+        traceback.print_exception(err)

@@ -64,7 +64,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_WIN64;_WINDOWS;ARXBRXTEST_MODULE;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=240;PYRXDEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_WINDOWS;PYRXLOADER_MODULE;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=240;PYRXDEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalUsingDirectories>%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalIncludeDirectories>$(ARX2021)\inc;$(ARX2021)\inc-$(PlatformName)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -83,8 +83,7 @@
       <AdditionalIncludeDirectories>$(NOINHERIT)$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>copy /Y "$(SolutionDir)\PyRxAcSetup\Include\PyRxDebug.INI" "$(outdir)\PyRx.INI"
-copy /Y "$(SolutionDir)\PyRxAcSetup\Include\internal_onload.py" "$(outdir)\pyrx_onload.py"</Command>
+      <Command>copy /Y "$(SolutionDir)\PyRxAcSetup\Include\internal_onload.py" "$(outdir)\pyrx_onload.py"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -101,7 +100,7 @@ copy /Y "$(SolutionDir)\PyRxAcSetup\Include\internal_onload.py" "$(outdir)\pyrx_
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_WIN64;_WINDOWS;ARXBRXTEST_MODULE;NDEBUG;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=240;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_WINDOWS;PYRXLOADER_MODULE;NDEBUG;_AFXEXT;_ACRXAPP;ARXAPP;_ARXTARGET=240;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalUsingDirectories>%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalIncludeDirectories>$(ARX2021)\inc;$(ARX2021)\inc-$(PlatformName)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>

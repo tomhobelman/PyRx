@@ -131,7 +131,7 @@ void makeDbCoreWrapper()
         .def("textFind", &DbCore::textFind2, DS.SOVRL(textFindOverloads, 9686)).staticmethod("textFind")
         .def("transactionManager", &DbCore::transactionManager, DS.SARGS(9784)).staticmethod("transactionManager")
         .def("ucsMatrix", &DbCore::ucsMatrix1)
-        .def("ucsMatrix", &DbCore::ucsMatrix2, DS.SARGS({ "db: PyDb.Database = None" }, 9808)).staticmethod("ucsMatrix")
+        .def("ucsMatrix", &DbCore::ucsMatrix2, DS.SARGS({ "db: PyDb.Database = ..." }, 9808)).staticmethod("ucsMatrix")
         .def("unloadXrefs", &DbCore::unloadXrefs1)
         .def("unloadXrefs", &DbCore::unloadXrefs2,
             DS.SARGS({ "db: PyDb.Database","ids: list[PyDb.ObjectId]","bequiet: bool=True" }, 9915)).staticmethod("unloadXrefs")
@@ -157,8 +157,14 @@ void makeDbCoreWrapper()
             DS.SARGS({ "p: PyGe.Point3d|PyGe.Vector3d", "normal: PyGe.Vector3d","qout: PyGe.Point3d|PyGe.Vector3d" }, 4227)).staticmethod("ecs2Wcs")
         .def("evaluateFields", &DbCore::evaluateFields1)
         .def("evaluateFields", &DbCore::evaluateFields2, DS.SOVRL(evaluateFieldsOverloads, 4505)).staticmethod("evaluateFields")
+        .def("resolveCurrentXRefs", &DbCore::resolveCurrentXRefs, DS.SARGS({ "db: PyDb.Database","useThreadEngine: bool","doNewOnly: bool" })).staticmethod("resolveCurrentXRefs")
         .def("resbufTest", &DbCore::resbufTest, DS.SARGS({ "resultBuffer: list" })).staticmethod("resbufTest")
         .def("stringTest", &DbCore::stringTest, DS.SARGS({ "val: str" })).staticmethod("stringTest")
+        .def("stringtolower", &DbCore::stringtolower, DS.SARGS({ "val: str" })).staticmethod("stringtolower")
+        .def("stringtoupper", &DbCore::stringtoupper, DS.SARGS({ "val: str" })).staticmethod("stringtoupper")
+        .def("icompare", &DbCore::icompare, DS.SARGS({ "left: str","right: str" })).staticmethod("icompare")
+        .def("groupCodeToType", &DbCore::groupCodeToType, DS.SARGS({ "code: PyDb.DxfCode" })).staticmethod("groupCodeToType")
+        .def("isVisible", &DbCore::isVisible, DS.SARGS({ "entityId: PyDb.ObjectId" })).staticmethod("isVisible")
         ;
 }
 
@@ -174,8 +180,7 @@ boost::python::list DbCore::activeDatabaseArray()
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
-    const AcArray<AcDbDatabase*>& dbs = acdbActiveDatabaseArray();
-    for (auto db : dbs)
+    for (auto db : acdbActiveDatabaseArray())
         pyList.append(PyDbDatabase(db));
     return pyList;
 }
@@ -236,7 +241,7 @@ void DbCore::bindXrefs2(PyDbDatabase& pHostDb, const boost::python::list& xrefBl
 
 void DbCore::clearSetupForLayouts(UINT_PTR contextHandle)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(acdbClearSetupForLayouts(contextHandle));
@@ -280,7 +285,7 @@ PyDbCurve DbCore::convertGelibCurveToAcDbCurve3(const PyGeCurve3d& geCurve, AcGe
 
 PyDbObjectId DbCore::createViewByViewport(PyDbDatabase& pDb, const PyDbObjectId& viewportId, const std::string& name, const std::string& categoryName, const PyDbObjectId& labelBlockId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyDbObjectId view;
@@ -291,7 +296,7 @@ PyDbObjectId DbCore::createViewByViewport(PyDbDatabase& pDb, const PyDbObjectId&
 
 std::string DbCore::canonicalToSystemRange(int eUnits, const std::string& strIn)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     AcString strOut;
@@ -307,10 +312,10 @@ void DbCore::detachXref(PyDbDatabase& pHostDb, const PyDbObjectId& xrefBlkId)
 
 bool DbCore::dictAdd(const PyDbObjectId& dictname, const std::string& symname, const PyDbObjectId& newobj)
 {
+    ads_name ads_newobj = { 0 };
     ads_name ads_dictname = { 0 };
     PyThrowBadEs(acdbGetAdsName(ads_dictname, dictname.m_id));
-    ads_name ads_newobj = { 0 };
-    acdbGetAdsName(ads_newobj, dictname.m_id);
+    PyThrowBadEs(acdbGetAdsName(ads_newobj, dictname.m_id));
     return acdbDictAdd(ads_dictname, utf8_to_wstr(symname).c_str(), ads_newobj) == RTNORM;
 }
 
@@ -361,7 +366,7 @@ double DbCore::disToF(const std::string& str, int unit)
 
 UINT_PTR DbCore::doSetupForLayouts(PyDbDatabase& pDatabase)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     Adesk::ULongPtr contextHandle = 0;
@@ -482,7 +487,7 @@ void DbCore::fail(const std::string& msg)
 
 boost::python::tuple DbCore::findField(const std::string& pszText, int iSearchFrom)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -495,7 +500,7 @@ boost::python::tuple DbCore::findField(const std::string& pszText, int iSearchFr
 
 void DbCore::forceTextAdjust(const boost::python::list& ids)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     auto _ids = PyListToObjectIdArray(ids);
@@ -505,7 +510,7 @@ void DbCore::forceTextAdjust(const boost::python::list& ids)
 
 PyDbObjectId DbCore::getCurUserViewportId(PyDbDatabase& db)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyDbObjectId id;
@@ -533,7 +538,7 @@ PyDbObjectId DbCore::getDimAssocId(const PyDbObjectId& dimId)
 
 boost::python::list DbCore::getDimAssocIds(const PyDbObjectId& dimId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -548,7 +553,7 @@ boost::python::list DbCore::getDimAssocIds(const PyDbObjectId& dimId)
 
 PyDbObjectId DbCore::getDimStyleId(PyDbDatabase& db, const std::string& styleName, const std::string& lockName)
 {
-#if defined (_ZRXTARGET) && _ZRXTARGET <= 250 || defined (_GRXTARGET) && _GRXTARGET <= 250  || defined(_BRXTARGET250)
+#if defined (_ZRXTARGET) && _ZRXTARGET <= 250 || defined (_GRXTARGET) && _GRXTARGET <= 250  || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(acdbGetDimStyleId(db.impObj(), utf8_to_wstr(styleName).c_str(), utf8_to_wstr(lockName).c_str()));
@@ -557,7 +562,7 @@ PyDbObjectId DbCore::getDimStyleId(PyDbDatabase& db, const std::string& styleNam
 
 PyDbObjectId DbCore::getDynDimStyleId(PyDbDatabase& db)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(acdbGetDynDimStyleId(db.impObj()));
@@ -580,7 +585,7 @@ bool DbCore::hasGeoData(PyDbDatabase& db)
 boost::python::tuple DbCore::getProxyInfo(const PyDbObject& obj)
 {
     PyAutoLockGIL lock;
-#if defined(_ARXTARGET240) || defined(_ZRXTARGET260) || defined(_GRXTARGET250) || defined(_BRXTARGET250) 
+#if defined(_ARXTARGET240) || defined(_ZRXTARGET260) || defined(_GRXTARGET250) || defined(_BRXTARGET260) || defined(_IRXTARGET140)
     RxAutoOutStr dxfName;
     RxAutoOutStr className;
     RxAutoOutStr appName;
@@ -597,7 +602,7 @@ boost::python::tuple DbCore::getProxyInfo(const PyDbObject& obj)
 
 std::string DbCore::getMappedFontName(const std::string& fontName)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(acdbGetMappedFontName(utf8_to_wstr(fontName).c_str()));
@@ -691,7 +696,7 @@ boost::python::list DbCore::openDbObjects3(const boost::python::list& ids, AcDb:
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
-    for (auto& id : PyListToObjectIdArray(ids))
+    for (const auto& id : PyListToObjectIdArray(ids))
     {
         AcDbObject* pObj = nullptr;
         PyThrowBadEs(acdbOpenAcDbObject(pObj, id, mode, erased));
@@ -725,7 +730,7 @@ boost::python::list DbCore::openDbEntities3(const boost::python::list& ids, AcDb
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
-    for (auto& id : PyListToObjectIdArray(ids))
+    for (const auto& id : PyListToObjectIdArray(ids))
     {
         AcDbEntity* pObj = nullptr;
         PyThrowBadEs(acdbOpenAcDbEntity(pObj, id, mode, erased));
@@ -750,7 +755,7 @@ PyDbObjectId DbCore::postDimAssoc2(const PyDbObjectId& dimId, PyDbDimAssoc& asso
 
 void DbCore::queueAnnotationEntitiesForRegen(PyDbDatabase& db)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(acdbQueueAnnotationEntitiesForRegen(db.impObj()));
@@ -790,7 +795,6 @@ void DbCore::reloadXrefs2(PyDbDatabase& db, const boost::python::list& ids, bool
     PyThrowBadEs(acdbReloadXrefs(db.impObj(), PyListToObjectIdArray(ids), bQuiet));
 }
 
-//TODO make test class 
 boost::python::list DbCore::resbufTest(const boost::python::list& list)
 {
     AcResBufPtr ptr(listToResbuf(list));
@@ -800,6 +804,21 @@ boost::python::list DbCore::resbufTest(const boost::python::list& list)
 std::string DbCore::stringTest(const std::string& val)
 {
     return wstr_to_utf8(utf8_to_wstr(val));
+}
+
+std::string DbCore::stringtolower(const std::string& val)
+{
+    return wstr_to_utf8(towlower(utf8_to_wstr(val)));
+}
+
+std::string DbCore::stringtoupper(const std::string& val)
+{
+    return wstr_to_utf8(towupper(utf8_to_wstr(val)));
+}
+
+bool DbCore::icompare(const std::string& left, const std::string& right)
+{
+    return ::icompare(utf8_to_wstr(left), utf8_to_wstr(right));
 }
 
 void DbCore::setEnableTightExtents(bool bEnable)
@@ -818,7 +837,7 @@ bool DbCore::snValid(const std::string& tbstr, int pipeTest)
 
 PyDbSymUtilServices DbCore::symUtil()
 {
-    return PyDbSymUtilServices();
+    return PyDbSymUtilServices{};
 }
 
 boost::python::list DbCore::tblNext(const std::string& tblname, int rewind)
@@ -831,7 +850,7 @@ PyDbObjectId DbCore::tblObjName(const std::string& tblname, const std::string& s
 {
     PyDbObjectId id;
     ads_name entres = { 0 };
-    acdbTblObjName(utf8_to_wstr(tblname).c_str(), utf8_to_wstr(sym).c_str(), entres);
+    PyThrowBadRt(acdbTblObjName(utf8_to_wstr(tblname).c_str(), utf8_to_wstr(sym).c_str(), entres));
     PyThrowBadEs(acdbGetObjectId(id.m_id, entres));
     return id;
 }
@@ -844,7 +863,7 @@ boost::python::list DbCore::tblSearch(const std::string& tblname, const std::str
 
 boost::python::list DbCore::textFind1(PyDbDatabase& db, const std::string& findString)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     AcDbObjectIdArray resultSet;
@@ -855,7 +874,7 @@ boost::python::list DbCore::textFind1(PyDbDatabase& db, const std::string& findS
 
 boost::python::list DbCore::textFind2(PyDbDatabase& db, const std::string& findString, const std::string& replaceString, Adesk::UInt8 searchOptions, const boost::python::list& selSet)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     AcDbObjectIdArray resultSet;
@@ -899,19 +918,27 @@ void DbCore::unloadXrefs2(PyDbDatabase& db, const boost::python::list& xrefBlkId
 
 PyDbDatabaseSummaryInfo DbCore::getSummaryInfo(PyDbDatabase& db)
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
     AcDbDatabaseSummaryInfo* info = nullptr;
     PyThrowBadEs(acdbGetSummaryInfo(db.impObj(), info));
     return PyDbDatabaseSummaryInfo(info);
+#endif
 }
 
 void DbCore::putSummaryInfo(PyDbDatabaseSummaryInfo& info, PyDbDatabase& db)
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
     PyThrowBadEs(acdbPutSummaryInfo(info.impObj(), db.impObj()));
+#endif
 }
 
 bool DbCore::validateCustomSummaryInfoKey(const std::string& key, PyDbDatabaseSummaryInfo& info)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acdbValidateCustomSummaryInfoKey(utf8_to_wstr(key).c_str(), info.impObj()) == eOk;
@@ -1026,4 +1053,24 @@ Acad::ErrorStatus DbCore::evaluateFields1()
 Acad::ErrorStatus DbCore::evaluateFields2(const boost::python::object& ids, int context)
 {
     return acdbEvaluateFields(PyListToObjectIdArray(ids), context);
+}
+
+void DbCore::resolveCurrentXRefs(const PyDbDatabase& db, bool useThreadEngine, bool doNewOnly)
+{
+    PyThrowBadEs(acdbResolveCurrentXRefs(db.impObj(), useThreadEngine, doNewOnly));
+}
+
+AcDb::DwgDataType DbCore::groupCodeToType(AcDb::DxfCode pCode)
+{
+    return acdbGroupCodeToType(pCode);
+}
+
+bool DbCore::isVisible(const PyDbObjectId& id)
+{
+    if (id.m_id.objectClass()->isDerivedFrom(AcDbEntity::desc()))
+    {
+        AcDbEntityPointer ptr(id.m_id);
+        return ptr->visibility() == AcDb::kVisible;
+    }
+    return false;
 }

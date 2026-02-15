@@ -12,6 +12,8 @@
 #include "PyEdUserInteraction.h"
 #include "PyDbHatch.h"
 #include "PyRxApp.h"
+#include "PyDbGraph.h"
+#include "xgraph.h"
 
 
 #ifdef ARXAPP
@@ -25,20 +27,38 @@ void                            ads_regen(void);
 #ifdef ZRXAPP
 int                             zcedEvaluateLisp(ACHAR const* str, resbuf*& result);
 extern bool                     zcedHatchPalletteDialog(wchar_t const*, bool, wchar_t*&);
+
+extern Adesk::Boolean           zcedLinetypeDialog(AcDbObjectId old_linetypeId, Adesk::Boolean IncludeByBlockByLayer, ACHAR*& new_linetypeName, AcDbObjectId& new_linetypeId);
+extern bool                     zcedLineWeightDialog(AcDb::LineWeight, bool, AcDb::LineWeight&);
+
 #endif
 
 #ifdef GRXAPP
 int                             gcedEvaluateLisp(ACHAR const* str, resbuf*& result);
 extern Adesk::Boolean           gcedHatchPalletteDialog(wchar_t const*, Adesk::Boolean, wchar_t*&);
 extern Adesk::Boolean           gcedPostCommand(const ACHAR*);
+
+extern Adesk::Boolean           gcedLinetypeDialog(AcDbObjectId old_linetypeId, Adesk::Boolean IncludeByBlockByLayer, ACHAR*& new_linetypeName, AcDbObjectId& new_linetypeId);
+extern bool                     gcedLineWeightDialog(AcDb::LineWeight, bool, AcDb::LineWeight&);
+
 #endif
 
 #ifdef BRXAPP
+#if defined(_BRXTARGET) && (_BRXTARGET >= 260)
+extern Adesk::Boolean           acedGetPredefinedPattens(AcStringArray& patterns);
+#endif
 int                             acedEvaluateLisp(ACHAR const* str, resbuf*& result);
 extern  bool                    acedHatchPalletteDialog(const wchar_t*, bool, wchar_t*&);
 extern Adesk::Boolean           acedPostCommand(const ACHAR*);
+
+extern bool                     acedLinetypeDialog(AcDbObjectId old_linetypeId, bool IncludeByBlockByLayer, ACHAR*& new_linetypeName, AcDbObjectId& new_linetypeId);
+extern bool                     acedLineWeightDialog(AcDb::LineWeight, bool, AcDb::LineWeight&);
+
 #endif
 
+#ifdef IRXAPP
+int                             acedEvaluateLisp(ACHAR const* str, resbuf*& result);
+#endif
 
 #ifdef ARXAPP
 int                             acedEvaluateLisp(ACHAR const* str, resbuf*& result);
@@ -52,9 +72,11 @@ extern void                     acedGetLastCommandLines(AcStringArray&, int, boo
 extern Adesk::Boolean           acedPostCommand(const ACHAR*);
 bool                            acedLoadMainMenu(const ACHAR*);
 extern Adesk::Boolean           acedHatchPalletteDialog(wchar_t const*, Adesk::Boolean, wchar_t*&);
+extern bool                     acedLinetypeDialog(AcDbObjectId, bool, ACHAR*&, AcDbObjectId&);
+extern bool                     acedLinetypeDialog(AcDbDatabase* pDb, AcDbObjectId, bool, ACHAR*&, AcDbObjectId&);
+extern bool                     acedLineWeightDialog(AcDb::LineWeight, bool, AcDb::LineWeight&);
+//extern void                     acedLayerMergeDialog(HWND, const AcDbObjectIdArray&);
 
-//acedLinetypeDialog()
-//acedLineWeightDialog()
 #endif
 
 //-----------------------------------------------------------------------------------------
@@ -86,7 +108,7 @@ double Util::cvUnit(double val, const std::string& oldunit, const std::string& n
 
 double Util::distance(const AcGePoint3d& pt1, const AcGePoint3d& pt2)
 {
-    return acutDistance(asDblArray(pt1), asDblArray(pt1));
+    return acutDistance(asDblArray(pt1), asDblArray(pt2));
 }
 
 AcGePoint3d Util::polar(const AcGePoint3d& pt, double angle, double dist)
@@ -141,7 +163,7 @@ void makePyEdCoreWrapper()
 
     constexpr const std::string_view  cmdSOverloads = "Overloads:\n"
         "- commandName:str\n"
-        "- resultBuffer:list[tuple[int,any]]\n";
+        "- resultBuffer:list[tuple[int,Any]]\n";
 
     PyDocString DS("Core");
     class_<EdCore>("Core")
@@ -162,7 +184,6 @@ void makePyEdCoreWrapper()
         .def("coordFromPixelToWorld", &EdCore::coordFromPixelToWorld1)
         .def("coordFromPixelToWorld", &EdCore::coordFromPixelToWorld2, DS.SOVRL(coordFromPixelToWorldOverloads, 10775)).staticmethod("coordFromPixelToWorld")
         .def("coordFromWorldToPixel", &EdCore::coordFromWorldToPixel, DS.SARGS({ "windnum: int ","pnt: PyGe.Point3d" }, 10776)).staticmethod("coordFromWorldToPixel")
-        .def("convertEntityToHatch", &EdCore::convertEntityToHatch, DS.SARGS({ "hatch: PyDb.Hatch","entity: PyDb.Entity", "transferId: bool" }, 10774)).staticmethod("convertEntityToHatch")
         .def("createInternetShortcut", &EdCore::createInternetShortcut, DS.SARGS({ "szURL: str","szShortcutPath: str" }, 10779)).staticmethod("createInternetShortcut")
         .def("createViewportByView", &EdCore::createViewportByView, DS.SARGS({ "db: PyDb.Database","view: PyDb.ObjectId","pt: PyGe.Point2d","scale: float" }, 10783)).staticmethod("createViewportByView")
         .def("cmdS", &EdCore::cmdS1)
@@ -233,6 +254,9 @@ void makePyEdCoreWrapper()
         .def("loadJSScript", &EdCore::loadJSScript, DS.SARGS({ "scr: str" })).staticmethod("loadJSScript")
         .def("loadPartialMenu", &EdCore::loadPartialMenu, DS.SARGS({ "mnu: str" }, 11219)).staticmethod("loadPartialMenu")
         .def("loadMainMenu", &EdCore::loadMainMenu, DS.SARGS({ "mnu: str" })).staticmethod("loadMainMenu")
+        .def("linetypeDialog", &EdCore::linetypeDialog1, DS.SARGS({ "id: PyDb.ObjectId", "includeByBlockByLayer: bool" }))
+        .def("linetypeDialog", &EdCore::linetypeDialog2, DS.SARGS({ "db: PyDb.Database" "id: PyDb.ObjectId", "includeByBlockByLayer: bool" })).staticmethod("linetypeDialog")
+        .def("lineWeightDialog", &EdCore::lineWeightDialog, DS.SARGS({ "lt: PyDb.LineWeight", "includeByBlockByLayer: bool" })).staticmethod("lineWeightDialog")
         .def("menuCmd", &EdCore::menuCmd, DS.SARGS({ "cmd: str" })).staticmethod("menuCmd")
         .def("markForDelayXRefRelativePathResolve", &EdCore::markForDelayXRefRelativePathResolve, DS.SARGS({ "id: PyDb.ObjectId" }, 11221)).staticmethod("markForDelayXRefRelativePathResolve")
         .def("mSpace", &EdCore::mSpace, DS.SARGS(11223)).staticmethod("mSpace")
@@ -253,8 +277,9 @@ void makePyEdCoreWrapper()
         .def("setColorDialogTrueColor", &EdCore::setColorDialogTrueColor1)
         .def("setColorDialogTrueColor", &EdCore::setColorDialogTrueColor2, DS.SARGS({ "clr: PyDb.AcCmColor","bAllowMetaColor: bool","nCurLayerColor: PyDb.AcCmColor","tab: int = 7" }, 11309)).staticmethod("setColorDialogTrueColor")
         .def("setColorPrompt", &EdCore::setColorPrompt, DS.SARGS({ "prompt: str","bAllowMetaColor: bool" }, 11311)).staticmethod("setColorPrompt")
+        .def("getCurrentView", &EdCore::getCurrentView, DS.SARGS()).staticmethod("getCurrentView")
         .def("setCurrentView", &EdCore::setCurrentView1)
-        .def("setCurrentView", &EdCore::setCurrentView2, DS.SARGS({ "vrec: PyDb.ViewTableRecord", "vp: PyDb.Viewport = None" }, 11317)).staticmethod("setCurrentView")
+        .def("setCurrentView", &EdCore::setCurrentView2, DS.SARGS({ "vrec: PyDb.ViewTableRecord", "vp: PyDb.Viewport = ..." }, 11317)).staticmethod("setCurrentView")
         .def("setCurrentVPort", &EdCore::setCurrentVPort, DS.SARGS({ "vp: PyDb.Viewport" }, 11318)).staticmethod("setCurrentVPort")
         .def("setStatusBarProgressMeter", &EdCore::setStatusBarProgressMeter, DS.SARGS({ "lable: str", "nMinPos: int","nMaxPos: int" }, 11325)).staticmethod("setStatusBarProgressMeter")
         .def("setStatusBarProgressMeterPos", &EdCore::setStatusBarProgressMeterPos, DS.SARGS({ "pos: int" }, 11326)).staticmethod("setStatusBarProgressMeterPos")
@@ -309,6 +334,7 @@ void makePyEdCoreWrapper()
         .def("hasSupplementalCursorImage", &EdCore::hasSupplementalCursorImage, DS.SARGS()).staticmethod("hasSupplementalCursorImage")
         .def("getSupplementalCursorOffset", &EdCore::getSupplementalCursorOffset, DS.SARGS()).staticmethod("getSupplementalCursorOffset")
         .def("setSupplementalCursorOffset", &EdCore::setSupplementalCursorOffset, DS.SARGS({ "x:int", "y:int" })).staticmethod("setSupplementalCursorOffset")
+        .def("curDwgXrefGraph", &EdCore::curDwgXrefGraph, DS.SARGS()).staticmethod("curDwgXrefGraph")
         ;
 }
 
@@ -409,7 +435,7 @@ int EdCore::arxUnload(const std::string& app)
 
 void EdCore::audit1(PyDbDatabase& pDb, bool bFixErrors)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(acedAudit(pDb.impObj(), bFixErrors));
@@ -418,7 +444,7 @@ void EdCore::audit1(PyDbDatabase& pDb, bool bFixErrors)
 
 void EdCore::audit2(PyDbDatabase& pDb, bool bFixErrors, bool bCmdLnEcho)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(acedAudit(pDb.impObj(), bFixErrors, bCmdLnEcho));
@@ -437,7 +463,7 @@ bool EdCore::clearOLELock(int handle)
 
 std::string EdCore::clipFormatName()
 {
-#if defined(_GRXTARGET) && (_GRXTARGET <= 250)
+#if defined(_GRXTARGET) && (_GRXTARGET <= 260)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(acedClipFormatName());
@@ -467,7 +493,7 @@ boost::python::dict EdCore::getCommands()
     for (; !iter->done(); iter->next())
     {
         const auto cmd = iter->command();
-        if(cmdSet.contains(cmd))
+        if (cmdSet.contains(cmd))
             continue;
         cmdSet.insert(cmd);
         const auto& groupname = wstr_to_utf8(iter->commandGroup());
@@ -490,16 +516,6 @@ boost::python::tuple EdCore::calcTextExtents(const std::string& strval, const Py
     auto pnt = iStyle.extents(wstrval.c_str(), Adesk::kFalse, wstrval.size(), Adesk::kTrue);
     PyAutoLockGIL lock;
     return boost::python::make_tuple(pnt.x, pnt.y);
-}
-
-void EdCore::convertEntityToHatch(const PyDbHatch& hatch, const PyDbEntity& entity, bool transferId)
-{
-#if defined(_BRXTARGET250)
-    throw PyNotimplementedByHost();
-#else
-    AcDbEntity* pEnt = entity.impObj();
-    PyThrowBadEs(acedConvertEntityToHatch(hatch.impObj(), pEnt, transferId));
-#endif
 }
 
 AcGePoint3d EdCore::coordFromPixelToWorld1(const boost::python::tuple& tin)
@@ -545,7 +561,7 @@ boost::python::tuple EdCore::coordFromWorldToPixel(int windnum, const AcGePoint3
 
 bool EdCore::createInternetShortcut(const std::string& szURL, const std::string& szShortcutPath)
 {
-#if defined(_ZRXTARGET240) || defined(_BRXTARGET250)
+#if defined(_ZRXTARGET240) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedCreateInternetShortcut(utf8_to_wstr(szURL).c_str(), utf8_to_wstr(szShortcutPath).c_str());
@@ -554,7 +570,7 @@ bool EdCore::createInternetShortcut(const std::string& szURL, const std::string&
 
 PyDbObjectId EdCore::createViewportByView(PyDbDatabase& db, PyDbObjectId& view, const AcGePoint2d& location, double scale)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyDbObjectId id;
@@ -570,7 +586,7 @@ int EdCore::defun(const std::string& pszName, int nFuncNum)
 
 int EdCore::defunEx(const std::string& pszGlobalName, const std::string& pszLocalName, int nFuncNum)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedDefunEx(utf8_to_wstr(pszGlobalName).c_str(), utf8_to_wstr(pszLocalName).c_str(), nFuncNum);
@@ -584,7 +600,7 @@ void EdCore::disableDefaultARXExceptionHandler(bool flag)
 
 void EdCore::disableUsrbrk()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     acedDisableUsrbrk();
@@ -593,7 +609,7 @@ void EdCore::disableUsrbrk()
 
 bool EdCore::displayBorder(bool flag)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250) 
     throw PyNotimplementedByHost();
 #else
     return acedDisplayBorder(flag);
@@ -613,7 +629,7 @@ void EdCore::drawOrderInherit(PyDbObjectId& parent, const boost::python::list& c
 
 void EdCore::dropOpenFile(const std::string& value)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     acedDropOpenFile(utf8_to_wstr(value).c_str());
@@ -622,7 +638,7 @@ void EdCore::dropOpenFile(const std::string& value)
 
 int EdCore::eatCommandThroat()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedEatCommandThroat();
@@ -636,7 +652,7 @@ int EdCore::editMTextInteractive(PyDbMText& mtext, bool useNewUI, bool allowTabs
 
 void EdCore::enableUsrbrk()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedEnableUsrbrk();
@@ -677,6 +693,9 @@ boost::python::list EdCore::evaluateLisp(const std::string& str)
 #ifdef _ARXTARGET 
     acedEvaluateLisp(utf8_to_wstr(str).c_str(), pRb);
 #endif
+#ifdef _IRXTARGET 
+    acedEvaluateLisp(utf8_to_wstr(str).c_str(), pRb);
+#endif
     AcResBufPtr pSafeRb(pRb);
     return resbufToList(pRb);
 }
@@ -694,7 +713,7 @@ std::string EdCore::evaluateDiesel(const std::string& str)
 
 bool EdCore::cmdS1(const std::string& name)
 {
-    
+
 #ifdef _ZRXTARGET260
     PyRxApp::instance().commandForDocOverride = utf8_to_wstr(name).c_str();
 #endif
@@ -721,7 +740,7 @@ std::string EdCore::findFile(const std::string& file)
 
 std::string EdCore::findTrustedFile(const std::string& file)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     std::wstring data(MAX_PATH, 0);
@@ -732,13 +751,13 @@ std::string EdCore::findTrustedFile(const std::string& file)
 
 boost::python::list EdCore::getPredefinedPattens()
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET250) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
     AcStringArray patterns;
     boost::python::list py_patterns;
-    if (acedGetPredefinedPattens(patterns) == true)
+    if (acedGetPredefinedPattens(patterns))
     {
         for (auto& pattern : patterns)
             py_patterns.append(wstr_to_utf8(pattern));
@@ -775,7 +794,7 @@ boost::python::list EdCore::getFileNavDialog(const std::string& title, const std
 
 std::string EdCore::getCommandPromptString()
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     CString str;
@@ -787,7 +806,7 @@ std::string EdCore::getCommandPromptString()
 
 boost::python::list EdCore::getLastCommandLines(int lineCount, bool ignoreNull)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     AcStringArray strs;
@@ -798,7 +817,7 @@ boost::python::list EdCore::getLastCommandLines(int lineCount, bool ignoreNull)
 
 unsigned int EdCore::getBlockEditMode()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedGetBlockEditMode();
@@ -821,7 +840,7 @@ boost::python::list EdCore::getCurrentSelectionSet()
 
 boost::python::tuple EdCore::getCurVportPixelToDisplay()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -834,7 +853,7 @@ boost::python::tuple EdCore::getCurVportPixelToDisplay()
 
 boost::python::tuple EdCore::getCurVportScreenToDisplay()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -847,7 +866,7 @@ boost::python::tuple EdCore::getCurVportScreenToDisplay()
 
 float EdCore::getDpiScalingValue()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedGetDpiScalingValue();
@@ -856,7 +875,7 @@ float EdCore::getDpiScalingValue()
 
 std::string EdCore::getUserFavoritesDir()
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #endif
 #ifdef _ARXTARGET
@@ -952,7 +971,7 @@ int EdCore::isDragging()
 
 bool EdCore::isInBackgroundMode()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedIsInBackgroundMode();
@@ -971,7 +990,7 @@ Adesk::Boolean EdCore::isMenuGroupLoaded(const std::string& mnu)
 
 bool EdCore::isOsnapOverride()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedIsOsnapOverride();
@@ -985,7 +1004,7 @@ bool EdCore::isUpdateDisplayPaused()
 
 bool EdCore::isUsrbrkDisabled()
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return acedIsUsrbrkDisabled();
@@ -994,7 +1013,7 @@ bool EdCore::isUsrbrkDisabled()
 
 void EdCore::loadJSScript(const std::string& pUriOfJSFile)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     acedLoadJSScript(utf8_to_wstr(pUriOfJSFile).c_str());
@@ -1008,16 +1027,63 @@ bool EdCore::loadPartialMenu(const std::string& mnu)
 
 bool EdCore::loadMainMenu(const std::string& mnu)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     return acedLoadMainMenu(utf8_to_wstr(mnu).c_str());
 #endif
 }
 
+boost::python::tuple EdCore::linetypeDialog1(const PyDbObjectId& id, bool IncludeByBlockByLayer)
+{
+    bool flag = false;
+    PyAutoLockGIL lock;
+    PyDbObjectId new_linetypeId;
+    RxAutoOutStr new_linetypename;
+#if defined(_GRXTARGET)
+    flag = gcedLinetypeDialog(id.m_id, true, new_linetypename.buf, new_linetypeId.m_id);
+#elif defined(_ZRXTARGET)
+    flag = zcedLinetypeDialog(id.m_id, true, new_linetypename.buf, new_linetypeId.m_id);
+#elif defined(_ARXTARGET) || defined(_BRXTARGET)
+    flag = acedLinetypeDialog(id.m_id, true, new_linetypename.buf, new_linetypeId.m_id);
+#else
+    throw PyNotimplementedByHost{};
+#endif
+    return boost::python::make_tuple(flag, new_linetypename.str(), new_linetypeId);
+}
+
+boost::python::tuple EdCore::linetypeDialog2(const PyDbDatabase& db, const PyDbObjectId& id, bool IncludeByBlockByLayer)
+{
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
+    throw PyNotimplementedByHost();
+#else
+    PyAutoLockGIL lock;
+    PyDbObjectId new_linetypeId;
+    RxAutoOutStr new_linetypename;
+    bool flag = acedLinetypeDialog(db.impObj(), id.m_id, true, new_linetypename.buf, new_linetypeId.m_id);
+    return boost::python::make_tuple(flag, new_linetypename.str(), new_linetypeId);
+#endif
+}
+
+boost::python::tuple EdCore::lineWeightDialog(AcDb::LineWeight lt, bool IncludeByBlockByLayer)
+{
+    bool flag = false;
+    AcDb::LineWeight outlt = AcDb::LineWeight::kLnWt000;
+#if defined(_GRXTARGET)
+    flag = gcedLineWeightDialog(lt, IncludeByBlockByLayer, outlt);
+#elif defined(_ZRXTARGET)
+    flag = zcedLineWeightDialog(lt, IncludeByBlockByLayer, outlt);
+#elif defined(_ARXTARGET) || defined(_BRXTARGET)
+    flag = acedLineWeightDialog(lt, IncludeByBlockByLayer, outlt);
+#else
+    throw PyNotimplementedByHost{};
+#endif
+    return boost::python::make_tuple(flag, outlt);
+}
+
 void EdCore::markForDelayXRefRelativePathResolve(const PyDbObjectId& id)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     acedMarkForDelayXRefRelativePathResolve(id.m_id);
@@ -1049,7 +1115,7 @@ boost::python::dict EdCore::getSysVars()
 
     for (std::unique_ptr<AcEdSysVarIterator> vars(new AcEdSysVarIterator()); !vars->done(); vars->step())
     {
-        resbuf buf;
+        resbuf buf{};
         buf.restype = 0;
         buf.resval.rint = 0;
         const AcRxVariable* var = vars->getSysVar();
@@ -1157,10 +1223,11 @@ bool EdCore::setVar(const std::string& sym, const boost::python::object& src)
     {
         AcResBufPtr buf;
         const AcString asSym = utf8_to_wstr(sym).c_str();
+        //TODO: extract tuple (RT, VALUE), see Document::setVariable
         if (PyLong_Check(src.ptr()))
         {
             const int val = extract<int32_t>(src);
-            if (val <= SHRT_MAX)
+            if (isInt16_t(val))
                 buf.reset(acutBuildList(RTSHORT, val, 0));
             else
                 buf.reset(acutBuildList(RTLONG, val, 0));
@@ -1445,11 +1512,11 @@ AcGePoint3d EdCore::getMousePositionUCS()
     acedDwgPoint cpt;
     acedCoordFromPixelToWorld(cursorPos, cpt);
 
-    resbuf fromrb;
+    resbuf fromrb{};
     fromrb.restype = RTSHORT;
     fromrb.resval.rint = 2; // DCS
 
-    resbuf torb;
+    resbuf torb{};
     torb.restype = RTSHORT;
     torb.resval.rint = 1; // UCS 
 
@@ -1467,11 +1534,11 @@ AcGePoint3d EdCore::getMousePositionWCS()
     acedDwgPoint cpt;
     acedCoordFromPixelToWorld(cursorPos, cpt);
 
-    resbuf fromrb;
+    resbuf fromrb{};
     fromrb.restype = RTSHORT;
     fromrb.resval.rint = 2; // DCS
 
-    resbuf torb;
+    resbuf torb{};
     torb.restype = RTSHORT;
     torb.resval.rint = 0; // WCS 
 
@@ -1509,7 +1576,7 @@ AcGePoint3d EdCore::osnap(const AcGePoint3d& pt, const std::string& mode)
 AcCmColor EdCore::setColorPrompt(const std::string& prompt, bool bAllowMetaColor)
 {
     AcCmColor color;
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #elif defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     RxAutoOutStr str;
@@ -1523,11 +1590,70 @@ AcCmColor EdCore::setColorPrompt(const std::string& prompt, bool bAllowMetaColor
 
 void EdCore::setUndoMark(bool flag)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(acedSetUndoMark(flag));
 #endif
+}
+
+static int cvport()
+{
+    struct resbuf rb;
+    acedGetVar(_T("CVPORT"), &rb);
+    return rb.resval.rint;
+}
+
+//https://forums.autodesk.com/t5/objectarx-forum/view-not-restoring-to-previous-view/m-p/7203525/highlight/true#M8017
+PyDbViewTableRecord EdCore::getCurrentView()
+{
+    AcDbViewTableRecord* view = new AcDbViewTableRecord();
+    struct resbuf var;
+    struct resbuf WCS, UCS, DCS;
+    WCS.restype = RTSHORT;
+    WCS.resval.rint = 0;
+    UCS.restype = RTSHORT;
+    UCS.resval.rint = 1;
+    DCS.restype = RTSHORT;
+    DCS.resval.rint = 2;
+
+    int rt = RTNORM;
+    rt = ads_getvar(L"VIEWMODE", &var);
+
+    view->setPerspectiveEnabled(var.resval.rint & 1);
+    view->setFrontClipEnabled(var.resval.rint & 2 ? true : false);
+    view->setBackClipEnabled(var.resval.rint & 4 ? true : false);
+    view->setFrontClipAtEye(!(var.resval.rint & 16));
+
+    rt = ads_getvar(L"BACKZ", &var);
+    view->setBackClipDistance(var.resval.rreal);
+
+    rt = ads_getvar(L"FRONTZ", &var);
+    view->setFrontClipDistance(var.resval.rreal);
+
+    rt = ads_getvar(L"VIEWCTR", &var);
+    rt = ads_trans(var.resval.rpoint, &UCS, &DCS, NULL, var.resval.rpoint);
+    view->setCenterPoint(asPnt2d(var.resval.rpoint));
+
+    rt = ads_getvar(L"LENSLENGTH", &var);
+    view->setLensLength(var.resval.rreal);
+
+    rt = ads_getvar(L"TARGET", &var);
+    rt = ads_trans(var.resval.rpoint, &UCS, &WCS, NULL, var.resval.rpoint);
+    view->setTarget(asPnt3d(var.resval.rpoint));
+
+    rt = ads_getvar(L"VIEWDIR", &var);
+    rt = ads_trans(var.resval.rpoint, &UCS, &WCS, TRUE, var.resval.rpoint);
+    view->setViewDirection(asVec3d(var.resval.rpoint));
+
+    rt = ads_getvar(L"VIEWSIZE", &var);
+    view->setHeight(var.resval.rreal);
+    view->setWidth(var.resval.rreal);
+
+    rt = ads_getvar(L"VIEWTWIST", &var);
+    view->setViewTwist(var.resval.rreal);
+
+    return PyDbViewTableRecord(view, true);
 }
 
 void EdCore::setCurrentView1(const PyDbViewTableRecord& vrec)
@@ -1557,7 +1683,7 @@ int EdCore::setStatusBarProgressMeterPos(int pos)
 
 void EdCore::setXrefResolvedWithUpdateStatus(const PyDbBlockTableRecord& rec)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(acedSetXrefResolvedWithUpdateStatus(rec.impObj()));
@@ -1571,7 +1697,7 @@ bool EdCore::showHTMLModalWindow1(UINT_PTR hwnd, const std::string& uriOfHtmlPag
 
 bool EdCore::showHTMLModalWindow2(UINT_PTR hwnd, const std::string& uriOfHtmlPage, bool persistSizeAndPosition)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     return acedShowHTMLModalWindow((HWND)hwnd, utf8_to_wstr(uriOfHtmlPage).c_str(), persistSizeAndPosition);
@@ -1585,7 +1711,7 @@ UINT_PTR EdCore::showHTMLModelessWindow1(UINT_PTR owner, const std::string& uriO
 
 UINT_PTR EdCore::showHTMLModelessWindow2(UINT_PTR owner, const std::string& uriOfHtmlPage, bool persistSizeAndPosition)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET260)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
 #else
     return (UINT_PTR)acedShowHTMLModelessWindow((HWND)owner, utf8_to_wstr(uriOfHtmlPage).c_str(), persistSizeAndPosition);
@@ -1594,7 +1720,7 @@ UINT_PTR EdCore::showHTMLModelessWindow2(UINT_PTR owner, const std::string& uriO
 
 void EdCore::skipXrefNotification(PyDbDatabase& db, const std::string& xrefName)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(acedSkipXrefNotification(db.impObj(), utf8_to_wstr(xrefName).c_str()));
@@ -1603,7 +1729,7 @@ void EdCore::skipXrefNotification(PyDbDatabase& db, const std::string& xrefName)
 
 void EdCore::setFieldUpdateEnabled(PyApDocument& doc, bool enabled)
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET260) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost();
 #else
     acedSetFieldUpdateEnabled(doc.impObj(), enabled);
@@ -1685,7 +1811,7 @@ bool EdCore::unloadPartialMenu(const std::string& pszMenuFile)
 
 void EdCore::unmarkForDelayXRefRelativePathResolve(const PyDbObjectId& xrefDefId)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     acedUnmarkForDelayXRefRelativePathResolve(xrefDefId.m_id);
@@ -1776,7 +1902,7 @@ void EdCore::xrefDetach2(const std::string& XrefBlockname, bool bQuiet, PyDbData
 
 bool EdCore::xrefNotifyCheckFileChanged(const PyDbObjectId& id)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     bool flag = false;
@@ -1852,7 +1978,7 @@ void EdCore::xrefBind2(const std::string& XrefBlockname, bool bInsertBind, bool 
 
 void EdCore::xrefXBind1(const boost::python::list& symbolIds)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     AcDbObjectIdArray ids = PyListToObjectIdArray(symbolIds);
@@ -1862,12 +1988,19 @@ void EdCore::xrefXBind1(const boost::python::list& symbolIds)
 
 void EdCore::xrefXBind2(const boost::python::list& symbolIds, bool bQuiet, PyDbDatabase& pHostDb)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     AcDbObjectIdArray ids = PyListToObjectIdArray(symbolIds);
     return PyThrowBadEs(acedXrefXBind(ids, bQuiet, pHostDb.impObj()));
 #endif
+}
+
+PyDbXrefGraph EdCore::curDwgXrefGraph()
+{
+    PyDbXrefGraph gr{};
+    PyThrowBadEs(acedGetCurDwgXrefGraph(*gr.impObj(), Adesk::kFalse));
+    return gr;
 }
 
 std::string EdCore::exceptionTest()

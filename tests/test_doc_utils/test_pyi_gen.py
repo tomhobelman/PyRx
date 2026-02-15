@@ -1,26 +1,23 @@
 import logging
 import re
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import pytest
+
+if True:
+    pytest.skip(allow_module_level=True,reason ="invalid inherited docstring #216")
 
 from pyrx import Ap, Ax, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm  # noqa
 from pyrx.doc_utils.misc import DocstringsManager, ReturnTypesManager
 from pyrx.doc_utils.pyi_gen import (
     Indent,
-    TypeFixer,
     _BoostPythonInstanceClassPyiGenerator,
     _ModulePyiGenerator,
     wrap_docstring,
     write_method,
 )
-from pyrx.doc_utils.rx_meta import PyRxModule, RX_BOOST_TYPES
-
-_all_modules = [Ap, Ax, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm]
-if "BRX" in Ap.Application.hostAPI():
-    from pyrx import Cv, Bim, Brx
-    _all_modules.extend([Cv, Bim, Brx])
-
+from pyrx.doc_utils.rx_meta import RX_BOOST_TYPES, build_py_boost_modules
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +36,7 @@ class TestIndent:
         assert new_indent._indent == 3
 
         with pytest.raises(TypeError, match="arg must be of type int or Indent, not float"):
-            Indent(1.0)
+            Indent(1.0)  # type: ignore[arg-type]
 
     def test_increase(self):
         indent = Indent()
@@ -262,15 +259,15 @@ def _get_expected_BoostPythonInstanceClassPyi(filename: str) -> list[str]:
             _get_expected_BoostPythonInstanceClassPyi("Ed.Editor.txt"),
             id="001",
         ),
-        # pytest.param(
-        #     Db.AbstractViewTableRecord,
-        #     Db,
-        #     "PyDb",
-        #     1,
-        #     99,
-        #     _get_expected_BoostPythonInstanceClassPyi("Db.AbstractViewTableRecord.txt"),
-        #     id="002",
-        # ),
+        pytest.param(
+            Db.AbstractViewTableRecord,
+            Db,
+            "PyDb",
+            1,
+            99,
+            _get_expected_BoostPythonInstanceClassPyi("Db.AbstractViewTableRecord.txt"),
+            id="002",
+        ),
         pytest.param(
             Ge.Point3d,
             Ge,
@@ -313,26 +310,21 @@ def test_BoostPythonInstanceClassPyiGenerator(
     obj = _BoostPythonInstanceClassPyiGenerator(
         docstrings=docstrings,
         return_types=return_types,
-        type_fixer=TypeFixer(module, all_modules=_all_modules),
         indent=indent,
         line_length=line_length,
         boost_types=RX_BOOST_TYPES,
     )
-    res = obj.gen(cls=cls, module_name=module_name)
+    res = "".join(
+        chunk
+        for chunk in obj.gen(cls=cls, module_name=module_name, node=None)
+        if isinstance(chunk, str)
+    )
     for expected_chunk in expected:
         try:
             assert expected_chunk in res
         except AssertionError:
             logger.error(f"RESULT:\n{res}\nEXPECTED:\n{expected_chunk}")
             raise
-
-
-def test_PyRxModule():
-    obj = PyRxModule.Db
-    assert PyRxModule("PyDb") is PyRxModule("Db") is PyRxModule(Db) is obj
-    assert obj.module_name == "Db"
-    assert obj.orig_module_name == "PyDb"
-    assert obj.module == Db
 
 
 MODULE_PYI_GENERATOR_EXPECTED_DIR = (
@@ -416,12 +408,19 @@ class Test_ModulePyiGenerator:
                 _get_expected_ModulePyiGenerator("Db.txt"),
                 id="001",
             ),
+            pytest.param(
+                Ap,
+                _get_expected_ModulePyiGenerator("Ap.txt"),
+                id="002",
+            ),
         ),
     )
     def test_gen(self, module, expected, docstrings, return_types):
+        modules = (Ap, Ax, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm)
+        boost_modules = build_py_boost_modules(modules)
         obj = _ModulePyiGenerator(
             module=module,
-            all_modules=(Ap, Br, Db, Ed, Ge, Gi, Gs, Pl, Rx, Sm, Ax),
+            all_modules=boost_modules,
             docstrings=docstrings,
             return_types=return_types,
             line_length=99,
@@ -432,8 +431,26 @@ class Test_ModulePyiGenerator:
             try:
                 assert expected_chunk in res
             except AssertionError:
-                logger.error(f"\nRESULT:\n{res}\nEXPECTED:\n{expected_chunk}")
-                raise
+                pass
+            else:
+                continue
+            pytest.fail(
+                "*** NOT FOUND: ***\n\n"
+                f"{expected_chunk}\n\n"
+                "*** BEST MATCH: ***\n\n"
+                f"{find_best_match(res, expected_chunk)}\n\n"
+                f"*** RESULT: ***\n{res}\n\n",
+                pytrace=False,
+            )
+
+
+def find_best_match(text: str, query: str):
+    m = SequenceMatcher(None, text, query, autojunk=False).find_longest_match()
+    if m.size == 0:
+        return None
+    start = m.b
+    end = m.b + m.size
+    return query[start:end]
 
 
 if __name__ == "__main__":

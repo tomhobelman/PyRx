@@ -20,15 +20,15 @@
 
 #include "wx/setup.h"
 #include "wx/wx.h"
-#include "wx/evtloop.h"
+#include <wx/xrc/xmlres.h>
+#include <wx/dynlib.h>
 
-WXDLLIMPEXP_BASE void wxSetInstance(HINSTANCE hInst);
 
 //------------------------------------------------------------------------------------------------
 //  this is AutoCAD's main frame
-WinFrame::WinFrame(HWND hwnd)
+ArxTopLevelWindow::ArxTopLevelWindow()
 {
-    this->SetHWND(hwnd);
+    this->SetHWND(adsw_acadMainWnd());
     this->AdoptAttributesFromHWND();
     this->m_isShown = true;
     wxTopLevelWindows.Append(this);
@@ -36,48 +36,48 @@ WinFrame::WinFrame(HWND hwnd)
 
 //------------------------------------------------------------------------------------------------
 // the wxApp
-WxRxApp& WxRxApp::instance()
-{
-    static WxRxApp mthis;
-    return mthis;
-}
-
 bool WxRxApp::OnInit()
 {
-    frame.reset(new WinFrame(adsw_acadMainWnd()));
-    wxTheApp->SetTopWindow(frame.get());
-    if (wxTheApp->GetMainTopWindow() == nullptr)
+    // TODO: support wxWidgets with dark mode
+#if defined(wxVERSION_NUMBER) && (wxVERSION_NUMBER >= 3300)
+    resbuf rb;
+    const auto rt = acedGetVar(_T("COLORTHEME"), &rb);
+    if (rt == RTNORM && rb.restype == RTSHORT && rb.resval.rint == 0)
+    {
+        if (!wxTheApp->MSWEnableDarkMode(wxApp::DarkMode_Always))
+            acutPrintf(_T("MSWEnableDarkMode failed"));
+    }
+#endif //wxVERSION_NUMBER
+    wxTheApp->SetTopWindow(new ArxTopLevelWindow());
+    if (wxTheApp->GetTopWindow() == nullptr)
         return false;
+    wxTheApp->SetExitOnFrameDelete(false);
     if (Init_wxPython() == false)
         return false;
+    {
+        // Hold a ref so wxPython wx.App.Get() returns our app 
+        PyAutoLockGIL lock;
+        wxPyConstructObject(wxTheApp, wxT("wxPyApp"), true);
+    }
     return true;
 }
 
 int WxRxApp::OnExit()
 {
-#ifdef NEVER //TODO!
-    wxPyEndAllowThreads(wxPyBeginAllowThreads());
-    wxTheApp->GetMainTopWindow()->SetHWND(0);
-    wxTheApp->SetTopWindow(nullptr);
-    wxTheApp->CleanUp();
-    frame.release();
-    wxUninitialize();
-#endif
+    auto top = wxTheApp->GetTopWindow();
+    if (top != nullptr)
+        top->SetHWND(0);
+    wxTopLevelWindows.clear();
+    wxPyEndAllowThreads(m_mainTState);
     return 0;
 }
 
 void WxRxApp::WakeUpIdle()
 {
-    const CWinApp* mfcApp = AfxGetApp();
-    if (mfcApp != nullptr && mfcApp->m_pMainWnd)
+    if (auto hwnd = adsw_acadMainWnd(); ::IsWindow(hwnd))
     {
-        ::PostMessage(mfcApp->m_pMainWnd->m_hWnd, WM_NULL, 0, 0);
+        ::PostMessage(hwnd, WM_NULL, 0, 0);
     }
-}
-
-void WxRxApp::ExitMainLoop()
-{
-    ::PostQuitMessage(0);
 }
 
 static bool initializeFromConfig()
@@ -85,21 +85,22 @@ static bool initializeFromConfig()
     PyConfig config;
     PyConfig_InitPythonConfig(&config);
 
-    {//args
+    config.optimization_level = PyRxAppSettings::optimizationLevel();
+
+    {// command line args
         const auto& args = PyRxAppSettings::getCommandLineArgs();
         config.parse_argv = args.size() == 0 ? 0 : 1;
         for (const auto& item : args)
             PyWideStringList_Append(&config.argv, item.c_str());
     }
 
-    //#ifdef NEVER //wait for enum
     const auto& app = PyRxApp::instance();
     if (GETBIT(app.testflags, size_t(PyRxTestFlags::kPyTfWaitForDebug)))
         acedAlert(_T("Waiting for debugger! "));
-    //#endif // NEVER
+    if (GETBIT(app.testflags, size_t(PyRxTestFlags::kPyTfNoOptimize)))
+        config.optimization_level = 0;
 
-    const auto [es, pyexecutable] = PyRxAppSettings::pyexecutable_path();
-    if (es == true)
+    if (const auto [es, pyexecutable] = PyRxAppSettings::pyexecutable_path(); es == true)
     {
         auto status = PyConfig_SetString(&config, &config.executable, pyexecutable.c_str());
         if (PyStatus_Exception(status))
@@ -144,37 +145,61 @@ bool WxRxApp::Init_wxPython()
         acutPrintf(_T("\n*****Error importing the wxPython API!*****: \n"));
         return false;
     }
-    wxPyBeginAllowThreads();
+    m_mainTState = wxPyBeginAllowThreads();
     PyAutoLockGIL::canLock = true;
     return true;
+}
+
+//------------------------------------------------------------------------------------------------
+// hasWxXmlResourceModule helper [#422]
+static bool hasWxXmlResourceModule()
+{
+    int found = 0;
+    wxDynamicLibraryDetailsArray modules = wxDynamicLibrary::ListLoaded();
+    for (size_t i = 0, len = modules.GetCount(); i < len; ++i)
+    {
+        const auto& name = modules[i].GetName();
+        if (name.Contains(_T("_xrc.cp")))
+            found++;
+        if (name.Contains(_T("_xml.cp")))
+            found++;
+        if (found == 2)
+            return true;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------------------------
 // initWxApp
 static bool initWxApp()
 {
-    wxApp::SetInstance(&WxRxApp::instance());
-    if (wxInitialize())
-    {
 #ifdef BRXAPP
-        HINSTANCE hInst = _hdllInstance;
+    HINSTANCE hInst = _hdllInstance;
 #else
-        HINSTANCE hInst = AfxGetInstanceHandle();
+    HINSTANCE hInst = AfxGetInstanceHandle();
 #endif // BRXAP
-        if (hInst == nullptr || !wxEntryStart(hInst))
-            return false;
-        wxSetInstance(hInst);
-        if (wxTheApp && wxTheApp->CallOnInit())
-        {
-            static wxGUIEventLoop evtLoopStd;
-            wxGUIEventLoop* evtLoop = static_cast<wxGUIEventLoop*>(wxEventLoop::GetActive());
-            if (!evtLoop)
-                evtLoop = &evtLoopStd;
-            wxEventLoop::SetActive(evtLoop);
-            return true;
-        }
-    }
+    wxApp::SetInstance(new WxRxApp());
+    if (hInst == nullptr || !wxEntryStart(hInst))
+        return false;
+    if (wxTheApp && wxTheApp->CallOnInit())
+        return true;
     return false;
+}
+
+static bool uninitWxApp()
+{
+    wxTheApp->OnExit();
+    wxEntryCleanup();
+#if defined(wxVERSION_NUMBER) && (wxVERSION_NUMBER < 3300)
+#if defined(_GRXTARGET) && (_GRXTARGET >= 260)
+    if (hasWxXmlResourceModule())
+        wxExit();
+#elif defined(_GRXTARGET) && (_GRXTARGET < 260)
+    if (hasWxXmlResourceModule())
+        std::quick_exit(EXIT_SUCCESS);
+#endif //_GRXTARGET
+#endif //wxVERSION_NUMBER
+    return true;
 }
 
 //------------------------------------------------------------------------------------------------
@@ -195,53 +220,75 @@ const std::filesystem::path& PyRxApp::moduleName()
     static std::filesystem::path path;
     if (path.empty())
     {
-        std::wstring buffer(MAX_PATH, 0);
-        GetModuleFileName(_hdllInstance, buffer.data(), buffer.size());
-        path = buffer.c_str();
+        DWORD bufferSize = MAX_PATH;
+        std::wstring buffer(bufferSize, L'\0');
+        DWORD result = GetModuleFileName(_hdllInstance, buffer.data(), bufferSize);
+        if (result > 0 && result < bufferSize)
+        {
+            buffer.resize(result);
+            path = std::filesystem::path(buffer);
+        }
     }
     return path;
 }
 
-void PyRxApp::applyDevelopmentSettings()
+const std::filesystem::path& PyRxApp::getLocalAppDataPath(bool createIfNotFound /*= true*/)
 {
-    PyAutoLockGIL lock;
-    std::error_code ec;
-    const auto& settingsPath = PyRxAppSettings::iniPath();
-    if (std::filesystem::exists(settingsPath, ec) == false)
-        return;
-    std::wstring stubPath(MAX_PATH, 0);
-    if (GetPrivateProfileStringW(_T("PYRXSETTINGS"), _T("PYRXSTUBPATH"), _T(""), stubPath.data(), stubPath.size(), settingsPath.c_str()))
+    static std::filesystem::path path;
+    if (path.empty())
     {
-        std::unique_ptr<AutoCWD> pAutoCWD(new AutoCWD(modulePath()));
-        const auto abspath = std::filesystem::absolute(stubPath, ec);
-        if (!ec)
+        std::wstring _path(MAX_PATH, 0);
+        if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, _path.data()) == S_OK)
         {
-            PyRxApp::instance().dbg_pyrxpath = abspath;
-            PyRxApp::appendSearchPath(abspath);
-        }
-        else
-        {
-            acutPrintf(L"\napplyDevelopmentSettings failed: ");
+            path = _path.c_str();
+            path /= L"PyRx";
         }
     }
+    if (createIfNotFound)
+    {
+        if (std::error_code _Ec; !std::filesystem::exists(path, _Ec))
+        {
+            std::filesystem::create_directory(path, _Ec);
+            if (_Ec)
+            {
+                acutPrintf(_T("\nError create_directory failed %ls  %ls: "), __FUNCTIONW__, utf8_to_wstr(_Ec.message()).c_str());
+            }
+        }
+    }
+    return path;
 }
 
-bool PyRxApp::load_pyrx_onload()
+const std::filesystem::path& PyRxApp::getAppDataPath(bool createIfNotFound /*= true*/)
 {
-    const auto [bfound, spath] = PyRxAppSettings::pyonload_path();
-    if (bfound)
+    static std::filesystem::path path;
+    if (path.empty())
     {
-        PyAutoLockGIL lock;
-        return ads_loadPythonModule(spath.c_str());
+        std::wstring _path(MAX_PATH, 0);
+        if (SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, _path.data()) == S_OK)
+        {
+            path = _path.c_str();
+            path /= L"PyRx";
+        }
     }
-    return false;
+    if (createIfNotFound)
+    {
+        if (std::error_code _Ec; !std::filesystem::exists(path, _Ec))
+        {
+            std::filesystem::create_directory(path, _Ec);
+            if (_Ec)
+            {
+                acutPrintf(_T("\nError create_directory failed %ls  %ls: "), __FUNCTIONW__, utf8_to_wstr(_Ec.message()).c_str());
+            }
+        }
+    }
+    return path;
 }
 
 bool PyRxApp::load_host_init()
 {
     PyAutoLockGIL lock;
 #ifdef PYRXDEBUG
-    std::filesystem::path fileToFind = PyRxApp::instance().dbg_pyrxpath / L"_host_init.py";
+    const std::filesystem::path fileToFind = SOLUTION_DIR / L"pyrx" / L"_host_init.py";
     if (AcString fout; acdbHostApplicationServices()->findFile(fout, fileToFind.c_str()) == eOk)
         return ads_loadPythonModule((const wchar_t*)fout);
     return false;
@@ -282,18 +329,17 @@ bool PyRxApp::init()
 #endif
         initTestFlags();
         initWxApp();
-        applyDevelopmentSettings();
 
         if (Py_IsInitialized() && setPyConfig())
         {
             isLoaded = true;
-            acutPrintf(_T("Python Interpreter Loaded successfully!\n"));
+            acutPrintf(_T("\nPython Interpreter Loaded successfully! :\n"));
         }
         else
         {
             if (PyErr_Occurred())
                 PyErr_Clear();
-            acutPrintf(_T("Failed to load Python Interpreter!"));
+            acutPrintf(_T("\nFailed to load Python Interpreter!: \n"));
             isLoaded = false;
         }
     }
@@ -309,7 +355,6 @@ void PyRxApp::initTestFlags()
 {
     try
     {
-        std::error_code ec;
         const auto& args = PyRxAppSettings::getCommandLineArgs();
         for (const auto& item : args)
         {
@@ -332,28 +377,12 @@ void PyRxApp::initTestFlags()
 
 bool PyRxApp::uninit()
 {
-    try
-    {
-        // Py_FinalizeEx throws because something is still in python 
-        // I think it's wxPython since the main window was attached
-        // acrxLockApplication so we just let the OS do our dirty work
-#ifdef NEVER //TODO!
-        PyGILState_STATE state = PyGILState_Ensure();
-        if (Py_IsInitialized())
-        {
-            wxTheApp->OnExit();
-            Py_FinalizeEx();
-        }
-#endif
-    }
-    catch (...)
-    {
-        acutPrintf(_T("exception in uninit"));
-    }
-    return false;
+    return uninitWxApp();
 }
 
-static void print_list(PyObject* pylist)
+#ifdef PYRXDEBUG
+#ifdef NEVER // sanity 
+static void printPythonList(PyObject* pylist)
 {
     for (Py_ssize_t idx = 0; idx < PyList_Size(pylist); idx++)
     {
@@ -366,6 +395,8 @@ static void print_list(PyObject* pylist)
         }
     }
 }
+#endif
+#endif
 
 bool PyRxApp::setPyConfig()
 {
@@ -387,6 +418,8 @@ bool PyRxApp::setPyConfig()
     return true;
 }
 
+// during pyload, we insert the modules to the front of sys.path, load, then move it 
+// to the end. this is to ensure correct module is loaded
 bool PyRxApp::appendSearchPath(const std::filesystem::path& modulePath, bool pyload /*= false*/)
 {
     PyObjectPtr sys(PyImport_ImportModule("sys"));
@@ -443,9 +476,9 @@ bool PyRxApp::popFrontSearchPath(const std::filesystem::path& pModulePath)
     }
 
 #ifdef PYRXDEBUG
-#ifdef NEVER
+#ifdef NEVER // sanity 
     acutPrintf(_T("\nBefore: \n"));
-    print_list(path.get());
+    printPythonList(path.get());
 #endif
 #endif
 
@@ -454,12 +487,11 @@ bool PyRxApp::popFrontSearchPath(const std::filesystem::path& pModulePath)
         return false;
 
 #ifdef PYRXDEBUG
-#ifdef NEVER
+#ifdef NEVER // sanity 
     acutPrintf(_T("\nAfter: \n"));
-    print_list(path.get());
+    printPythonList(path.get());
 #endif
 #endif
-
     return true;
 }
 
@@ -468,40 +500,42 @@ std::wstring PyRxApp::the_error()
     PyAutoLockGIL lock;
     if (PyErr_Occurred())
     {
-        PyObject* error_type = nullptr;
-        PyObject* the_error = nullptr;
-        PyObject* the_traceback = nullptr;
+        PyObject* error_type = nullptr, * the_error = nullptr, * the_traceback = nullptr;
         PyErr_Fetch(&error_type, &the_error, &the_traceback);
         PyErr_NormalizeException(&error_type, &the_error, &the_traceback);
-        if ((error_type != NULL))
+        std::string the_error_string = "Unknown Error";
+        std::string the_traceback_string;
+        if (the_error != nullptr)
         {
-            std::string the_error_string, the_traceback_string;
-            if (the_error != NULL)
-                the_error_string = PyUnicode_AsUTF8(PyObject_Str(the_error));
-            if (the_traceback != NULL && PyTraceBack_Check(the_traceback))
+            PyObjectPtr pRep{ PyObject_Str(the_error) };
+            if (pRep) 
             {
-                PyTracebackObject* traceRoot = (PyTracebackObject*)the_traceback;
-                PyTracebackObject* pTrace = traceRoot;
-                while (pTrace != NULL)
-                {
-                    PyFrameObject* frame = pTrace->tb_frame;
-                    PyCodeObject* code = PyFrame_GetCode(frame);
-                    int lineNr = PyFrame_GetLineNumber(frame);
-                    const char* sCodeName = PyUnicode_AsUTF8(code->co_name);
-                    const char* sFileName = PyUnicode_AsUTF8(code->co_filename);
-                    the_traceback_string += std::format("\nAt {} ({}:{})", sCodeName, sFileName, lineNr);
-                    pTrace = pTrace->tb_next;
-                }
+                const char* utf8 = PyUnicode_AsUTF8(pRep.get());
+                if (utf8 != nullptr) 
+                    the_error_string = utf8;
             }
-            std::string message(the_error_string + " ,Traceback - " + the_traceback_string);
-            Py_XDECREF(error_type);
-            Py_XDECREF(the_error);
-            Py_XDECREF(the_traceback);
-            return utf8_to_wstr(message);
         }
+        if (the_traceback != nullptr && PyTraceBack_Check(the_traceback))
+        {
+            PyTracebackObject* pTrace = (PyTracebackObject*)the_traceback;
+            while (pTrace != nullptr)
+            {
+                PyFrameObject* frame = pTrace->tb_frame;
+                PyCodeObject* code = PyFrame_GetCode(frame);
+                int lineNr = PyFrame_GetLineNumber(frame);
+                const char* sCodeName = PyUnicode_AsUTF8(code->co_name);
+                const char* sFileName = PyUnicode_AsUTF8(code->co_filename);
+                the_traceback_string += std::format("\n  File \"{}\", line {}, in {}", sFileName ? sFileName : "?", lineNr, sCodeName ? sCodeName : "?");
+                Py_DECREF(code);
+                pTrace = pTrace->tb_next;
+            }
+        }
+        std::string message = the_error_string + "\nTraceback (most recent call last):" + the_traceback_string;
+        Py_XDECREF(error_type);
+        Py_XDECREF(the_error);
+        Py_XDECREF(the_traceback);
+        return utf8_to_wstr(message);
     }
-    return std::wstring{ __FUNCTIONW__ };
+    return L"No Python Error Occurred";
 }
-IMPLEMENT_APP_NO_MAIN(WxRxApp)
-
-
+wxIMPLEMENT_APP_NO_MAIN(WxRxApp);

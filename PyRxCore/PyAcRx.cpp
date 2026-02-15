@@ -3,6 +3,7 @@
 #include "PyRxObject.h"
 #include <boost/function.hpp>
 #include "PyRxOverrule.h"
+#include "PyRxApp.h"
 
 using namespace boost::python;
 
@@ -40,18 +41,100 @@ enum eDirection_type
     eStderr
 };
 
+static std::string expandPercents(const std::string& input)
+{
+    std::string result;
+    result.reserve(size_t(input.size() * 1.25));
+    for (char c : input)
+    {
+        result += c;
+        if (c == '%')
+            result += '%';
+    }
+    return result;
+}
+
+static void doWrite(const std::string& input)
+{
+    if (input.size() != 0)
+        acutPrintf(utf8_to_wstr(expandPercents(input)).c_str());
+}
+
+//https://forums.codeguru.com/showthread.php?562679-Thread-safe-deque-implementation
+template<typename T>
+class PromtLockQueue
+{
+public:
+    void push(T value)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        queue.push(std::move(value));
+    }
+
+    bool try_pop(T& value)
+    {
+        if (queue.empty())
+            return false;
+        value = std::move(queue.front());
+        queue.pop();
+        return true;
+    }
+
+    size_t size() const
+    {
+        return queue.size();
+    }
+
+    void write()
+    {
+        if (size() > 0)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            while (size() > 0)
+            {
+                if (std::string buffer; try_pop(buffer))
+                    doWrite(buffer);
+                else
+                    return;
+            }
+        }
+    }
+
+private:
+    mutable std::mutex mutex;
+    std::queue<T> queue;
+};
+
+static PromtLockQueue<std::string>& getLockqueue()
+{
+    static PromtLockQueue<std::string> lq;
+    return lq;
+}
+
+void flushPromptBuffer()
+{
+    getLockqueue().write();
+}
+
 template<eDirection_type>
 class py_redirector
 {
 public:
+
     void write(const std::string& text)
     {
         if (text.size() != 0)
-            acutPrintf(utf8_to_wstr(text).c_str());
+        {
+            if (std::this_thread::get_id() != PyRxApp::instance().MAIN_THREAD_ID)
+                getLockqueue().push(text);
+            else
+                doWrite(text);
+        }
     }
+
     void flush()
     {
-        acutPrintf(_T("\n"));
+        doWrite("\n");
     }
 };
 
@@ -70,7 +153,7 @@ static boost::shared_ptr<stderr_redirector> make_stderr_redirector()
 
 //-----------------------------------------------------------------------------------------------------------
 //PyRx Module
-BOOST_PYTHON_MODULE(PyRx)
+static BOOST_PYTHON_MODULE(PyRx)
 {
     docstring_options local_docstring_options(py_show_user_defined, py_show_py_signatures, py_show_cpp_signatures);
 

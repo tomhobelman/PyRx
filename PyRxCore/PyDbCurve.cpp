@@ -13,13 +13,17 @@ void makePyDbCurveWrapper()
         "- newParam: float\n"
         "- extendStart: bool, toPoint: PyGe.Point3d\n";
 
-    PyDocString DS("PyDb.Curve");
+    PyDocString DS("Curve");
     class_<PyDbCurve, bases<PyDbEntity>>("Curve", boost::python::no_init)
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" }, 2760)))
         .def("isClosed", &PyDbCurve::isClosed, DS.ARGS(2796))
         .def("isPeriodic", &PyDbCurve::isPeriodic, DS.ARGS(2797))
+        .def("isOn", &PyDbCurve::isOn1)
+        .def("isOn", &PyDbCurve::isOn2)
+        .def("isOn", &PyDbCurve::isOn3)
+        .def("isOn", &PyDbCurve::isOn4, DS.ARGS({ "val : float | PyGe.Point3d","tol : PyGe.Tol = ..." }, 11867))
         .def("getStartParam", &PyDbCurve::getStartParam, DS.ARGS(2794))
         .def("getEndParam", &PyDbCurve::getEndParam, DS.ARGS(2780))
         .def("getStartPoint", &PyDbCurve::getStartPoint, DS.ARGS(2795))
@@ -36,14 +40,14 @@ void makePyDbCurveWrapper()
         .def("getSecondDeriv", &PyDbCurve::getSecondDeriv2, DS.ARGS({ "param: float|PyGe.Point3d" }, 2791))
         .def("getClosestPointTo", &PyDbCurve::getClosestPointTo1)
         .def("getClosestPointTo", &PyDbCurve::getClosestPointTo2)
-        .def("getClosestPointTo", &PyDbCurve::getClosestPointTo3, DS.ARGS({ "point3d: PyGe.Point3d","direction: PyGe.Vector3d=None","extend: bool=False" }, 2777))
+        .def("getClosestPointTo", &PyDbCurve::getClosestPointTo3, DS.ARGS({ "point3d: PyGe.Point3d","direction: PyGe.Vector3d = ...","extend: bool=False" }, 2777))
         .def("getOffsetCurves", &PyDbCurve::getOffsetCurves, DS.ARGS({ "dist: float" }, 2783))
         .def("getOffsetCurvesGivenPlaneNormal", &PyDbCurve::getOffsetCurvesGivenPlaneNormal, DS.ARGS({ "normal: PyGe.Vector3d", "dist: float" }, 2784))
         .def("getSplitCurves", &PyDbCurve::getSplitCurves, DS.ARGS({ "paramsOrPoints: list" }, 2793))
-        .def("getSplitCurvesAtParam", &PyDbCurve::getSplitCurvesAtParam, DS.ARGS({ "param: float" }))
-        .def("getSplitCurvesAtParams", &PyDbCurve::getSplitCurvesAtParams, DS.ARGS({ "params: list[float]" }))
-        .def("getSplitCurvesAtPoint", &PyDbCurve::getSplitCurvesAtPoint, DS.ARGS({ "point: PyGe.Point3d" }))
-        .def("getSplitCurvesAtPoints", &PyDbCurve::getSplitCurvesAtPoints, DS.ARGS({ "points: list[PyGe.Point3d]" }))
+        .def("getSplitCurvesAtParam", &PyDbCurve::getSplitCurvesAtParam, DS.ARGS({ "param: float" }, 2793))
+        .def("getSplitCurvesAtParams", &PyDbCurve::getSplitCurvesAtParams, DS.ARGS({ "params: list[float]" }, 2793))
+        .def("getSplitCurvesAtPoint", &PyDbCurve::getSplitCurvesAtPoint, DS.ARGS({ "point: PyGe.Point3d" }, 2793))
+        .def("getSplitCurvesAtPoints", &PyDbCurve::getSplitCurvesAtPoints, DS.ARGS({ "points: list[PyGe.Point3d]" }, 2793))
         .def("getOrthoProjectedCurve", &PyDbCurve::getOrthoProjectedCurve, DS.ARGS({ "plane: PyGe.Plane" }, 2785))
         .def("getProjectedCurve", &PyDbCurve::getProjectedCurve, DS.ARGS({ "plane: PyGe.Plane","projDir: PyGe.Vector3d" }, 2790))
         .def("getSpline", &PyDbCurve::getSpline, DS.ARGS(2792))
@@ -52,16 +56,16 @@ void makePyDbCurveWrapper()
         .def("getArea", &PyDbCurve::getArea, DS.ARGS(2776))
         .def("reverseCurve", &PyDbCurve::reverseCurve, DS.ARGS(2798))
         .def("getAcGeCurve", &PyDbCurve::getAcGeCurve1)
-        .def("getAcGeCurve", &PyDbCurve::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = 'default'" }, 2775))
+        .def("getAcGeCurve", &PyDbCurve::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = ..." }, 2775))
         .def("setFromAcGeCurve", &PyDbCurve::setFromAcGeCurve1)
         .def("setFromAcGeCurve", &PyDbCurve::setFromAcGeCurve2)
         .def("setFromAcGeCurve", &PyDbCurve::setFromAcGeCurve3,
-            DS.ARGS({ "curve: PyGe.Curve3d","normal: PyGe.Vector3d = PyGe.Vector3d.kZAxis","tol: PyGe.Tol = 'default'" }, 2799))
+            DS.ARGS({ "curve: PyGe.Curve3d","normal: PyGe.Vector3d = PyGe.Vector3d.kZAxis","tol: PyGe.Tol = ..." }, 2799))
 
         .def("createFromAcGeCurve", &PyDbCurve::createFromAcGeCurve1)
         .def("createFromAcGeCurve", &PyDbCurve::createFromAcGeCurve2)
         .def("createFromAcGeCurve", &PyDbCurve::createFromAcGeCurve3,
-            DS.SARGS({ "curve: PyGe.Curve3d","normal: PyGe.Vector3d = PyGe.Vector3d.kZAxis","tol: PyGe.Tol = 'default'" }, 2773)).staticmethod("createFromAcGeCurve")
+            DS.SARGS({ "curve: PyGe.Curve3d","normal: PyGe.Vector3d = PyGe.Vector3d.kZAxis","tol: PyGe.Tol = ..." }, 2773)).staticmethod("createFromAcGeCurve")
 
         .def("className", &PyDbCurve::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbCurve::desc, DS.SARGS(15560)).staticmethod("desc")
@@ -98,6 +102,33 @@ Adesk::Boolean PyDbCurve::isClosed() const
 Adesk::Boolean PyDbCurve::isPeriodic() const
 {
     return impObj()->isPeriodic();
+}
+
+static std::unique_ptr<AcGeCurve3d> getSafeCurve(AcDbCurve* pCurve)
+{
+    AcGeCurve3d* pGeCurve = nullptr;
+    PyThrowBadEs(pCurve->getAcGeCurve(pGeCurve));
+    return std::unique_ptr<AcGeCurve3d>(pGeCurve);
+}
+
+Adesk::Boolean PyDbCurve::isOn1(const AcGePoint3d& pnt) const
+{
+    return getSafeCurve(impObj())->isOn(pnt);
+}
+
+Adesk::Boolean PyDbCurve::isOn2(const AcGePoint3d& pnt, const AcGeTol& tol) const
+{
+    return getSafeCurve(impObj())->isOn(pnt, tol);
+}
+
+Adesk::Boolean PyDbCurve::isOn3(double param) const
+{
+    return getSafeCurve(impObj())->isOn(param);
+}
+
+Adesk::Boolean PyDbCurve::isOn4(double param, const AcGeTol& tol) const
+{
+    return getSafeCurve(impObj())->isOn(param, tol);
 }
 
 double PyDbCurve::getStartParam() const
@@ -303,33 +334,33 @@ boost::python::list PyDbCurve::getSplitCurvesAtPoints(const boost::python::objec
     return curves;
 }
 
-PyDbCurve PyDbCurve::getOrthoProjectedCurve(const PyGePlane& plane)
+PyDbCurve PyDbCurve::getOrthoProjectedCurve(const PyGePlane& plane) const
 {
     AcDbCurve* pCurve = nullptr;
     PyThrowBadEs(impObj()->getOrthoProjectedCurve(*plane.impObj(), pCurve));
     return PyDbCurve(pCurve, true);
 }
 
-PyDbCurve PyDbCurve::getProjectedCurve(const PyGePlane& plane, const AcGeVector3d& projDir)
+PyDbCurve PyDbCurve::getProjectedCurve(const PyGePlane& plane, const AcGeVector3d& projDir) const
 {
     AcDbCurve* pCurve = nullptr;
     PyThrowBadEs(impObj()->getProjectedCurve(*plane.impObj(), projDir, pCurve));
     return PyDbCurve(pCurve, true);
 }
 
-PyDbSpline PyDbCurve::getSpline()
+PyDbSpline PyDbCurve::getSpline() const
 {
     AcDbSpline* _spline = nullptr;
     PyThrowBadEs(impObj()->getSpline(_spline));
     return PyDbSpline(_spline, true);
 }
 
-void PyDbCurve::extend1(double newParam)
+void PyDbCurve::extend1(double newParam) const
 {
     return PyThrowBadEs(impObj()->extend(newParam));
 }
 
-void PyDbCurve::extend2(Adesk::Boolean extendStart, const AcGePoint3d& toPoint)
+void PyDbCurve::extend2(Adesk::Boolean extendStart, const AcGePoint3d& toPoint) const
 {
     return PyThrowBadEs(impObj()->extend(extendStart, toPoint));
 }
@@ -341,8 +372,10 @@ double PyDbCurve::getArea() const
     return area;
 }
 
-void PyDbCurve::reverseCurve()
+void PyDbCurve::reverseCurve() const
 {
+    if(impObj()->isWriteEnabled() == Adesk::kFalse)
+        PyThrowBadEs(eNotOpenForWrite);
     return PyThrowBadEs(impObj()->reverseCurve());
 }
 
@@ -360,17 +393,17 @@ PyGeCurve3d PyDbCurve::getAcGeCurve2(const AcGeTol& tol) const
     return PyGeCurve3d(pGeCurve);
 }
 
-void PyDbCurve::setFromAcGeCurve1(const PyGeCurve3d& geCurve)
+void PyDbCurve::setFromAcGeCurve1(const PyGeCurve3d& geCurve) const
 {
     PyThrowBadEs(impObj()->setFromAcGeCurve(*geCurve.impObj()));
 }
 
-void PyDbCurve::setFromAcGeCurve2(const PyGeCurve3d& geCurve, AcGeVector3d& normal)
+void PyDbCurve::setFromAcGeCurve2(const PyGeCurve3d& geCurve, AcGeVector3d& normal) const
 {
     PyThrowBadEs(impObj()->setFromAcGeCurve(*geCurve.impObj(), std::addressof(normal)));
 }
 
-void PyDbCurve::setFromAcGeCurve3(const PyGeCurve3d& geCurve, AcGeVector3d& normal, const AcGeTol& tol)
+void PyDbCurve::setFromAcGeCurve3(const PyGeCurve3d& geCurve, AcGeVector3d& normal, const AcGeTol& tol) const
 {
     PyThrowBadEs(impObj()->setFromAcGeCurve(*geCurve.impObj(), std::addressof(normal), tol));
 }

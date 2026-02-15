@@ -6,7 +6,7 @@
 enum class PyRxTestFlags : __int64
 {
     kPyTfNone = 0,
-    kPyTfReserved0 = (1 << 0),
+    kPyTfNoOptimize = (1 << 0),
     kPyTfReserved1 = (1 << 1),
     kPyTfReserved2 = (1 << 2),
     kPyTfReserved3 = (1 << 3),
@@ -17,59 +17,15 @@ enum class PyRxTestFlags : __int64
     kPyTfWaitForDebug = (1 << 8),
 };
 
-
 struct PyRxMethod;
-
-#ifdef PYPERFPROFILE
-class PerfTimerEx
-{
-public:
-    void init(const CString& funcName);
-    void tick();
-    void end();
-    void reset();
-
-private:
-    CString m_funcName;
-    uint64_t m_ticks = 0;
-    std::chrono::high_resolution_clock::time_point t_begin;
-};
-
-inline void PerfTimerEx::init(const CString& funcName)
-{
-    m_funcName = funcName;
-    reset();
-}
-
-inline void PerfTimerEx::reset()
-{
-    m_ticks = 0;
-    t_begin = std::chrono::high_resolution_clock::now();
-}
-
-inline void PerfTimerEx::tick()
-{
-    m_ticks++;
-}
-
-inline void PerfTimerEx::end()
-{
-    std::chrono::duration<double> elapsed;
-    auto t_end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = t_end - t_begin;
-    acutPrintf(_T("\nName= %ls, total = %lf, ticks %ld, per tick = %lf"),
-        (const TCHAR*)m_funcName, diff.count(), m_ticks, diff.count() / m_ticks);
-    reset();
-}
-#endif
-
 
 //------------------------------------------------------------------------------------------------
 //  this is AutoCAD's main frame
-class WinFrame : public wxFrame
+class ArxTopLevelWindow : public wxTopLevelWindow
 {
 public:
-    WinFrame(HWND hwnd);
+    ArxTopLevelWindow();
+    ~ArxTopLevelWindow() override = default;
 };
 
 //------------------------------------------------------------------------------------------------
@@ -82,30 +38,36 @@ public:
     virtual bool    OnInit() override;
     virtual int     OnExit() override;
     virtual void    WakeUpIdle() override;
-    virtual void    ExitMainLoop() override;
     bool            Init_wxPython();
-    static WxRxApp& instance();
-public:
-    std::unique_ptr<WinFrame> frame;
+private:
+    PyThreadState* m_mainTState = nullptr;
 };
+wxDECLARE_APP(WxRxApp);
 
 //------------------------------------------------------------------------------------------------
 // the PyRxApp, holds the command objects
 class PyRxApp
 {
 public:
+    PyRxApp() = default;
+    ~PyRxApp() = default;
+    PyRxApp(const PyRxApp&) = delete;
+    PyRxApp& operator=(const PyRxApp&) = delete;
+
     bool                init();
     void                initTestFlags();
     bool                uninit();
+
     static bool         setPyConfig();
     static bool         appendSearchPath(const std::filesystem::path& pModulePath, bool pyload = false);
     static bool         popFrontSearchPath(const std::filesystem::path& pModulePath);
     static std::wstring the_error();
     static const std::filesystem::path& modulePath();
     static const std::filesystem::path& moduleName();
-    static void         applyDevelopmentSettings();
-    static bool         load_pyrx_onload();
+    static const std::filesystem::path& getLocalAppDataPath(bool createIfNotFound = true);
+    static const std::filesystem::path& getAppDataPath(bool createIfNotFound = true);
     static bool         load_host_init();
+
     static PyRxApp& instance();
 public:
 
@@ -123,21 +85,15 @@ public:
     PathForLispFunc pathForLispFunc;
     std::set<std::wstring> loadedModuleNames;
 
+    inline static std::thread::id MAIN_THREAD_ID;
+
 #ifdef _ZRXTARGET260
     //ID SUP - 79158
     AcString commandForDocOverride;
 #endif
 
-    // this is the path to pyrx when working in debug, see applyDevelopmentSettings
-    std::filesystem::path dbg_pyrxpath;
-
     void* appPkt = nullptr;
     size_t testflags = 0;
     bool isLoaded = false;
 
-#ifdef PYPERFPROFILER
-    PerfTimerEx perfTimerEx;
-#endif
-
 };
-

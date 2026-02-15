@@ -1,12 +1,15 @@
 import traceback
-from pyrx_imp import Rx, Ge, Db, Ap, Ed, Gi, Gs
-import wx
 from timeit import default_timer as timer
+
+import wx
+
+from pyrx import Ap, Db, Gs
 
 host = Ap.Application.hostAPI()
 
-#id image width, image height, scale factor, (optional)BKColor
-#img: wx.Image = Gs.Core.getBlockImage(id, 64, 64, 1.0, [255, 255, 255])
+# id image width, image height, scale factor, (optional)BKColor
+# img: wx.Image = Gs.Core.getBlockImage(id, 64, 64, 1.0, [255, 255, 255])
+
 
 def doSideDb(db: Db.Database):
     start = timer()
@@ -20,26 +23,28 @@ def doSideDb(db: Db.Database):
             continue
         if name.startswith("A$"):
             continue
-        
+
         img: wx.Image = Gs.Core.getBlockImage(id, 128, 128, 1.0)
         img.SaveFile("E:/temp/{}_{}_128.png".format(name, host), wx.BITMAP_TYPE_PNG)
         cnt += 1
 
     end = timer()
     print(cnt, end - start)
-    
-#side database
-def PyRxCmd_doitsd():
+
+
+# side database
+@Ap.Command()
+def doitsd():
     try:
-        db = Db.Database(False,True)
+        db = Db.Database(False, True)
         db.readDwgFile("M:/Dev/Projects/PyRxGit/PySamples/dwg/Floor Plan Sample.dwg ")
         db.closeInput(True)
         doSideDb(db)
     except Exception as err:
         traceback.print_exception(err)
 
-
-def PyRxCmd_doit64():
+@Ap.Command()
+def doit64():
     try:
         start = timer()
 
@@ -65,8 +70,9 @@ def PyRxCmd_doit64():
         traceback.print_exception(err)
 
 
-#SR176790 - AcGsView::getSnapShot differences 
-def PyRxCmd_doit64W():
+# SR176790 - AcGsView::getSnapShot differences
+@Ap.Command()
+def doit64W():
     try:
         start = timer()
 
@@ -90,8 +96,9 @@ def PyRxCmd_doit64W():
 
     except Exception as err:
         traceback.print_exception(err)
-        
-def PyRxCmd_doit64TR():
+
+@Ap.Command()
+def doit64TR():
     try:
         start = timer()
 
@@ -107,7 +114,7 @@ def PyRxCmd_doit64TR():
             if name.startswith("A$"):
                 continue
             img: wx.Image = Gs.Core.getBlockImage(id, 64, 64, 1.0, [0, 0, 0])
-            img.SetMaskColour(0,0,0)
+            img.SetMaskColour(0, 0, 0)
             img.SetMask(True)
             img.SaveFile("E:/temp/{}_{}_64.png".format(name, host), wx.BITMAP_TYPE_PNG)
             cnt += 1
@@ -118,8 +125,8 @@ def PyRxCmd_doit64TR():
     except Exception as err:
         traceback.print_exception(err)
 
-
-def PyRxCmd_doit128():
+@Ap.Command()
+def doit128():
     try:
         start = timer()
 
@@ -144,8 +151,8 @@ def PyRxCmd_doit128():
     except Exception as err:
         traceback.print_exception(err)
 
-
-def PyRxCmd_doit256():
+@Ap.Command()
+def doit256():
     try:
         start = timer()
 

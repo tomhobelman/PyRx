@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from pyrx import Ge
 
 
@@ -10,6 +11,15 @@ class TestPoint2d:
     def test_point2d_default_ctor(self):
         point = Ge.Point2d()
         assert point == Ge.Point2d(0, 0)
+
+    def test_Point2dArray_init(self):
+        vals = [Ge.Point2d(0, 0), Ge.Point2d(10, 0), Ge.Point2d(10, 10)]
+        pnts = Ge.Point2dArray(vals)
+        assert pnts[2] == vals[2]
+
+    def test_point2d_len(self):
+        pO = Ge.Point2d(0, 0)
+        assert len(pO) == 2
 
     def test_point2d_arg_ctor(self):
         point = Ge.Point2d(100, 100)

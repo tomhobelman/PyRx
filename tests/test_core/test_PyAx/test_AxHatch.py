@@ -1,8 +1,11 @@
 from __future__ import annotations
-from pyrx import Ap, Ge, Ax
+
 import pytest
 
+from pyrx import Ap, Ax, Ge
 
+
+@pytest.mark.known_failure_GRX
 class TestAxHatch:
 
     def setup_class(self):

@@ -11,8 +11,19 @@
 #include "PyDbDate.h"
 #include "PyDbDbLayerStateManager.h"
 #include "PyAcadApplication.h"
+#include "PyDbGraph.h"
+#include "PyDbSymbolTable.h"
 
 using namespace boost::python;
+
+static AcDbObjectId getblockModelSpaceId(AcDbDatabase* pDb)
+{
+    AcDbObjectId recid;
+    AcDbBlockTablePointer bt(pDb->blockTableId());
+    bt->getIdAt(L"*MODEL_SPACE", recid);
+    return recid;
+}
+
 //---------------------------------------------------------------------------------------------------
 // makeAcDbDatabaseWrapper
 void makePyDbDatabaseWrapper()
@@ -22,22 +33,26 @@ void makePyDbDatabaseWrapper()
         "descList: list[PyRx.RxClass]\n";
 
     constexpr const std::string_view wblockOverloads = "Overloads:\n"
+        "- None: Any\n"
         "- blockId : PyDb.ObjectId\n"
-        "- blockIds : list[PyDb.ObjectId], basePoint : PyGe.Point3d\n"
-        "- outputDb : PyDb.Database, ids : list[PyDb.ObjectId], basePoint : PyGe.Point3d , drc : PyDb.DuplicateRecordCloning\n";
+        "- blockIds : list[PyDb.ObjectId], basePoint : PyGe.Point3d\n";
 
     constexpr const std::string_view insertOverloads = "Overloads:\n"
         "- blockId: PyDb.ObjectId, pBlockName: str, db:PyDb.Database, preserveSourceDatabase: bool\n"
         "- blockId: PyDb.ObjectId, pBlockName: str, pDestinationBlockName: str, db:PyDb.Database, preserveSourceDatabase: bool\n"
         "- xform: PyGe.Matrix3d, db: PyDb.Database, preserveSourceDatabase: bool\n";
 
-    PyDocString DS("PyDb.Database");
+    constexpr const std::string_view  readDwgFilesOverloads = "Overloads:\n"
+        "- fileName:str\n"
+        "- fileName:str, mode: PyDb.DatabaseOpenMode,bAllowCPConversion:bool,password:str\n";
+
+    PyDocString DS("Database");
     class_<PyDbDatabase, bases<PyRxObject>>("Database")
         .def(init<>())
         .def(init<bool, bool>(DS.ARGS({ "buildDefaultDrawing : bool=True", "noDocument: bool=False" }, 19135)))
-        .def("acadDatabase", &PyDbDatabase::acadDatabase)
+        .def("acadDatabase", &PyDbDatabase::acadDatabase, DS.ARGS(19137))
         .def("addToBlock", &PyDbDatabase::addToBlock1)
-        .def("addToBlock", &PyDbDatabase::addToBlock2, DS.ARGS({ "btrid : PyDb.ObjectId", "entity : PyDb.Entity | list[PyDb.Entity]" }))
+        .def("addToBlock", &PyDbDatabase::addToBlock2, DS.ARGS({ "btrId : PyDb.ObjectId", "entity : PyDb.Entity | list[PyDb.Entity]" }))
         .def("addToModelspace", &PyDbDatabase::addToModelspace1)
         .def("addToModelspace", &PyDbDatabase::addToModelspace2, DS.ARGS({ "entity : PyDb.Entity | list[PyDb.Entity]" }, 19133))
         .def("addToCurrentspace", &PyDbDatabase::addToCurrentspace1)
@@ -52,6 +67,7 @@ void makePyDbDatabaseWrapper()
         .def("attmode", &PyDbDatabase::attmode, DS.ARGS(2872))
         .def("aunits", &PyDbDatabase::aunits, DS.ARGS(2875))
         .def("auprec", &PyDbDatabase::auprec, DS.ARGS(2876))
+        .def("audit", &PyDbDatabase::audit, DS.ARGS({ "fixErrors: bool", "cmdLineEcho: bool" }, 10721))
         .def("blipmode", &PyDbDatabase::blipmode, DS.ARGS(2877))
         .def("byBlockLinetype", &PyDbDatabase::byBlockLinetype, DS.ARGS(2879))
         .def("byBlockMaterial", &PyDbDatabase::byBlockMaterial, DS.ARGS(2880))
@@ -103,7 +119,7 @@ void makePyDbDatabaseWrapper()
         .def("dwgFileWasSavedByAutodeskSoftware", &PyDbDatabase::dwgFileWasSavedByAutodeskSoftware, DS.ARGS(2933))
         .def("dxfIn", &PyDbDatabase::dxfIn, DS.ARGS({ "filename : str" }, 2934))
         .def("dxfOut", &PyDbDatabase::dxfOut1)
-        .def("dxfOut", &PyDbDatabase::dxfOut2, DS.ARGS({ "filename : str","precision : int=16, dwgVer:PyDb.DwgVersion=PyDb.DwgVersion.kDHL_CURRENT,saveThumbnailImage: bool=False" }, 2935))
+        .def("dxfOut", &PyDbDatabase::dxfOut2, DS.ARGS({ "dxfFilename : str","precision : int=16, dwgVer:PyDb.DwgVersion=PyDb.DwgVersion.kDHL_CURRENT,saveThumbnailImage: bool=False" }, 2935))
         .def("elevation", &PyDbDatabase::elevation, DS.ARGS(2937))
         .def("eraseEmptyObjects", &PyDbDatabase::eraseEmptyObjects, DS.ARGS({ "flag : int" }, 2939))
         .def("extmax", &PyDbDatabase::extmax, DS.ARGS(2941))
@@ -119,8 +135,14 @@ void makePyDbDatabaseWrapper()
         .def("objectIds", &PyDbDatabase::objectIds)
         .def("objectIds", &PyDbDatabase::objectIdsOfType)
         .def("objectIds", &PyDbDatabase::objectIdsOfTypeList, DS.OVRL(objectIdsOverloads))
+        .def("objectIdArray", &PyDbDatabase::objectIdArray1)
+        .def("objectIdArray", &PyDbDatabase::objectIdArray2)
+        .def("objectIdArray", &PyDbDatabase::objectIdArray3, DS.OVRL(objectIdsOverloads))
         .def("getObjectId", &PyDbDatabase::getAcDbObjectId1)
         .def("getObjectId", &PyDbDatabase::getAcDbObjectId2, DS.ARGS({ "createIfNotFound : bool","objHandle : Handle","xRefId : int=0" }, 2950))
+        .def("blockTable", &PyDbDatabase::getBlockTable1)
+        .def("blockTable", &PyDbDatabase::getBlockTable2, DS.ARGS({ "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }, 2951))
+        .def("getBlocks", &PyDbDatabase::getBlocks, DS.ARGS(19138))
         .def("tryGetObjectId", &PyDbDatabase::tryGetAcDbObjectId1)
         .def("tryGetObjectId", &PyDbDatabase::tryGetAcDbObjectId2, DS.ARGS({ "createIfNotFound : bool","objHandle : Handle","xRefId : int=0" }))
         .def("getCePlotStyleNameId", &PyDbDatabase::getCePlotStyleNameId, DS.ARGS(2952))
@@ -149,7 +171,7 @@ void makePyDbDatabaseWrapper()
         .def("intersectDisplay", &PyDbDatabase::intersectDisplay, DS.ARGS(3019))
         .def("isBeingDestroyed", &PyDbDatabase::isBeingDestroyed, DS.ARGS(3021))
         .def("isEMR", &PyDbDatabase::isEMR, DS.ARGS(3022))
-        .def("isObjectNonPersistent", &PyDbDatabase::isObjectNonPersistent, DS.SARGS({ "id : ObjectId" }, 3023)).staticmethod("isObjectNonPersistent")//static
+        .def("isObjectNonPersistent", &PyDbDatabase::isObjectNonPersistent, DS.SARGS({ "id : PyDb.ObjectId" }, 3023)).staticmethod("isObjectNonPersistent")//static
         .def("isolines", &PyDbDatabase::isolines, DS.ARGS(3024))
         .def("isPartiallyOpened", &PyDbDatabase::isPartiallyOpened, DS.ARGS(3025))
         .def("isPucsOrthographic", &PyDbDatabase::isPucsOrthographic, DS.ARGS({ "orthoView : OrthographicView" }, 3026))
@@ -185,7 +207,7 @@ void makePyDbDatabaseWrapper()
         .def("lunits", &PyDbDatabase::lunits, DS.ARGS(3057))
         .def("luprec", &PyDbDatabase::luprec, DS.ARGS(3058))
         .def("maintenanceReleaseVersion", &PyDbDatabase::maintenanceReleaseVersion, DS.ARGS(3059))
-        .def("markObjectNonPersistent", &PyDbDatabase::markObjectNonPersistent, DS.SARGS({ "id : ObjectId","value : bool" }, 3060)).staticmethod("markObjectNonPersistent")//static
+        .def("markObjectNonPersistent", &PyDbDatabase::markObjectNonPersistent, DS.SARGS({ "id : PyDb.ObjectId","value : bool" }, 3060)).staticmethod("markObjectNonPersistent")//static
         .def("materialDictionaryId", &PyDbDatabase::materialDictionaryId, DS.ARGS(3061))
         .def("maxactvp", &PyDbDatabase::maxactvp, DS.ARGS(3062))
         .def("measurement", &PyDbDatabase::measurement, DS.ARGS(3063))
@@ -254,187 +276,187 @@ void makePyDbDatabaseWrapper()
         .def("setAngbase", &PyDbDatabase::setAngbase, DS.ARGS({ "angle : float" }, 3133))
         .def("setAngdir", &PyDbDatabase::setAngdir, DS.ARGS({ "dir : bool" }, 3134))
         .def("setAnnoAllVisible", &PyDbDatabase::setAnnoAllVisible, DS.ARGS({ "allvis : bool" }, 3135))
-        .def("setAttdia", &PyDbDatabase::setAttdia, DS.ARGS({ "val : bool" }, 3136))
-        .def("setAttmode", &PyDbDatabase::setAttmode, DS.ARGS({ "val : int" }, 3137))
-        .def("setAttreq", &PyDbDatabase::setAttreq, DS.ARGS({ "val : bool" }, 3138))
-        .def("setAunits", &PyDbDatabase::setAunits, DS.ARGS({ "val : int" }, 3139))
-        .def("setAuprec", &PyDbDatabase::setAuprec, DS.ARGS({ "val : int" }, 3140))
-        .def("setBlipmode", &PyDbDatabase::setBlipmode, DS.ARGS({ "val : bool" }, 3141))
-        .def("setCameraDisplay", &PyDbDatabase::setCameraDisplay, DS.ARGS({ "val : bool" }, 3142))
-        .def("setCameraHeight", &PyDbDatabase::setCameraHeight, DS.ARGS({ "val : float" }, 3143))
-        .def("setCDynDisplayMode", &PyDbDatabase::setCDynDisplayMode, DS.ARGS({ "val : int" }, 3145))
-        .def("setCeltscale", &PyDbDatabase::setCeltscale, DS.ARGS({ "val : float" }, 3147))
-        .def("setCeltype", &PyDbDatabase::setCeltype, DS.ARGS({ "val : ObjectId" }, 3148))
-        .def("setCelweight", &PyDbDatabase::setCelweight, DS.ARGS({ "val : LineWeight" }, 3149))
-        .def("setCePlotStyleName", &PyDbDatabase::setCePlotStyleName, DS.ARGS({ "val : PyDb.PlotStyleNameType", "id : PyDb.ObjectId" }, 3150))
-        .def("setChamfera", &PyDbDatabase::setChamfera, DS.ARGS({ "val : float" }, 3152))
-        .def("setChamferb", &PyDbDatabase::setChamferb, DS.ARGS({ "val : float" }, 3153))
-        .def("setChamferc", &PyDbDatabase::setChamferc, DS.ARGS({ "val : float" }, 3154))
-        .def("setChamferd", &PyDbDatabase::setChamferd, DS.ARGS({ "val : float" }, 3155))
-        .def("setClayer", &PyDbDatabase::setClayer, DS.ARGS({ "val : ObjectId" }, 3156))
-        .def("setCmaterial", &PyDbDatabase::setCmaterial, DS.ARGS({ "val : ObjectId" }, 3157))
-        .def("setCmljust", &PyDbDatabase::setCmljust, DS.ARGS({ "val : int" }, 3158))
-        .def("setCmlscale", &PyDbDatabase::setCmlscale, DS.ARGS({ "val : float" }, 3159))
-        .def("setCmlstyleID", &PyDbDatabase::setCmlstyleID, DS.ARGS({ "val : ObjectId" }, 3160))
-        .def("setCoords", &PyDbDatabase::setCoords, DS.ARGS({ "val : int" }, 3161))
-        .def("setCshadow", &PyDbDatabase::setCshadow, DS.ARGS({ "val : int" }, 3162))
-        .def("setDelUsedObj", &PyDbDatabase::setDelUsedObj, DS.ARGS({ "val : int" }, 3163))
-        .def("setDgnframe", &PyDbDatabase::setDgnframe, DS.ARGS({ "val : int" }, 3165))
-        .def("setDimaso", &PyDbDatabase::setDimaso, DS.ARGS({ "val : bool" }, 3166))
-        .def("setDimAssoc", &PyDbDatabase::setDimAssoc, DS.ARGS({ "val : int" }, 3167))
-        .def("setDimfit", &PyDbDatabase::setDimfit, DS.ARGS({ "val : int" }, 3168))
-        .def("setDimsho", &PyDbDatabase::setDimsho, DS.ARGS({ "val : bool" }, 3169))
-        .def("setDimstyle", &PyDbDatabase::setDimstyle, DS.ARGS({ "val : ObjectId" }, 3170))
+        .def("setAttdia", &PyDbDatabase::setAttdia, DS.ARGS({ "prompt : bool" }, 3136))
+        .def("setAttmode", &PyDbDatabase::setAttmode, DS.ARGS({ "attribute_mode : int" }, 3137))
+        .def("setAttreq", &PyDbDatabase::setAttreq, DS.ARGS({ "required : bool" }, 3138))
+        .def("setAunits", &PyDbDatabase::setAunits, DS.ARGS({ "angular_units : int" }, 3139))
+        .def("setAuprec", &PyDbDatabase::setAuprec, DS.ARGS({ "angular_precision : int" }, 3140))
+        .def("setBlipmode", &PyDbDatabase::setBlipmode, DS.ARGS({ "blip_mode : bool" }, 3141))
+        .def("setCameraDisplay", &PyDbDatabase::setCameraDisplay, DS.ARGS({ "camera_display : bool" }, 3142))
+        .def("setCameraHeight", &PyDbDatabase::setCameraHeight, DS.ARGS({ "camera_height : float" }, 3143))
+        .def("setCDynDisplayMode", &PyDbDatabase::setCDynDisplayMode, DS.ARGS({ "dynamic_display_mode : int" }, 3145))
+        .def("setCeltscale", &PyDbDatabase::setCeltscale, DS.ARGS({ "cell_scale : float" }, 3147))
+        .def("setCeltype", &PyDbDatabase::setCeltype, DS.ARGS({ "cell_type : PyDb.ObjectId" }, 3148))
+        .def("setCelweight", &PyDbDatabase::setCelweight, DS.ARGS({ "cell_weight : LineWeight" }, 3149))
+        .def("setCePlotStyleName", &PyDbDatabase::setCePlotStyleName, DS.ARGS({ "plot_style_type : PyDb.PlotStyleNameType", "new_id : PyDb.ObjectId" }, 3150))
+        .def("setChamfera", &PyDbDatabase::setChamfera, DS.ARGS({ "chamfer_distance_a : float" }, 3152))
+        .def("setChamferb", &PyDbDatabase::setChamferb, DS.ARGS({ "chamfer_distance_b : float" }, 3153))
+        .def("setChamferc", &PyDbDatabase::setChamferc, DS.ARGS({ "chamfer_distance_c : float" }, 3154))
+        .def("setChamferd", &PyDbDatabase::setChamferd, DS.ARGS({ "chamfer_distance_d : float" }, 3155))
+        .def("setClayer", &PyDbDatabase::setClayer, DS.ARGS({ "current_layer : PyDb.ObjectId" }, 3156))
+        .def("setCmaterial", &PyDbDatabase::setCmaterial, DS.ARGS({ "current_material : PyDb.ObjectId" }, 3157))
+        .def("setCmljust", &PyDbDatabase::setCmljust, DS.ARGS({ "multiline_justify : int" }, 3158))
+        .def("setCmlscale", &PyDbDatabase::setCmlscale, DS.ARGS({ "multiline_scale : float" }, 3159))
+        .def("setCmlstyleID", &PyDbDatabase::setCmlstyleID, DS.ARGS({ "multiline_style_id : PyDb.ObjectId" }, 3160))
+        .def("setCoords", &PyDbDatabase::setCoords, DS.ARGS({ "coordinates_display : int" }, 3161))
+        .def("setCshadow", &PyDbDatabase::setCshadow, DS.ARGS({ "current_shadow : int" }, 3162))
+        .def("setDelUsedObj", &PyDbDatabase::setDelUsedObj, DS.ARGS({ "delete_unused_objects : int" }, 3163))
+        .def("setDgnframe", &PyDbDatabase::setDgnframe, DS.ARGS({ "design_frame : int" }, 3165))
+        .def("setDimaso", &PyDbDatabase::setDimaso, DS.ARGS({ "dim_associative : bool" }, 3166))
+        .def("setDimAssoc", &PyDbDatabase::setDimAssoc, DS.ARGS({ "dimension_associativity : int" }, 3167))
+        .def("setDimfit", &PyDbDatabase::setDimfit, DS.ARGS({ "dimension_fit : int" }, 3168))
+        .def("setDimsho", &PyDbDatabase::setDimsho, DS.ARGS({ "dim_show_origin : bool" }, 3169))
+        .def("setDimstyle", &PyDbDatabase::setDimstyle, DS.ARGS({ "dimension_style : PyDb.ObjectId" }, 3170))
         .def("setDimstyleData", &PyDbDatabase::setDimstyleData1)
-        .def("setDimstyleData", &PyDbDatabase::setDimstyleData2, DS.ARGS({ "val : PyDb.DimStyleTableRecord | PyDb.ObjectId" }, 3171))
-        .def("setDimunit", &PyDbDatabase::setDimunit, DS.ARGS({ "val : int" }, 3172))
-        .def("setDispSilh", &PyDbDatabase::setDispSilh, DS.ARGS({ "val : bool" }, 3173))
-        .def("setDragmode", &PyDbDatabase::setDragmode, DS.ARGS({ "val : int" }, 3174))
-        .def("setDragVisStyle", &PyDbDatabase::setDragVisStyle, DS.ARGS({ "val : ObjectId" }, 3175))
-        .def("setDrawOrderCtl", &PyDbDatabase::setDrawOrderCtl, DS.ARGS({ "val : int" }, 3176))
-        .def("setDwfframe", &PyDbDatabase::setDwfframe, DS.ARGS({ "val : int" }, 3177))
-        .def("setElevation", &PyDbDatabase::setElevation, DS.ARGS({ "val : float" }, 3178))
-        .def("setEndCaps", &PyDbDatabase::setEndCaps, DS.ARGS({ "val : EndCaps" }, 3179))
-        .def("setExtmax", &PyDbDatabase::setExtmax, DS.ARGS({ "val : PyGe.Point3d" }, 3180))
-        .def("setExtmin", &PyDbDatabase::setExtmin, DS.ARGS({ "val : PyGe.Point3d" }, 3181))
-        .def("setFacetres", &PyDbDatabase::setFacetres, DS.ARGS({ "val : float" }, 3182))
-        .def("setFilletrad", &PyDbDatabase::setFilletrad, DS.ARGS({ "val : float" }, 3183))
-        .def("setFillmode", &PyDbDatabase::setFillmode, DS.ARGS({ "val : bool" }, 3184))
+        .def("setDimstyleData", &PyDbDatabase::setDimstyleData2, DS.ARGS({ "dim_style_data : PyDb.DimStyleTableRecord | PyDb.ObjectId" }, 3171))
+        .def("setDimunit", &PyDbDatabase::setDimunit, DS.ARGS({ "dimension_units : int" }, 3172))
+        .def("setDispSilh", &PyDbDatabase::setDispSilh, DS.ARGS({ "display_silhouette : bool" }, 3173))
+        .def("setDragmode", &PyDbDatabase::setDragmode, DS.ARGS({ "drag_mode : int" }, 3174))
+        .def("setDragVisStyle", &PyDbDatabase::setDragVisStyle, DS.ARGS({ "drag_visual_style : PyDb.ObjectId" }, 3175))
+        .def("setDrawOrderCtl", &PyDbDatabase::setDrawOrderCtl, DS.ARGS({ "draw_order_control : int" }, 3176))
+        .def("setDwfframe", &PyDbDatabase::setDwfframe, DS.ARGS({ "dwf_frame : int" }, 3177))
+        .def("setElevation", &PyDbDatabase::setElevation, DS.ARGS({ "elevation_value : float" }, 3178))
+        .def("setEndCaps", &PyDbDatabase::setEndCaps, DS.ARGS({ "end_caps_type : EndCaps" }, 3179))
+        .def("setExtmax", &PyDbDatabase::setExtmax, DS.ARGS({ "extents_maximum : PyGe.Point3d" }, 3180))
+        .def("setExtmin", &PyDbDatabase::setExtmin, DS.ARGS({ "extents_minimum : PyGe.Point3d" }, 3181))
+        .def("setFacetres", &PyDbDatabase::setFacetres, DS.ARGS({ "facet_resolution : float" }, 3182))
+        .def("setFilletrad", &PyDbDatabase::setFilletrad, DS.ARGS({ "fillet_radius : float" }, 3183))
+        .def("setFillmode", &PyDbDatabase::setFillmode, DS.ARGS({ "fill_mode : bool" }, 3184))
         .def("saveAs", &PyDbDatabase::saveAs1)
         .def("saveAs", &PyDbDatabase::saveAs2, DS.ARGS({ "filename: str", "bBakAndRename: bool = False","dwgVer: PyDb.DwgVersion = PyDb.DwgVersion.kDHL_CURRENT" }, 3127))
         .def("setFingerprintGuid", &PyDbDatabase::setFingerprintGuid, DS.ARGS({ "guid : str" }, 3185))
         .def("setFullSaveRequired", &PyDbDatabase::setFullSaveRequired, DS.ARGS(3186))
-        .def("setGeoMarkerVisibility", &PyDbDatabase::setGeoMarkerVisibility, DS.ARGS({ "val : bool" }, 3187))
-        .def("setHaloGap", &PyDbDatabase::setHaloGap, DS.ARGS({ "val : int" }, 3188))
-        .def("setHandseed", &PyDbDatabase::setHandseed, DS.ARGS({ "val : Handle" }, 3189))
-        .def("setHideText", &PyDbDatabase::setHideText, DS.ARGS({ "val : int" }, 3190))
-        .def("setHpInherit", &PyDbDatabase::setHpInherit, DS.ARGS({ "val : bool" }, 3191))
-        .def("setHpOrigin", &PyDbDatabase::setHpOrigin, DS.ARGS({ "val : PyGe.Point2d" }, 3192))
-        .def("setHyperlinkBase", &PyDbDatabase::setHyperlinkBase, DS.ARGS({ "val : str" }, 3193))
-        .def("setIndexctl", &PyDbDatabase::setIndexctl, DS.ARGS({ "val : int" }, 3194))
-        .def("setInsbase", &PyDbDatabase::setInsbase, DS.ARGS({ "val : PyGe.Point3d" }, 3195))
-        .def("setInsunits", &PyDbDatabase::setInsunits, DS.ARGS({ "val : UnitsValue" }, 3196))
-        .def("setInterfereObjVisStyle", &PyDbDatabase::setInterfereObjVisStyle, DS.ARGS({ "val : PyDb.ObjectId" }, 3198))
-        .def("setInterfereVpVisStyle", &PyDbDatabase::setInterfereVpVisStyle, DS.ARGS({ "val : PyDb.ObjectId" }, 3199))
-        .def("setIntersectColor", &PyDbDatabase::setIntersectColor, DS.ARGS({ "val : int" }, 3200))
-        .def("setIntersectDisplay", &PyDbDatabase::setIntersectDisplay, DS.ARGS({ "val : int" }, 3201))
-        .def("setIsolines", &PyDbDatabase::setIsolines, DS.ARGS({ "val : int" }, 3202))
-        .def("setJoinStyle", &PyDbDatabase::setJoinStyle, DS.ARGS({ "val : JoinStyle" }, 3203))
-        .def("setLatitude", &PyDbDatabase::setLatitude, DS.ARGS({ "val : float" }, 3204))
-        .def("setLayerEval", &PyDbDatabase::setLayerEval, DS.ARGS({ "val : int" }, 3205))
-        .def("setLayerNotify", &PyDbDatabase::setLayerNotify, DS.ARGS({ "val : int" }, 3206))
-        .def("setLensLength", &PyDbDatabase::setLensLength, DS.ARGS({ "val : float" }, 3207))
-        .def("setLightGlyphDisplay", &PyDbDatabase::setLightGlyphDisplay, DS.ARGS({ "val : int" }, 3208))
-        .def("setLightingUnits", &PyDbDatabase::setLightingUnits, DS.ARGS({ "val : int" }, 3209))
-        .def("setLightsInBlocks", &PyDbDatabase::setLightsInBlocks, DS.ARGS({ "val : bool" }, 3210))
-        .def("setLimcheck", &PyDbDatabase::setLimcheck, DS.ARGS({ "val : bool" }, 3210))
-        .def("setLimmax", &PyDbDatabase::setLimmax, DS.ARGS({ "val : PyGe.Point2d" }, 3212))
-        .def("setLimmin", &PyDbDatabase::setLimmin, DS.ARGS({ "val : PyGe.Point2d" }, 3213))
-        .def("setLineWeightDisplay", &PyDbDatabase::setLineWeightDisplay, DS.ARGS({ "val : bool" }, 3214))
-        .def("setLoftAng1", &PyDbDatabase::setLoftAng1, DS.ARGS({ "val : float" }, 3215))
-        .def("setLoftAng2", &PyDbDatabase::setLoftAng2, DS.ARGS({ "val : float" }, 3216))
-        .def("setLoftMag1", &PyDbDatabase::setLoftMag1, DS.ARGS({ "val : float" }, 3217))
-        .def("setLoftMag2", &PyDbDatabase::setLoftMag2, DS.ARGS({ "val : float" }, 3218))
-        .def("setLoftNormals", &PyDbDatabase::setLoftNormals, DS.ARGS({ "val : int" }, 3219))
-        .def("setLoftParam", &PyDbDatabase::setLoftParam, DS.ARGS({ "flags : int" }, 3220))
-        .def("setLongitude", &PyDbDatabase::setLongitude, DS.ARGS({ "val : float" }, 3221))
-        .def("setLtscale", &PyDbDatabase::setLtscale, DS.ARGS({ "val : float" }, 3222))
-        .def("setLunits", &PyDbDatabase::setLunits, DS.ARGS({ "val : int" }, 3223))
-        .def("setLuprec", &PyDbDatabase::setLuprec, DS.ARGS({ "val : int" }, 3224))
-        .def("setMaxactvp", &PyDbDatabase::setMaxactvp, DS.ARGS({ "val : int" }, 3225))
-        .def("setMeasurement", &PyDbDatabase::setMeasurement, DS.ARGS({ "val : MeasurementValue" }, 3226))
-        .def("setMirrtext", &PyDbDatabase::setMirrtext, DS.ARGS({ "val : bool" }, 3227))
-        .def("setMLeaderscale", &PyDbDatabase::setMLeaderscale, DS.ARGS({ "val : float" }, 3228))
-        .def("setMLeaderstyle", &PyDbDatabase::setMLeaderstyle, DS.ARGS({ "val : ObjectId" }, 3229))
-        .def("setMsltscale", &PyDbDatabase::setMsltscale, DS.ARGS({ "val : bool" }, 3230))
-        .def("setMsOleScale", &PyDbDatabase::setMsOleScale, DS.ARGS({ "val : float" }, 3231))
-        .def("setNorthDirection", &PyDbDatabase::setNorthDirection, DS.ARGS({ "val : float" }, 3232))
-        .def("setObscuredColor", &PyDbDatabase::setObscuredColor, DS.ARGS({ "val : int" }, 3233))
-        .def("setObscuredLineType", &PyDbDatabase::setObscuredLineType, DS.ARGS({ "val : int" }, 3234))
-        .def("setOleStartUp", &PyDbDatabase::setOleStartUp, DS.ARGS({ "val : bool" }, 3235))
-        .def("setOrthomode", &PyDbDatabase::setOrthomode, DS.ARGS({ "val : bool" }, 3236))
-        .def("setPdfframe", &PyDbDatabase::setPdfframe, DS.ARGS({ "val : int" }, 3237))
-        .def("setPdmode", &PyDbDatabase::setPdmode, DS.ARGS({ "val : int" }, 3238))
-        .def("setPdsize", &PyDbDatabase::setPdsize, DS.ARGS({ "val : float" }, 3239))
-        .def("setPelevation", &PyDbDatabase::setPelevation, DS.ARGS({ "val : float" }, 3240))
-        .def("setPextmax", &PyDbDatabase::setPextmax, DS.ARGS({ "val : PyGe.Point3d" }, 3241))
-        .def("setPextmin", &PyDbDatabase::setPextmin, DS.ARGS({ "val : PyGe.Point3d" }, 3242))
-        .def("setPickstyle", &PyDbDatabase::setPickstyle, DS.ARGS({ "val : int" }, 3243))
-        .def("setPinsbase", &PyDbDatabase::setPinsbase, DS.ARGS({ "val : PyGe.Point3d" }, 3244))
-        .def("setPlimcheck", &PyDbDatabase::setPlimcheck, DS.ARGS({ "val : bool" }, 3245))
-        .def("setPlimmax", &PyDbDatabase::setPlimmax, DS.ARGS({ "val : PyGe.Point2d" }, 3246))
-        .def("setPlimmin", &PyDbDatabase::setPlimmin, DS.ARGS({ "val : PyGe.Point2d" }, 3247))
-        .def("setPlineEllipse", &PyDbDatabase::setPlineEllipse, DS.ARGS({ "val : bool" }, 3248))
-        .def("setPlinegen", &PyDbDatabase::setPlinegen, DS.ARGS({ "val : bool" }, 3248))
-        .def("setPlinewid", &PyDbDatabase::setPlinewid, DS.ARGS({ "val : float" }, 3250))
-        .def("setPreviewType", &PyDbDatabase::setPreviewType, DS.ARGS({ "val : int" }, 3251))
-        .def("setProjectName", &PyDbDatabase::setProjectName, DS.ARGS({ "val : str" }, 3252))
-        .def("setPsltscale", &PyDbDatabase::setPsltscale, DS.ARGS({ "val : bool" }, 3253))
-        .def("setPsolHeight", &PyDbDatabase::setPsolHeight, DS.ARGS({ "val : float" }, 3254))
-        .def("setPsolWidth", &PyDbDatabase::setPsolWidth, DS.ARGS({ "val : float" }, 3255))
-        .def("setPucs", &PyDbDatabase::setPucs, DS.ARGS({ "ucsOrigin : PyGe.Point3d","ucsXDir : PyGe.Vector3d" ,"ucsYDir : PyGe.Vector3d" }, 3256))
-        .def("setPucsBase", &PyDbDatabase::setPucsBase, DS.ARGS({ "ucsid : ObjectId" }, 3257))
-        .def("setPucsname", &PyDbDatabase::setPucsname, DS.ARGS({ "ucsrec : ObjectId" }, 3258))
-        .def("setQtextmode", &PyDbDatabase::setQtextmode, DS.ARGS({ "val : bool" }, 3259))
-        .def("setRealWorldScale", &PyDbDatabase::setRealWorldScale, DS.ARGS({ "val : float" }, 3260))
-        .def("setRegenmode", &PyDbDatabase::setRegenmode, DS.ARGS({ "val : bool" }, 3261))
-        .def("setRetainOriginalThumbnailBitmap", &PyDbDatabase::setRetainOriginalThumbnailBitmap, DS.ARGS({ "val : bool" }, 3262))
-        .def("setSaveproxygraphics", &PyDbDatabase::setSaveproxygraphics, DS.ARGS({ "val : int" }, 3263))
-        .def("setSectionViewStyle", &PyDbDatabase::setSectionViewStyle, DS.ARGS({ "val : ObjectId" }, 3264))
-        .def("setShadedge", &PyDbDatabase::setShadedge, DS.ARGS({ "val : int" }, 3266))
-        .def("setShadedif", &PyDbDatabase::setShadedif, DS.ARGS({ "val : int" }, 3267))
-        .def("setShadowPlaneLocation", &PyDbDatabase::setShadowPlaneLocation, DS.ARGS({ "val : float" }, 3268))
-        .def("setShowHist", &PyDbDatabase::setShowHist, DS.ARGS({ "val : int" }, 3269))
-        .def("setSketchinc", &PyDbDatabase::setSketchinc, DS.ARGS({ "val : float" }, 3270))
-        .def("setSkpoly", &PyDbDatabase::setSkpoly, DS.ARGS({ "val : bool" }, 3271))
-        .def("setSolidHist", &PyDbDatabase::setSolidHist, DS.ARGS({ "val : int" }, 3272))
-        .def("setSortEnts", &PyDbDatabase::setSortEnts, DS.ARGS({ "val : int" }, 3273))
-        .def("setSplframe", &PyDbDatabase::setSplframe, DS.ARGS({ "val : bool" }, 3274))
-        .def("setSplinesegs", &PyDbDatabase::setSplinesegs, DS.ARGS({ "val : int" }, 3275))
-        .def("setSplinetype", &PyDbDatabase::setSplinetype, DS.ARGS({ "val : int" }, 3276))
-        .def("setStepSize", &PyDbDatabase::setStepSize, DS.ARGS({ "val : float" }, 3277))
-        .def("setStepsPerSec", &PyDbDatabase::setStepsPerSec, DS.ARGS({ "val : float" }, 3278))
-        .def("setStyleSheet", &PyDbDatabase::setStyleSheet, DS.ARGS({ "val : str" }, 3279))
-        .def("setSurftab1", &PyDbDatabase::setSurftab1, DS.ARGS({ "val : int" }, 3280))
-        .def("setSurftab2", &PyDbDatabase::setSurftab2, DS.ARGS({ "val : int" }, 3281))
-        .def("setSurftype", &PyDbDatabase::setSurftype, DS.ARGS({ "val : int" }, 3282))
-        .def("setSurfu", &PyDbDatabase::setSurfu, DS.ARGS({ "val : int" }, 3283))
-        .def("setSurfv", &PyDbDatabase::setSurfv, DS.ARGS({ "val : int" }, 3284))
-        .def("setTablestyle", &PyDbDatabase::setTablestyle, DS.ARGS({ "val : ObjectId" }, 3285))
-        .def("setTextsize", &PyDbDatabase::setTextsize, DS.ARGS({ "val : float" }, 3286))
-        .def("setTextstyle", &PyDbDatabase::setTextstyle, DS.ARGS({ "val : ObjectId" }, 3287))
-        .def("setThickness", &PyDbDatabase::setThickness, DS.ARGS({ "val : float" }, 3288))
-        .def("setTilemode", &PyDbDatabase::setTilemode, DS.ARGS({ "val : bool" }, 3291))
-        .def("setTimeZone", &PyDbDatabase::setTimeZone, DS.ARGS({ "val : TimeZone" }, 3292))
-        .def("setTimeZoneAsUtcOffset", &PyDbDatabase::setTimeZoneAsUtcOffset, DS.ARGS({ "val : float" }, 3293))
-        .def("setTracewid", &PyDbDatabase::setTracewid, DS.ARGS({ "val : float" }, 3294))
-        .def("setTreedepth", &PyDbDatabase::setTreedepth, DS.ARGS({ "val : int" }, 3295))
-        .def("setTStackAlign", &PyDbDatabase::setTStackAlign, DS.ARGS({ "val : int" }, 3296))
-        .def("setTStackSize", &PyDbDatabase::setTStackSize, DS.ARGS({ "val : int" }, 3297))
-        .def("setUcs", &PyDbDatabase::setUcs, DS.ARGS({ "ucsOrigin : PyGe.Point3d","ucsXDir : PyGe.Vector3d" ,"ucsYDir : PyGe.Vector3d" }, 3298))
-        .def("setUcsBase", &PyDbDatabase::setUcsBase, DS.ARGS({ "ucsid : ObjectId" }, 3299))
-        .def("setUcsname", &PyDbDatabase::setUcsname, DS.ARGS({ "ucsrecId : ObjectId" }, 3300))
-        .def("setUnitmode", &PyDbDatabase::setUnitmode, DS.ARGS({ "val : int" }, 3301))
-        .def("setUpdateThumbnail", &PyDbDatabase::setUpdateThumbnail, DS.ARGS({ "val : int" }, 3302))
-        .def("setUseri1", &PyDbDatabase::setUseri1, DS.ARGS({ "val : int" }, 3303))
-        .def("setUseri2", &PyDbDatabase::setUseri2, DS.ARGS({ "val : int" }, 3304))
-        .def("setUseri3", &PyDbDatabase::setUseri3, DS.ARGS({ "val : int" }, 3305))
-        .def("setUseri4", &PyDbDatabase::setUseri4, DS.ARGS({ "val : int" }, 3306))
-        .def("setUseri5", &PyDbDatabase::setUseri5, DS.ARGS({ "val : int" }, 3307))
-        .def("setUserr1", &PyDbDatabase::setUserr1, DS.ARGS({ "val : float" }, 3308))
-        .def("setUserr2", &PyDbDatabase::setUserr2, DS.ARGS({ "val : float" }, 3309))
-        .def("setUserr3", &PyDbDatabase::setUserr3, DS.ARGS({ "val : float" }, 3310))
-        .def("setUserr4", &PyDbDatabase::setUserr4, DS.ARGS({ "val : float" }, 3311))
-        .def("setUserr5", &PyDbDatabase::setUserr5, DS.ARGS({ "val : float" }, 3312))
-        .def("setUsrtimer", &PyDbDatabase::setUsrtimer, DS.ARGS({ "val : bool" }, 3313))
-        .def("setVersionGuid", &PyDbDatabase::setVersionGuid, DS.ARGS({ "val : str" }, 3314))
-        .def("setViewportScaleDefault", &PyDbDatabase::setViewportScaleDefault, DS.ARGS({ "val : float" }, 3315))
-        .def("setVisretain", &PyDbDatabase::setVisretain, DS.ARGS({ "val : bool" }, 3316))
-        .def("setWorldPucsBaseOrigin", &PyDbDatabase::setWorldPucsBaseOrigin, DS.ARGS({ "ucsOrigin : PyGe.Point3d","orthoView : OrthographicView" }, 3317))
-        .def("setWorldUcsBaseOrigin", &PyDbDatabase::setWorldUcsBaseOrigin, DS.ARGS({ "ucsOrigin : PyGe.Point3d","orthoView : OrthographicView" }, 3318))
-        .def("setWorldview", &PyDbDatabase::setWorldview, DS.ARGS({ "val : bool" }, 3319))
-        .def("setXclipFrame", &PyDbDatabase::setXclipFrame, DS.ARGS({ "val : int" }, 3320))
-        .def("setXrefEditEnabled", &PyDbDatabase::setXrefEditEnabled, DS.ARGS({ "val : bool" }, 3321))
+        .def("setGeoMarkerVisibility", &PyDbDatabase::setGeoMarkerVisibility, DS.ARGS({ "geometric_marker_visibility : bool" }, 3187))
+        .def("setHaloGap", &PyDbDatabase::setHaloGap, DS.ARGS({ "halo_gap : int" }, 3188))
+        .def("setHandseed", &PyDbDatabase::setHandseed, DS.ARGS({ "handshake_seed : Handle" }, 3189))
+        .def("setHideText", &PyDbDatabase::setHideText, DS.ARGS({ "hide_text : int" }, 3190))
+        .def("setHpInherit", &PyDbDatabase::setHpInherit, DS.ARGS({ "hatch_pattern_inherit : bool" }, 3191))
+        .def("setHpOrigin", &PyDbDatabase::setHpOrigin, DS.ARGS({ "hatch_pattern_origin : PyGe.Point2d" }, 3192))
+        .def("setHyperlinkBase", &PyDbDatabase::setHyperlinkBase, DS.ARGS({ "hyperlink_base_path : str" }, 3193))
+        .def("setIndexctl", &PyDbDatabase::setIndexctl, DS.ARGS({ "index_control : int" }, 3194))
+        .def("setInsbase", &PyDbDatabase::setInsbase, DS.ARGS({ "insertion_base_point : PyGe.Point3d" }, 3195))
+        .def("setInsunits", &PyDbDatabase::setInsunits, DS.ARGS({ "insertion_units : UnitsValue" }, 3196))
+        .def("setInterfereObjVisStyle", &PyDbDatabase::setInterfereObjVisStyle, DS.ARGS({ "interference_object_visibility_style : PyDb.ObjectId" }, 3198))
+        .def("setInterfereVpVisStyle", &PyDbDatabase::setInterfereVpVisStyle, DS.ARGS({ "interference_viewport_visibility_style : PyDb.ObjectId" }, 3199))
+        .def("setIntersectColor", &PyDbDatabase::setIntersectColor, DS.ARGS({ "intersection_color : int" }, 3200))
+        .def("setIntersectDisplay", &PyDbDatabase::setIntersectDisplay, DS.ARGS({ "intersection_display : int" }, 3201))
+        .def("setIsolines", &PyDbDatabase::setIsolines, DS.ARGS({ "isolines_count : int" }, 3202))
+        .def("setJoinStyle", &PyDbDatabase::setJoinStyle, DS.ARGS({ "join_style : JoinStyle" }, 3203))
+        .def("setLatitude", &PyDbDatabase::setLatitude, DS.ARGS({ "latitude_value : float" }, 3204))
+        .def("setLayerEval", &PyDbDatabase::setLayerEval, DS.ARGS({ "layer_evaluation : int" }, 3205))
+        .def("setLayerNotify", &PyDbDatabase::setLayerNotify, DS.ARGS({ "layer_notification : int" }, 3206))
+        .def("setLensLength", &PyDbDatabase::setLensLength, DS.ARGS({ "lens_length : float" }, 3207))
+        .def("setLightGlyphDisplay", &PyDbDatabase::setLightGlyphDisplay, DS.ARGS({ "light_glyph_display : int" }, 3208))
+        .def("setLightingUnits", &PyDbDatabase::setLightingUnits, DS.ARGS({ "lighting_units : int" }, 3209))
+        .def("setLightsInBlocks", &PyDbDatabase::setLightsInBlocks, DS.ARGS({ "lights_in_blocks : bool" }, 3210))
+        .def("setLimcheck", &PyDbDatabase::setLimcheck, DS.ARGS({ "limit_check : bool" }, 3210))
+        .def("setLimmax", &PyDbDatabase::setLimmax, DS.ARGS({ "limit_maximum : PyGe.Point2d" }, 3212))
+        .def("setLimmin", &PyDbDatabase::setLimmin, DS.ARGS({ "limit_minimum : PyGe.Point2d" }, 3213))
+        .def("setLineWeightDisplay", &PyDbDatabase::setLineWeightDisplay, DS.ARGS({ "line_weight_display : bool" }, 3214))
+        .def("setLoftAng1", &PyDbDatabase::setLoftAng1, DS.ARGS({ "loft_angle_1 : float" }, 3215))
+        .def("setLoftAng2", &PyDbDatabase::setLoftAng2, DS.ARGS({ "loft_angle_2 : float" }, 3216))
+        .def("setLoftMag1", &PyDbDatabase::setLoftMag1, DS.ARGS({ "loft_magnitude_1 : float" }, 3217))
+        .def("setLoftMag2", &PyDbDatabase::setLoftMag2, DS.ARGS({ "loft_magnitude_2 : float" }, 3218))
+        .def("setLoftNormals", &PyDbDatabase::setLoftNormals, DS.ARGS({ "loft_normals : int" }, 3219))
+        .def("setLoftParam", &PyDbDatabase::setLoftParam, DS.ARGS({ "loft_parameters : int" }, 3220))
+        .def("setLongitude", &PyDbDatabase::setLongitude, DS.ARGS({ "longitude_value : float" }, 3221))
+        .def("setLtscale", &PyDbDatabase::setLtscale, DS.ARGS({ "line_type_scale : float" }, 3222))
+        .def("setLunits", &PyDbDatabase::setLunits, DS.ARGS({ "linear_units : int" }, 3223))
+        .def("setLuprec", &PyDbDatabase::setLuprec, DS.ARGS({ "linear_precision : int" }, 3224))
+        .def("setMaxactvp", &PyDbDatabase::setMaxactvp, DS.ARGS({ "max_active_viewports : int" }, 3225))
+        .def("setMeasurement", &PyDbDatabase::setMeasurement, DS.ARGS({ "measurement_system : MeasurementValue" }, 3226))
+        .def("setMirrtext", &PyDbDatabase::setMirrtext, DS.ARGS({ "mirror_text : bool" }, 3227))
+        .def("setMLeaderscale", &PyDbDatabase::setMLeaderscale, DS.ARGS({ "mleader_scale : float" }, 3228))
+        .def("setMLeaderstyle", &PyDbDatabase::setMLeaderstyle, DS.ARGS({ "mleader_style : PyDb.ObjectId" }, 3229))
+        .def("setMsltscale", &PyDbDatabase::setMsltscale, DS.ARGS({ "model_space_line_type_scale : bool" }, 3230))
+        .def("setMsOleScale", &PyDbDatabase::setMsOleScale, DS.ARGS({ "model_space_ole_scale : float" }, 3231))
+        .def("setNorthDirection", &PyDbDatabase::setNorthDirection, DS.ARGS({ "north_direction : float" }, 3232))
+        .def("setObscuredColor", &PyDbDatabase::setObscuredColor, DS.ARGS({ "obscured_color : int" }, 3233))
+        .def("setObscuredLineType", &PyDbDatabase::setObscuredLineType, DS.ARGS({ "obscured_line_type : int" }, 3234))
+        .def("setOleStartUp", &PyDbDatabase::setOleStartUp, DS.ARGS({ "ole_startup : bool" }, 3235))
+        .def("setOrthomode", &PyDbDatabase::setOrthomode, DS.ARGS({ "orthographic_mode : bool" }, 3236))
+        .def("setPdfframe", &PyDbDatabase::setPdfframe, DS.ARGS({ "pdf_frame : int" }, 3237))
+        .def("setPdmode", &PyDbDatabase::setPdmode, DS.ARGS({ "point_display_mode : int" }, 3238))
+        .def("setPdsize", &PyDbDatabase::setPdsize, DS.ARGS({ "point_size : float" }, 3239))
+        .def("setPelevation", &PyDbDatabase::setPelevation, DS.ARGS({ "perspective_elevation : float" }, 3240))
+        .def("setPextmax", &PyDbDatabase::setPextmax, DS.ARGS({ "paper_extents_max : PyGe.Point3d" }, 3241))
+        .def("setPextmin", &PyDbDatabase::setPextmin, DS.ARGS({ "paper_extents_min : PyGe.Point3d" }, 3242))
+        .def("setPickstyle", &PyDbDatabase::setPickstyle, DS.ARGS({ "pick_style : int" }, 3243))
+        .def("setPinsbase", &PyDbDatabase::setPinsbase, DS.ARGS({ "paper_insertion_base : PyGe.Point3d" }, 3244))
+        .def("setPlimcheck", &PyDbDatabase::setPlimcheck, DS.ARGS({ "paper_limits_check : bool" }, 3245))
+        .def("setPlimmax", &PyDbDatabase::setPlimmax, DS.ARGS({ "paper_limits_max : PyGe.Point2d" }, 3246))
+        .def("setPlimmin", &PyDbDatabase::setPlimmin, DS.ARGS({ "paper_limits_min : PyGe.Point2d" }, 3247))
+        .def("setPlineEllipse", &PyDbDatabase::setPlineEllipse, DS.ARGS({ "polyline_ellipse : bool" }, 3248))
+        .def("setPlinegen", &PyDbDatabase::setPlinegen, DS.ARGS({ "polyline_generation : bool" }, 3248))
+        .def("setPlinewid", &PyDbDatabase::setPlinewid, DS.ARGS({ "polyline_width : float" }, 3250))
+        .def("setPreviewType", &PyDbDatabase::setPreviewType, DS.ARGS({ "preview_type : int" }, 3251))
+        .def("setProjectName", &PyDbDatabase::setProjectName, DS.ARGS({ "project_name : str" }, 3252))
+        .def("setPsltscale", &PyDbDatabase::setPsltscale, DS.ARGS({ "plot_style_scale : bool" }, 3253))
+        .def("setPsolHeight", &PyDbDatabase::setPsolHeight, DS.ARGS({ "perspective_solid_height : float" }, 3254))
+        .def("setPsolWidth", &PyDbDatabase::setPsolWidth, DS.ARGS({ "perspective_solid_width : float" }, 3255))
+        .def("setPucs", &PyDbDatabase::setPucs, DS.ARGS({ "ucs_origin : PyGe.Point3d","ucs_x_direction : PyGe.Vector3d" ,"ucs_y_direction : PyGe.Vector3d" }, 3256))
+        .def("setPucsBase", &PyDbDatabase::setPucsBase, DS.ARGS({ "ucs_id : PyDb.ObjectId" }, 3257))
+        .def("setPucsname", &PyDbDatabase::setPucsname, DS.ARGS({ "ucs_record : PyDb.ObjectId" }, 3258))
+        .def("setQtextmode", &PyDbDatabase::setQtextmode, DS.ARGS({ "quick_text_mode : bool" }, 3259))
+        .def("setRealWorldScale", &PyDbDatabase::setRealWorldScale, DS.ARGS({ "real_world_scale : float" }, 3260))
+        .def("setRegenmode", &PyDbDatabase::setRegenmode, DS.ARGS({ "regeneration_mode : bool" }, 3261))
+        .def("setRetainOriginalThumbnailBitmap", &PyDbDatabase::setRetainOriginalThumbnailBitmap, DS.ARGS({ "retain_original_thumbnail : bool" }, 3262))
+        .def("setSaveproxygraphics", &PyDbDatabase::setSaveproxygraphics, DS.ARGS({ "save_proxy_graphics : int" }, 3263))
+        .def("setSectionViewStyle", &PyDbDatabase::setSectionViewStyle, DS.ARGS({ "section_view_style : PyDb.ObjectId" }, 3264))
+        .def("setShadedge", &PyDbDatabase::setShadedge, DS.ARGS({ "shadow_edge : int" }, 3266))
+        .def("setShadedif", &PyDbDatabase::setShadedif, DS.ARGS({ "shading_differential : int" }, 3267))
+        .def("setShadowPlaneLocation", &PyDbDatabase::setShadowPlaneLocation, DS.ARGS({ "shadow_plane_location : float" }, 3268))
+        .def("setShowHist", &PyDbDatabase::setShowHist, DS.ARGS({ "show_history : int" }, 3269))
+        .def("setSketchinc", &PyDbDatabase::setSketchinc, DS.ARGS({ "sketch_increment : float" }, 3270))
+        .def("setSkpoly", &PyDbDatabase::setSkpoly, DS.ARGS({ "sketch_polygon : bool" }, 3271))
+        .def("setSolidHist", &PyDbDatabase::setSolidHist, DS.ARGS({ "solid_history : int" }, 3272))
+        .def("setSortEnts", &PyDbDatabase::setSortEnts, DS.ARGS({ "sort_entities : int" }, 3273))
+        .def("setSplframe", &PyDbDatabase::setSplframe, DS.ARGS({ "spline_frame : bool" }, 3274))
+        .def("setSplinesegs", &PyDbDatabase::setSplinesegs, DS.ARGS({ "spline_segments : int" }, 3275))
+        .def("setSplinetype", &PyDbDatabase::setSplinetype, DS.ARGS({ "spline_type : int" }, 3276))
+        .def("setStepSize", &PyDbDatabase::setStepSize, DS.ARGS({ "step_size : float" }, 3277))
+        .def("setStepsPerSec", &PyDbDatabase::setStepsPerSec, DS.ARGS({ "steps_per_second : float" }, 3278))
+        .def("setStyleSheet", &PyDbDatabase::setStyleSheet, DS.ARGS({ "style_sheet : str" }, 3279))
+        .def("setSurftab1", &PyDbDatabase::setSurftab1, DS.ARGS({ "surface_density_u : int" }, 3280))
+        .def("setSurftab2", &PyDbDatabase::setSurftab2, DS.ARGS({ "surface_density_v : int" }, 3281))
+        .def("setSurftype", &PyDbDatabase::setSurftype, DS.ARGS({ "surface_type : int" }, 3282))
+        .def("setSurfu", &PyDbDatabase::setSurfu, DS.ARGS({ "surface_u_resolution : int" }, 3283))
+        .def("setSurfv", &PyDbDatabase::setSurfv, DS.ARGS({ "surface_v_resolution : int" }, 3284))
+        .def("setTablestyle", &PyDbDatabase::setTablestyle, DS.ARGS({ "table_style : PyDb.ObjectId" }, 3285))
+        .def("setTextsize", &PyDbDatabase::setTextsize, DS.ARGS({ "text_size : float" }, 3286))
+        .def("setTextstyle", &PyDbDatabase::setTextstyle, DS.ARGS({ "text_style : PyDb.ObjectId" }, 3287))
+        .def("setThickness", &PyDbDatabase::setThickness, DS.ARGS({ "thickness : float" }, 3288))
+        .def("setTilemode", &PyDbDatabase::setTilemode, DS.ARGS({ "tile_mode : bool" }, 3291))
+        .def("setTimeZone", &PyDbDatabase::setTimeZone, DS.ARGS({ "time_zone : TimeZone" }, 3292))
+        .def("setTimeZoneAsUtcOffset", &PyDbDatabase::setTimeZoneAsUtcOffset, DS.ARGS({ "time_zone_utc_offset : float" }, 3293))
+        .def("setTracewid", &PyDbDatabase::setTracewid, DS.ARGS({ "trace_width : float" }, 3294))
+        .def("setTreedepth", &PyDbDatabase::setTreedepth, DS.ARGS({ "tree_depth : int" }, 3295))
+        .def("setTStackAlign", &PyDbDatabase::setTStackAlign, DS.ARGS({ "text_stack_alignment : int" }, 3296))
+        .def("setTStackSize", &PyDbDatabase::setTStackSize, DS.ARGS({ "text_stack_size : int" }, 3297))
+        .def("setUcs", &PyDbDatabase::setUcs, DS.ARGS({ "ucs_origin : PyGe.Point3d","ucs_x_direction : PyGe.Vector3d" ,"ucs_y_direction : PyGe.Vector3d" }, 3298))
+        .def("setUcsBase", &PyDbDatabase::setUcsBase, DS.ARGS({ "ucs_base_id : PyDb.ObjectId" }, 3299))
+        .def("setUcsname", &PyDbDatabase::setUcsname, DS.ARGS({ "ucs_record_id : PyDb.ObjectId" }, 3300))
+        .def("setUnitmode", &PyDbDatabase::setUnitmode, DS.ARGS({ "unit_mode : int" }, 3301))
+        .def("setUpdateThumbnail", &PyDbDatabase::setUpdateThumbnail, DS.ARGS({ "update_thumbnail : int" }, 3302))
+        .def("setUseri1", &PyDbDatabase::setUseri1, DS.ARGS({ "user_integer_1 : int" }, 3303))
+        .def("setUseri2", &PyDbDatabase::setUseri2, DS.ARGS({ "user_integer_2 : int" }, 3304))
+        .def("setUseri3", &PyDbDatabase::setUseri3, DS.ARGS({ "user_integer_3 : int" }, 3305))
+        .def("setUseri4", &PyDbDatabase::setUseri4, DS.ARGS({ "user_integer_4 : int" }, 3306))
+        .def("setUseri5", &PyDbDatabase::setUseri5, DS.ARGS({ "user_integer_5 : int" }, 3307))
+        .def("setUserr1", &PyDbDatabase::setUserr1, DS.ARGS({ "user_real_1 : float" }, 3308))
+        .def("setUserr2", &PyDbDatabase::setUserr2, DS.ARGS({ "user_real_2 : float" }, 3309))
+        .def("setUserr3", &PyDbDatabase::setUserr3, DS.ARGS({ "user_real_3 : float" }, 3310))
+        .def("setUserr4", &PyDbDatabase::setUserr4, DS.ARGS({ "user_real_4 : float" }, 3311))
+        .def("setUserr5", &PyDbDatabase::setUserr5, DS.ARGS({ "user_real_5 : float" }, 3312))
+        .def("setUsrtimer", &PyDbDatabase::setUsrtimer, DS.ARGS({ "user_timer : bool" }, 3313))
+        .def("setVersionGuid", &PyDbDatabase::setVersionGuid, DS.ARGS({ "version_guid : str" }, 3314))
+        .def("setViewportScaleDefault", &PyDbDatabase::setViewportScaleDefault, DS.ARGS({ "viewport_scale_default : float" }, 3315))
+        .def("setVisretain", &PyDbDatabase::setVisretain, DS.ARGS({ "visibility_retention : bool" }, 3316))
+        .def("setWorldPucsBaseOrigin", &PyDbDatabase::setWorldPucsBaseOrigin, DS.ARGS({ "world_pucs_origin : PyGe.Point3d","orthographic_view : OrthographicView" }, 3317))
+        .def("setWorldUcsBaseOrigin", &PyDbDatabase::setWorldUcsBaseOrigin, DS.ARGS({ "world_ucs_origin : PyGe.Point3d","orthographic_view : OrthographicView" }, 3318))
+        .def("setWorldview", &PyDbDatabase::setWorldview, DS.ARGS({ "world_view : bool" }, 3319))
+        .def("setXclipFrame", &PyDbDatabase::setXclipFrame, DS.ARGS({ "x_clip_frame_display : int" }, 3320))
+        .def("setXrefEditEnabled", &PyDbDatabase::setXrefEditEnabled, DS.ARGS({ "xref_edit_enabled : bool" }, 3321))
         .def("shadedge", &PyDbDatabase::shadedge, DS.ARGS(3322))
         .def("shadedif", &PyDbDatabase::shadedif, DS.ARGS(3323))
         .def("shadowPlaneLocation", &PyDbDatabase::shadowPlaneLocation, DS.ARGS(3324))
@@ -482,7 +504,7 @@ void makePyDbDatabaseWrapper()
         .def("undoRecording", &PyDbDatabase::undoRecording, DS.ARGS(3368))
         .def("unitmode", &PyDbDatabase::unitmode, DS.ARGS(3369))
         .def("updateDataLink", &PyDbDatabase::updateDataLink, DS.ARGS({ "nDir : UpdateDirection", "opt : UpdateOption" }, 3370))
-        .def("updateExt", &PyDbDatabase::updateExt, DS.ARGS({ "val : bool" }, 3371))
+        .def("updateExt", &PyDbDatabase::updateExt, DS.ARGS({ "doBestFit : bool" }, 3371))
         .def("updateThumbnail", &PyDbDatabase::updateThumbnail, DS.ARGS(3372))
         .def("useri1", &PyDbDatabase::useri1, DS.ARGS(3373))
         .def("useri2", &PyDbDatabase::useri2, DS.ARGS(3374))
@@ -506,34 +528,36 @@ void makePyDbDatabaseWrapper()
         .def("xclipFrame", &PyDbDatabase::xclipFrame, DS.ARGS(3394))
         .def("xrefBlockId", &PyDbDatabase::xrefBlockId, DS.ARGS(3395))
         .def("xrefEditEnabled", &PyDbDatabase::xrefEditEnabled, DS.ARGS(3396))
-
-        .def("wblock", &PyDbDatabase::wblock1)
+        .def("wblockByRef", &PyDbDatabase::wblock1, DS.ARGS({ "dbByRef: PyDb.Database","ids: list[PyDb.ObjectId]"," basePoint : PyGe.Point3d","drc : PyDb.DuplicateRecordCloning" }, 19136))
         .def("wblock", &PyDbDatabase::wblock2)
         .def("wblock", &PyDbDatabase::wblock3)
         .def("wblock", &PyDbDatabase::wblock4, DS.OVRL(wblockOverloads, 3389))
-        .def("abortDeepClone", &PyDbDatabase::abortDeepClone, DS.ARGS({ "idmap: PyDb.IdMapping" }, 2861))
-
+        .def("abortDeepClone", &PyDbDatabase::abortDeepClone, DS.ARGS({ "id_map: PyDb.IdMapping" }, 2861))
         .def("deepCloneObjects", &PyDbDatabase::deepCloneObjects1)
         .def("deepCloneObjects", &PyDbDatabase::deepCloneObjects2,
-            DS.ARGS({ "ids:list[PyDb.ObjectId]","owner:PyDb.ObjectId","idmap: PyDb.IdMapping","deferXlation:bool=False" }, 2913))
+            DS.ARGS({ "ids:list[PyDb.ObjectId]","owner:PyDb.ObjectId","id_map: PyDb.IdMapping","deferXlation:bool=False" }, 2913))
 
         .def("wblockCloneObjects", &PyDbDatabase::wblockCloneObjects1)
         .def("wblockCloneObjects", &PyDbDatabase::wblockCloneObjects2,
-            DS.ARGS({ "ids:list[PyDb.ObjectId]","owner:PyDb.ObjectId","idmap: PyDb.IdMapping","drc: PyDb.DuplicateRecordCloning","deferXlation:bool=False" }, 3390))
+            DS.ARGS({ "ids:list[PyDb.ObjectId]","owner:PyDb.ObjectId","id_map: PyDb.IdMapping","drc: PyDb.DuplicateRecordCloning","deferXlation:bool=False" }, 3390))
 
         .def("getFilename", &PyDbDatabase::getFilename, DS.ARGS(2968))
         .def("readDwgFile", &PyDbDatabase::readDwgFile1)
-        .def("readDwgFile", &PyDbDatabase::readDwgFile2,
-            DS.ARGS({ "fileName: str", "mode: PyDb.DatabaseOpenMode=PyDb.DatabaseOpenMode.kForReadAndReadShare", "bAllowCPConversion:bool=False","password:str='empty'" }, 3116))
-
+        .def("readDwgFile", &PyDbDatabase::readDwgFile2, DS.OVRL(readDwgFilesOverloads, 3116))
         .def("blockTableId", &PyDbDatabase::blockTableId, DS.ARGS(2878))
         .def("modelSpaceId", &PyDbDatabase::modelSpaceId, DS.ARGS())
+        .def("modelSpace", &PyDbDatabase::modelSpace1)
+        .def("modelSpace", &PyDbDatabase::modelSpace2, DS.ARGS({ "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }))
         .def("currentSpaceId", &PyDbDatabase::currentSpaceId, DS.ARGS(2910))
+        .def("currentSpace", &PyDbDatabase::currentSpace1)
+        .def("currentSpace", &PyDbDatabase::currentSpace2, DS.ARGS({ "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }))
+        .def("currentLayoutId", &PyDbDatabase::currentLayoutId, DS.ARGS())
         .def("purge", &PyDbDatabase::purge, DS.ARGS({ "ids: list[PyDb.ObjectId]" }, 3114))
-        .def("setCannoscale", &PyDbDatabase::setCannoscale, DS.ARGS({ "val : AnnotationScale" }, 3144))
-        .def("setCecolor", &PyDbDatabase::setCecolor, DS.ARGS({ "val : Color" }, 3146))
-        .def("setCetransparency", &PyDbDatabase::setCetransparency, DS.ARGS({ "val : Transparency" }, 3151))
-        .def("setInterfereColor", &PyDbDatabase::setInterfereColor, DS.ARGS({ "val : Color" }, 3197))
+        .def("purgeGraph", &PyDbDatabase::purgeGraph, DS.ARGS({ "ids: PyDb.ObjectIdGraph" }, 3114))
+        .def("setCannoscale", &PyDbDatabase::setCannoscale, DS.ARGS({ "annotation_scale : AnnotationScale" }, 3144))
+        .def("setCecolor", &PyDbDatabase::setCecolor, DS.ARGS({ "current_entity_color : PyDb.Color" }, 3146))
+        .def("setCetransparency", &PyDbDatabase::setCetransparency, DS.ARGS({ "current_entity_transparency : PyDb.Transparency" }, 3151))
+        .def("setInterfereColor", &PyDbDatabase::setInterfereColor, DS.ARGS({ "interference_color : PyDb.Color" }, 3197))
         .def("className", &PyDbDatabase::className, DS.SARGS()).staticmethod("className")
         ;
 }
@@ -565,7 +589,7 @@ PyAcadDatabase PyDbDatabase::acadDatabase() const
     return PyAcadDatabase{ impObj() };
 }
 
-PyDbObjectId PyDbDatabase::addToBlock1(const PyDbObjectId& id, PyDbEntity& ent)
+PyDbObjectId PyDbDatabase::addToBlock1(const PyDbObjectId& id, PyDbEntity& ent) const
 {
     AcDbBlockTableRecordPointer btr(id.m_id, AcDb::kForWrite);
     PyThrowBadEs(btr.openStatus());
@@ -574,7 +598,7 @@ PyDbObjectId PyDbDatabase::addToBlock1(const PyDbObjectId& id, PyDbEntity& ent)
     return outid;
 }
 
-boost::python::list PyDbDatabase::addToBlock2(const PyDbObjectId& id, const boost::python::list& ents)
+boost::python::list PyDbDatabase::addToBlock2(const PyDbObjectId& id, const boost::python::list& ents) const
 {
     PyAutoLockGIL lock;
     boost::python::list ids;
@@ -593,27 +617,35 @@ boost::python::list PyDbDatabase::addToBlock2(const PyDbObjectId& id, const boos
     return ids;
 }
 
-PyDbObjectId PyDbDatabase::addToModelspace1(PyDbEntity& ent)
+PyDbObjectId PyDbDatabase::addToModelspace1(PyDbEntity& ent) const
 {
+#if defined(_IRXTARGET140)
+    return addToBlock1(PyDbObjectId(getblockModelSpaceId(impObj())), ent);
+#else
     return addToBlock1(PyDbObjectId(acdbSymUtil()->blockModelSpaceId(impObj())), ent);
+#endif
 }
 
-boost::python::list PyDbDatabase::addToModelspace2(const boost::python::list& ents)
+boost::python::list PyDbDatabase::addToModelspace2(const boost::python::list& ents) const
 {
+#if defined(_IRXTARGET140)
+    return addToBlock2(PyDbObjectId(getblockModelSpaceId(impObj())), ents);
+#else
     return addToBlock2(PyDbObjectId(acdbSymUtil()->blockModelSpaceId(impObj())), ents);
+#endif
 }
 
-PyDbObjectId PyDbDatabase::addToCurrentspace1(PyDbEntity& ent)
+PyDbObjectId PyDbDatabase::addToCurrentspace1(PyDbEntity& ent) const
 {
     return addToBlock1(impObj()->currentSpaceId(), ent);
 }
 
-boost::python::list PyDbDatabase::addToCurrentspace2(const boost::python::list& ent)
+boost::python::list PyDbDatabase::addToCurrentspace2(const boost::python::list& ent) const
 {
     return addToBlock2(impObj()->currentSpaceId(), ent);
 }
 
-PyDbObjectId PyDbDatabase::addAcDbObject(PyDbObject& obj)
+PyDbObjectId PyDbDatabase::addAcDbObject(PyDbObject& obj) const
 {
     PyDbObjectId id;
     PyThrowBadEs(impObj()->addAcDbObject(id.m_id, obj.impObj()));
@@ -665,9 +697,51 @@ Adesk::Int16 PyDbDatabase::auprec() const
     return impObj()->auprec();
 }
 
+void PyDbDatabase::audit(bool fixErrors, bool cmdLineEcho) const
+{
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
+    PyThrowBadEs(acedAudit(this->impObj(), fixErrors, cmdLineEcho));
+#endif
+}
+
 bool PyDbDatabase::blipmode() const
 {
     return impObj()->blipmode();
+}
+
+PyDbBlockTable PyDbDatabase::getBlockTable1() const
+{
+    AcDbBlockTable* ptr = nullptr;
+    PyThrowBadEs(impObj()->getBlockTable(ptr));
+    return PyDbBlockTable(ptr, false);
+}
+
+PyDbBlockTable PyDbDatabase::getBlockTable2(AcDb::OpenMode mode) const
+{
+    AcDbBlockTable* ptr = nullptr;
+    PyThrowBadEs(impObj()->getBlockTable(ptr, mode));
+    return PyDbBlockTable(ptr, false);
+}
+
+boost::python::dict PyDbDatabase::getBlocks() const
+{
+    PyAutoLockGIL lock;
+    boost::python::dict pydict;
+    AcDbBlockTablePointer bt(impObj()->blockTableId());
+    auto [es, iter] = makeBlockTableIterator(*bt);
+    PyThrowBadEs(es);
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        AcString name;
+        PyDbObjectId id;
+        PyThrowBadEs(iter->getRecordId(id.m_id));
+        AcDbBlockTableRecordPointer blk(id.m_id);
+        PyThrowBadEs(blk->getName(name));
+        pydict[wstr_to_utf8(name)] = id;
+    }
+    return pydict;
 }
 
 PyDbObjectId PyDbDatabase::byBlockLinetype() const
@@ -692,7 +766,7 @@ PyDbObjectId PyDbDatabase::byLayerMaterial() const
 
 bool PyDbDatabase::cameraDisplay() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->cameraDisplay();
@@ -701,7 +775,7 @@ bool PyDbDatabase::cameraDisplay() const
 
 double PyDbDatabase::cameraHeight() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->cameraHeight();
@@ -710,7 +784,7 @@ double PyDbDatabase::cameraHeight() const
 
 Adesk::Int16 PyDbDatabase::cDynDisplayMode() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->cDynDisplayMode();
@@ -752,9 +826,9 @@ double PyDbDatabase::chamferd() const
     return impObj()->chamferd();
 }
 
-std::string PyDbDatabase::classDxfName(const PyRxClass& pClass)
+std::string PyDbDatabase::classDxfName(const PyRxClass& pClass) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(impObj()->classDxfName(pClass.impObj()));
@@ -766,7 +840,7 @@ PyDbObjectId PyDbDatabase::clayer() const
     return PyDbObjectId(impObj()->clayer());
 }
 
-void PyDbDatabase::closeInput(bool bCloseFile)
+void PyDbDatabase::closeInput(bool bCloseFile) const
 {
     return PyThrowBadEs(impObj()->closeInput(bCloseFile));
 }
@@ -806,16 +880,16 @@ Adesk::Int16 PyDbDatabase::coords() const
     return impObj()->coords();
 }
 
-Adesk::UInt32 PyDbDatabase::countEmptyObjects(const Adesk::Int32 flags)
+Adesk::UInt32 PyDbDatabase::countEmptyObjects(const Adesk::Int32 flags) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->countEmptyObjects(flags);
 #endif
 }
 
-Adesk::UInt32 PyDbDatabase::countHardReferences(const boost::python::list& pyids)
+Adesk::UInt32 PyDbDatabase::countHardReferences(const boost::python::list& pyids) const
 {
     Adesk::UInt32 cnt = 0;
     PyThrowBadEs(impObj()->countHardReferences(PyListToObjectIdArray(pyids), &cnt));
@@ -824,7 +898,7 @@ Adesk::UInt32 PyDbDatabase::countHardReferences(const boost::python::list& pyids
 
 PyDbObjectId PyDbDatabase::detailViewStyle() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->detailViewStyle());
@@ -871,12 +945,12 @@ int PyDbDatabase::dimunit() const
     return impObj()->dimunit();
 }
 
-void PyDbDatabase::disablePartialOpen()
+void PyDbDatabase::disablePartialOpen() const
 {
     impObj()->disablePartialOpen();
 }
 
-void PyDbDatabase::disableUndoRecording(bool disable)
+void PyDbDatabase::disableUndoRecording(bool disable) const
 {
     impObj()->disableUndoRecording(disable);
 }
@@ -893,7 +967,7 @@ Adesk::Int16 PyDbDatabase::dragmode() const
 
 PyDbObjectId PyDbDatabase::dragVisStyle() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->dragVisStyle());
@@ -915,17 +989,17 @@ bool PyDbDatabase::dwgFileWasSavedByAutodeskSoftware() const
     return impObj()->dwgFileWasSavedByAutodeskSoftware();
 }
 
-void PyDbDatabase::dxfIn(const std::string& dxfFilename)
+void PyDbDatabase::dxfIn(const std::string& dxfFilename) const
 {
     return PyThrowBadEs(impObj()->dxfIn(utf8_to_wstr(dxfFilename).c_str()));
 }
 
-void PyDbDatabase::dxfOut1(const std::string& dxfFilename)
+void PyDbDatabase::dxfOut1(const std::string& dxfFilename) const
 {
     return PyThrowBadEs(impObj()->dxfOut(utf8_to_wstr(dxfFilename).c_str()));
 }
 
-void PyDbDatabase::dxfOut2(const std::string& dxfFilename, int precision, AcDb::AcDbDwgVersion dwgVer, bool saveThumbnailImage)
+void PyDbDatabase::dxfOut2(const std::string& dxfFilename, int precision, AcDb::AcDbDwgVersion dwgVer, bool saveThumbnailImage) const
 {
     return PyThrowBadEs(impObj()->dxfOut(utf8_to_wstr(dxfFilename).c_str(), precision, dwgVer, saveThumbnailImage));
 }
@@ -935,9 +1009,9 @@ double PyDbDatabase::elevation() const
     return impObj()->elevation();
 }
 
-Adesk::UInt32 PyDbDatabase::eraseEmptyObjects(const Adesk::Int32 flags)
+Adesk::UInt32 PyDbDatabase::eraseEmptyObjects(const Adesk::Int32 flags) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->eraseEmptyObjects(flags);
@@ -969,7 +1043,7 @@ bool PyDbDatabase::fillmode() const
     return impObj()->fillmode();
 }
 
-void PyDbDatabase::forceWblockDatabaseCopy()
+void PyDbDatabase::forceWblockDatabaseCopy() const
 {
     impObj()->forceWblockDatabaseCopy();
 }
@@ -981,7 +1055,7 @@ PyDbDbLayerStateManager PyDbDatabase::getLayerStateManager() const
 
 std::string PyDbDatabase::geoCoordinateSystemId() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(impObj()->geoCoordinateSystemId());
@@ -990,7 +1064,7 @@ std::string PyDbDatabase::geoCoordinateSystemId() const
 
 bool PyDbDatabase::geoMarkerVisibility() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->geoMarkerVisibility();
@@ -999,16 +1073,16 @@ bool PyDbDatabase::geoMarkerVisibility() const
 
 double PyDbDatabase::get3dDwfPrec() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->get3dDwfPrec();
 #endif
 }
 
-static std::vector<AcDbObjectId> getAllIdsFromDatabase(AcDbDatabase* pDb)
+static std::vector<PyDbObjectId> getAllIdsFromDatabase(AcDbDatabase* pDb)
 {
-    std::vector<AcDbObjectId> ids;
+    std::vector<PyDbObjectId> ids;
     if (pDb == nullptr)
         return ids;
     ids.reserve(pDb->approxNumObjects());
@@ -1016,11 +1090,10 @@ static std::vector<AcDbObjectId> getAllIdsFromDatabase(AcDbDatabase* pDb)
     AcDbHandle hndzero{ Adesk::UInt64(0) };
     while (hnd > hndzero)
     {
-        AcDbObjectId id;
-        if (pDb->getAcDbObjectId(id, false, hnd) == eOk)
+        if (PyDbObjectId id; pDb->getAcDbObjectId(id.m_id, false, hnd) == eOk)
         {
-            if (id.isValid() && !id.isErased() && !id.isEffectivelyErased())
-                ids.emplace_back(id);
+            if (!id.m_id.isNull() && !id.m_id.isErased() && !id.m_id.isEffectivelyErased())
+                ids.emplace_back(id.m_id);
         }
         hnd.decrement();
     }
@@ -1035,8 +1108,8 @@ static boost::python::list PyDbDatabaseObjectIds(AcDbDatabase* pDb, AcRxClass* p
         return pyList;
     for (const auto& id : getAllIdsFromDatabase(pDb))
     {
-        if (id.objectClass()->isDerivedFrom(pClass))
-            pyList.append(PyDbObjectId{ id });
+        if (id.m_id.objectClass()->isDerivedFrom(pClass))
+            pyList.append(id);
     }
     return pyList;
 }
@@ -1046,20 +1119,20 @@ boost::python::list PyDbDatabase::objectIds() const
     return PyDbDatabaseObjectIds(impObj(), AcDbObject::desc());
 }
 
-boost::python::list PyDbDatabase::objectIdsOfType(const PyRxClass& _class)
+boost::python::list PyDbDatabase::objectIdsOfType(const PyRxClass& _class) const
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
     auto _desc = _class.impObj();
     for (const auto& id : getAllIdsFromDatabase(impObj()))
     {
-        if (id.objectClass()->isDerivedFrom(_desc))
-            pyList.append(PyDbObjectId{ id });
+        if (id.m_id.objectClass()->isDerivedFrom(_desc))
+            pyList.append(id);
     }
     return pyList;
 }
 
-boost::python::list PyDbDatabase::objectIdsOfTypeList(const boost::python::list& _classes)
+boost::python::list PyDbDatabase::objectIdsOfTypeList(const boost::python::list& _classes) const
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
@@ -1070,34 +1143,80 @@ boost::python::list PyDbDatabase::objectIdsOfTypeList(const boost::python::list&
     }
     for (const auto& id : getAllIdsFromDatabase(impObj()))
     {
-        if (_set.contains(id.objectClass()))
-            pyList.append(PyDbObjectId{ id });
+        if (_set.contains(id.m_id.objectClass()))
+            pyList.append(id);
     }
     return pyList;
 }
 
-PyDbObjectId PyDbDatabase::getAcDbObjectId1(bool createIfNotFound, const PyDbHandle& objHandle)
+static PyDbObjectIdArray PyDbDatabaseObjectArray(AcDbDatabase* pDb, AcRxClass* pClass)
+{
+    PyDbObjectIdArray pyList;
+    if (pClass == nullptr)
+        return pyList;
+    for (const auto& id : getAllIdsFromDatabase(pDb))
+    {
+        if (id.m_id.objectClass()->isDerivedFrom(pClass))
+            pyList.push_back(id);
+    }
+    return pyList;
+}
+
+PyDbObjectIdArray PyDbDatabase::objectIdArray1() const
+{
+    return PyDbDatabaseObjectArray(impObj(), AcDbObject::desc());
+}
+
+PyDbObjectIdArray PyDbDatabase::objectIdArray2(const PyRxClass& _class) const
+{
+    PyDbObjectIdArray pyList;
+    auto _desc = _class.impObj();
+    for (const auto& id : getAllIdsFromDatabase(impObj()))
+    {
+        if (id.m_id.objectClass()->isDerivedFrom(_desc))
+            pyList.push_back(id);
+    }
+    return pyList;
+}
+
+PyDbObjectIdArray PyDbDatabase::objectIdArray3(const boost::python::list& _classes) const
+{
+    PyDbObjectIdArray pyList;
+    std::unordered_set<AcRxClass*> _set;
+    for (auto& item : py_list_to_std_vector<PyRxClass>(_classes))
+    {
+        _set.insert(item.impObj());
+    }
+    for (const auto& id : getAllIdsFromDatabase(impObj()))
+    {
+        if (_set.contains(id.m_id.objectClass()))
+            pyList.push_back(id);
+    }
+    return pyList;
+}
+
+PyDbObjectId PyDbDatabase::getAcDbObjectId1(bool createIfNotFound, const PyDbHandle& objHandle) const
 {
     PyDbObjectId retId;
     PyThrowBadEs(impObj()->getAcDbObjectId(retId.m_id, createIfNotFound, objHandle.m_hnd));
     return retId;
 }
 
-PyDbObjectId PyDbDatabase::getAcDbObjectId2(bool createIfNotFound, const PyDbHandle& objHandle, Adesk::UInt32 xRefId)
+PyDbObjectId PyDbDatabase::getAcDbObjectId2(bool createIfNotFound, const PyDbHandle& objHandle, Adesk::UInt32 xRefId) const
 {
     PyDbObjectId retId;
     PyThrowBadEs(impObj()->getAcDbObjectId(retId.m_id, createIfNotFound, objHandle.m_hnd, xRefId));
     return retId;
 }
 
-PyDbObjectId PyDbDatabase::tryGetAcDbObjectId1(bool createIfNotFound, const PyDbHandle& objHandle)
+PyDbObjectId PyDbDatabase::tryGetAcDbObjectId1(bool createIfNotFound, const PyDbHandle& objHandle) const
 {
     PyDbObjectId retId;
     impObj()->getAcDbObjectId(retId.m_id, createIfNotFound, objHandle.m_hnd);
     return retId;
 }
 
-PyDbObjectId PyDbDatabase::tryGetAcDbObjectId2(bool createIfNotFound, const PyDbHandle& objHandle, Adesk::UInt32 xRefId)
+PyDbObjectId PyDbDatabase::tryGetAcDbObjectId2(bool createIfNotFound, const PyDbHandle& objHandle, Adesk::UInt32 xRefId) const
 {
     PyDbObjectId retId;
     impObj()->getAcDbObjectId(retId.m_id, createIfNotFound, objHandle.m_hnd, xRefId);
@@ -1172,14 +1291,14 @@ boost::python::list PyDbDatabase::getViewportArray2(bool bGetPaperspaceVports) c
     return ObjectIdArrayToPyList(vportIds);
 }
 
-boost::python::list PyDbDatabase::getVisualStyleList()
+boost::python::list PyDbDatabase::getVisualStyleList() const
 {
     AcArray<const ACHAR*> vstyleList;
     PyThrowBadEs(impObj()->getVisualStyleList(vstyleList));
     PyAutoLockGIL lock;
     boost::python::list pyvstyleList;
     for (const auto& item : vstyleList)
-        pyvstyleList(wstr_to_utf8(item));
+        pyvstyleList.append(wstr_to_utf8(item));
     return pyvstyleList;
 }
 
@@ -1193,24 +1312,24 @@ PyDbObjectId PyDbDatabase::groupDictionaryId() const
     return PyDbObjectId(impObj()->groupDictionaryId());
 }
 
-void PyDbDatabase::insert1(PyDbObjectId& blockId, const std::string& pBlockName, PyDbDatabase& db, bool preserveSourceDatabase)
+void PyDbDatabase::insert1(PyDbObjectId& blockId, const std::string& pBlockName, PyDbDatabase& db, bool preserveSourceDatabase) const
 {
     return PyThrowBadEs(impObj()->insert(blockId.m_id, utf8_to_wstr(pBlockName).c_str(), db.impObj(), preserveSourceDatabase));
 }
 
-void PyDbDatabase::insert2(PyDbObjectId& blockId, const std::string& pSourceBlockName, const std::string& pDestinationBlockName, PyDbDatabase& db, bool preserveSourceDatabase)
+void PyDbDatabase::insert2(PyDbObjectId& blockId, const std::string& pSourceBlockName, const std::string& pDestinationBlockName, PyDbDatabase& db, bool preserveSourceDatabase) const
 {
     return PyThrowBadEs(impObj()->insert(blockId.m_id, utf8_to_wstr(pSourceBlockName).c_str(), utf8_to_wstr(pDestinationBlockName).c_str(), db.impObj(), preserveSourceDatabase));
 }
 
-void PyDbDatabase::insert3(const AcGeMatrix3d& xform, PyDbDatabase& db, bool preserveSourceDatabase)
+void PyDbDatabase::insert3(const AcGeMatrix3d& xform, PyDbDatabase& db, bool preserveSourceDatabase) const
 {
     return PyThrowBadEs(impObj()->insert(xform, db.impObj(), preserveSourceDatabase));
 }
 
 Adesk::UInt8 PyDbDatabase::haloGap() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->haloGap();
@@ -1226,7 +1345,7 @@ PyDbHandle PyDbDatabase::handseed() const
 
 bool PyDbDatabase::hasClass(const PyRxClass& pClass) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->hasClass(pClass.impObj());
@@ -1235,7 +1354,7 @@ bool PyDbDatabase::hasClass(const PyRxClass& pClass) const
 
 Adesk::UInt8 PyDbDatabase::hideText() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->hideText();
@@ -1254,7 +1373,7 @@ AcGePoint2d PyDbDatabase::hpOrigin() const
 
 Adesk::UInt8 PyDbDatabase::indexctl() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->indexctl();
@@ -1268,7 +1387,7 @@ AcDb::UnitsValue PyDbDatabase::insunits() const
 
 PyDbObjectId PyDbDatabase::interfereVpVisStyle() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->interfereVpVisStyle());
@@ -1277,7 +1396,7 @@ PyDbObjectId PyDbDatabase::interfereVpVisStyle() const
 
 Adesk::UInt16 PyDbDatabase::intersectColor() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->intersectColor();
@@ -1286,7 +1405,7 @@ Adesk::UInt16 PyDbDatabase::intersectColor() const
 
 Adesk::UInt8 PyDbDatabase::intersectDisplay() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->intersectDisplay();
@@ -1295,7 +1414,7 @@ Adesk::UInt8 PyDbDatabase::intersectDisplay() const
 
 bool PyDbDatabase::isBeingDestroyed() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isBeingDestroyed();
@@ -1309,7 +1428,7 @@ bool PyDbDatabase::isEMR() const
 
 bool PyDbDatabase::isObjectNonPersistent(const PyDbObjectId& id)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return AcDbDatabase::isObjectNonPersistent(id.m_id);
@@ -1363,7 +1482,7 @@ double PyDbDatabase::latitude() const
 
 Adesk::UInt8 PyDbDatabase::layerEval() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->layerEval();
@@ -1372,7 +1491,7 @@ Adesk::UInt8 PyDbDatabase::layerEval() const
 
 Adesk::Int16 PyDbDatabase::layerNotify() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->layerNotify();
@@ -1396,7 +1515,7 @@ PyDbObjectId PyDbDatabase::layoutDictionaryId() const
 
 double PyDbDatabase::lensLength() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->lensLength();
@@ -1405,7 +1524,7 @@ double PyDbDatabase::lensLength() const
 
 Adesk::UInt8 PyDbDatabase::lightGlyphDisplay() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->lightGlyphDisplay();
@@ -1414,7 +1533,7 @@ Adesk::UInt8 PyDbDatabase::lightGlyphDisplay() const
 
 Adesk::UInt8 PyDbDatabase::lightingUnits() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->lightingUnits();
@@ -1423,7 +1542,7 @@ Adesk::UInt8 PyDbDatabase::lightingUnits() const
 
 bool PyDbDatabase::lightsInBlocks() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->lightsInBlocks();
@@ -1455,7 +1574,7 @@ bool PyDbDatabase::lineWeightDisplay() const
     return impObj()->lineWeightDisplay();
 }
 
-void PyDbDatabase::loadLineTypeFile(const std::string& ltn, const std::string& filename)
+void PyDbDatabase::loadLineTypeFile(const std::string& ltn, const std::string& filename) const
 {
     return PyThrowBadEs(impObj()->loadLineTypeFile(utf8_to_wstr(ltn).c_str(), utf8_to_wstr(filename).c_str()));
 }
@@ -1510,7 +1629,7 @@ Adesk::Int16 PyDbDatabase::luprec() const
     return impObj()->luprec();
 }
 
-void PyDbDatabase::registerApp(const std::string& pszAppName)
+void PyDbDatabase::registerApp(const std::string& pszAppName) const
 {
 #if defined(_ARXTARGET) && (_ARXTARGET >= 242)
     return PyThrowBadEs(impObj()->registerApp(utf8_to_wstr(pszAppName).c_str()));
@@ -1526,7 +1645,7 @@ int PyDbDatabase::maintenanceReleaseVersion() const
 
 void PyDbDatabase::markObjectNonPersistent(const PyDbObjectId& id, bool value)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(AcDbDatabase::markObjectNonPersistent(id.m_id, value));
@@ -1580,7 +1699,7 @@ bool PyDbDatabase::msltscale() const
 
 double PyDbDatabase::msOleScale() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->msOleScale();
@@ -1594,7 +1713,7 @@ PyDbObjectId PyDbDatabase::namedObjectsDictionaryId() const
 
 bool PyDbDatabase::needsRecovery() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->needsRecovery();
@@ -1618,7 +1737,7 @@ PyDbObjectContextManager PyDbDatabase::objectContextManager() const
 
 Adesk::UInt16 PyDbDatabase::obscuredColor() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->obscuredColor();
@@ -1627,7 +1746,7 @@ Adesk::UInt16 PyDbDatabase::obscuredColor() const
 
 Adesk::UInt8 PyDbDatabase::obscuredLineType() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->obscuredLineType();
@@ -1676,7 +1795,7 @@ PyDbObjectId PyDbDatabase::paperSpaceVportId() const
 
 Adesk::Int8 PyDbDatabase::pdfframe() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->pdfframe();
@@ -1765,7 +1884,7 @@ PyDbObjectId PyDbDatabase::plotStyleNameDictionaryId() const
 
 Adesk::Int16 PyDbDatabase::previewType() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->previewType();
@@ -1779,7 +1898,7 @@ bool PyDbDatabase::psltscale() const
 
 double PyDbDatabase::psolHeight() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->psolHeight();
@@ -1788,7 +1907,7 @@ double PyDbDatabase::psolHeight() const
 
 double PyDbDatabase::psolWidth() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->psolWidth();
@@ -1820,7 +1939,16 @@ AcGeVector3d PyDbDatabase::pucsydir() const
     return impObj()->pucsydir();
 }
 
-boost::python::list PyDbDatabase::purge(const boost::python::list& pyids)
+void PyDbDatabase::purgeGraph(PyObjectIdGraph& graph) const
+{
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
+    PyThrowBadEs(impObj()->purge(*graph.impObj()));
+#endif
+}
+
+boost::python::list PyDbDatabase::purge(const boost::python::list& pyids) const
 {
     AcDbObjectIdArray ids = PyListToObjectIdArray(pyids);
     PyThrowBadEs(impObj()->purge(ids));
@@ -1832,7 +1960,7 @@ bool PyDbDatabase::qtextmode() const
     return impObj()->qtextmode();
 }
 
-void PyDbDatabase::reclaimMemoryFromErasedObjects(const boost::python::list& erasedObjects)
+void PyDbDatabase::reclaimMemoryFromErasedObjects(const boost::python::list& erasedObjects) const
 {
     const AcDbObjectIdArray ids = PyListToObjectIdArray(erasedObjects);
     return PyThrowBadEs(impObj()->reclaimMemoryFromErasedObjects(ids));
@@ -1853,21 +1981,21 @@ void PyDbDatabase::removeReactor(PyDbDatabaseReactor& pReactor) const
     PyThrowBadEs(impObj()->removeReactor(pReactor.impObj()));
 }
 
-void PyDbDatabase::resetTimes()
+void PyDbDatabase::resetTimes() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->resetTimes());
 #endif
 }
 
-void PyDbDatabase::restoreForwardingXrefSymbols()
+void PyDbDatabase::restoreForwardingXrefSymbols() const
 {
     return PyThrowBadEs(impObj()->restoreForwardingXrefSymbols());
 }
 
-void PyDbDatabase::restoreOriginalXrefSymbols()
+void PyDbDatabase::restoreOriginalXrefSymbols() const
 {
     return PyThrowBadEs(impObj()->restoreOriginalXrefSymbols());
 }
@@ -1889,7 +2017,7 @@ PyDbObjectId PyDbDatabase::scaleListDictionaryId() const
 
 PyDbObjectId PyDbDatabase::sectionViewStyle() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->sectionViewStyle());
@@ -1901,342 +2029,353 @@ PyDbObjectId PyDbDatabase::sectionViewStyleDictionaryId() const
     return PyDbObjectId(impObj()->sectionViewStyleDictionaryId());
 }
 
-void PyDbDatabase::set3dDwfPrec(double DwfPrec)
+void PyDbDatabase::set3dDwfPrec(double DwfPrec) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->set3dDwfPrec(DwfPrec));
 #endif
 }
 
-void PyDbDatabase::setAngbase(double angle)
+void PyDbDatabase::setAngbase(double angle) const
 {
     return PyThrowBadEs(impObj()->setAngbase(angle));
 }
 
-void PyDbDatabase::setAngdir(bool dir)
+void PyDbDatabase::setAngdir(bool dir) const
 {
     return PyThrowBadEs(impObj()->setAngdir(dir));
 }
 
-void PyDbDatabase::setAnnoAllVisible(bool allvis)
+void PyDbDatabase::setAnnoAllVisible(bool allvis) const
 {
     return PyThrowBadEs(impObj()->setAnnoAllVisible(allvis));
 }
 
-void PyDbDatabase::setAttdia(bool dia)
+void PyDbDatabase::setAttdia(bool dia) const
 {
     return PyThrowBadEs(impObj()->setAttdia(dia));
 }
 
-void PyDbDatabase::setAttmode(Adesk::Int16 mode)
+void PyDbDatabase::setAttmode(Adesk::Int16 mode) const
 {
     return PyThrowBadEs(impObj()->setAttmode(mode));
 }
 
-void PyDbDatabase::setAttreq(bool req)
+void PyDbDatabase::setAttreq(bool req) const
 {
     return PyThrowBadEs(impObj()->setAttreq(req));
 }
 
-void PyDbDatabase::setAunits(Adesk::Int16 aunits)
+void PyDbDatabase::setAunits(Adesk::Int16 aunits) const
 {
     return PyThrowBadEs(impObj()->setAunits(aunits));
 }
 
-void PyDbDatabase::setAuprec(Adesk::Int16 auprec)
+void PyDbDatabase::setAuprec(Adesk::Int16 auprec) const
 {
     return PyThrowBadEs(impObj()->setAuprec(auprec));
 }
 
-void PyDbDatabase::setBlipmode(bool mode)
+void PyDbDatabase::setBlipmode(bool mode) const
 {
     return PyThrowBadEs(impObj()->setBlipmode(mode));
 }
 
-void PyDbDatabase::setCameraDisplay(bool cameraDisplay)
+void PyDbDatabase::setCameraDisplay(bool cameraDisplay) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setCameraDisplay(cameraDisplay));
 #endif
 }
 
-void PyDbDatabase::setCameraHeight(double cameraHeight)
+void PyDbDatabase::setCameraHeight(double cameraHeight) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setCameraHeight(cameraHeight));
 #endif
 }
 
-void PyDbDatabase::setCannoscale(PyDbAnnotationScale& val)
+void PyDbDatabase::setCannoscale(PyDbAnnotationScale& val) const
 {
     return PyThrowBadEs(impObj()->setCannoscale(val.impObj()));
 }
 
-void PyDbDatabase::setCDynDisplayMode(Adesk::Int16 val)
+void PyDbDatabase::setCDynDisplayMode(Adesk::Int16 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setCDynDisplayMode(val));
 #endif
 }
 
-void PyDbDatabase::setCecolor(const AcCmColor& color)
+void PyDbDatabase::setCecolor(const AcCmColor& color) const
 {
     return PyThrowBadEs(impObj()->setCecolor(color));
 }
 
-void PyDbDatabase::setCeltscale(double scale)
+void PyDbDatabase::setCeltscale(double scale) const
 {
     return PyThrowBadEs(impObj()->setCeltscale(scale));
 }
 
-void PyDbDatabase::setCeltype(const PyDbObjectId& id)
+void PyDbDatabase::setCeltype(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setCeltype(id.m_id));
 }
 
-void PyDbDatabase::setCelweight(AcDb::LineWeight weight)
+void PyDbDatabase::setCelweight(AcDb::LineWeight weight) const
 {
     return PyThrowBadEs(impObj()->setCelweight(weight));
 }
 
-void PyDbDatabase::setCePlotStyleName(AcDb::PlotStyleNameType type, const PyDbObjectId& id)
+void PyDbDatabase::setCePlotStyleName(AcDb::PlotStyleNameType type, const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setCePlotStyleName(type, id.m_id));
 }
 
-void PyDbDatabase::setCetransparency(const AcCmTransparency& transparency)
+void PyDbDatabase::setCetransparency(const AcCmTransparency& transparency) const
 {
     return PyThrowBadEs(impObj()->setCetransparency(transparency));
 }
 
-void PyDbDatabase::setChamfera(double val)
+void PyDbDatabase::setChamfera(double val) const
 {
     return PyThrowBadEs(impObj()->setChamfera(val));
 }
 
-void PyDbDatabase::setChamferb(double val)
+void PyDbDatabase::setChamferb(double val) const
 {
     return PyThrowBadEs(impObj()->setChamferb(val));
 }
 
-void PyDbDatabase::setChamferc(double val)
+void PyDbDatabase::setChamferc(double val) const
 {
     return PyThrowBadEs(impObj()->setChamferc(val));
 }
 
-void PyDbDatabase::setChamferd(double val)
+void PyDbDatabase::setChamferd(double val) const
 {
     return PyThrowBadEs(impObj()->setChamferd(val));
 }
 
-void PyDbDatabase::setClayer(const PyDbObjectId& id)
+void PyDbDatabase::setClayer(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setClayer(id.m_id));
 }
 
-void PyDbDatabase::setCmaterial(const PyDbObjectId& id)
+void PyDbDatabase::setCmaterial(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setCmaterial(id.m_id));
 }
 
-void PyDbDatabase::setCmljust(Adesk::Int16 just)
+void PyDbDatabase::setCmljust(Adesk::Int16 just) const
 {
     return PyThrowBadEs(impObj()->setCmljust(just));
 }
 
-void PyDbDatabase::setCmlscale(double scale)
+void PyDbDatabase::setCmlscale(double scale) const
 {
     return PyThrowBadEs(impObj()->setCmlscale(scale));
 }
 
-void PyDbDatabase::setCmlstyleID(const PyDbObjectId& id)
+void PyDbDatabase::setCmlstyleID(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setCmlstyleID(id.m_id));
 }
 
-void PyDbDatabase::setCoords(Adesk::Int16 _coords)
+void PyDbDatabase::setCoords(Adesk::Int16 _coords) const
 {
     return PyThrowBadEs(impObj()->setCoords(_coords));
 }
 
-void PyDbDatabase::setCshadow(Adesk::UInt8 val)
+void PyDbDatabase::setCshadow(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setCshadow(val));
 #endif
 }
 
-void PyDbDatabase::setDelUsedObj(Adesk::Int16 deleteObj)
+void PyDbDatabase::setDelUsedObj(Adesk::Int16 deleteObj) const
 {
     return PyThrowBadEs(impObj()->setDelUsedObj(deleteObj));
 }
 
-void PyDbDatabase::setDgnframe(Adesk::UInt8 val)
+void PyDbDatabase::setDgnframe(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setDgnframe(val));
 #endif
 }
 
-void PyDbDatabase::setDimaso(bool aso)
+void PyDbDatabase::setDimaso(bool aso) const
 {
     return PyThrowBadEs(impObj()->setDimaso(aso));
 }
 
-void PyDbDatabase::setDimAssoc(Adesk::UInt8 val)
+void PyDbDatabase::setDimAssoc(Adesk::UInt8 val) const
 {
     return PyThrowBadEs(impObj()->setDimAssoc(val));
 }
 
-void PyDbDatabase::setDimfit(int fit)
+void PyDbDatabase::setDimfit(int fit) const
 {
     return PyThrowBadEs(impObj()->setDimfit(fit));
 }
 
-void PyDbDatabase::setDimsho(bool sho)
+void PyDbDatabase::setDimsho(bool sho) const
 {
     return PyThrowBadEs(impObj()->setDimsho(sho));
 }
 
-void PyDbDatabase::setDimstyle(const PyDbObjectId& id)
+void PyDbDatabase::setDimstyle(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setDimstyle(id.m_id));
 }
 
-void PyDbDatabase::setDimstyleData1(PyDbDimStyleTableRecord& pRec)
+void PyDbDatabase::setDimstyleData1(PyDbDimStyleTableRecord& pRec) const
 {
     return PyThrowBadEs(impObj()->setDimstyleData(pRec.impObj()));
 }
 
-void PyDbDatabase::setDimstyleData2(const PyDbObjectId& id)
+void PyDbDatabase::setDimstyleData2(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setDimstyleData(id.m_id));
 }
 
-void PyDbDatabase::setDimunit(int unit)
+void PyDbDatabase::setDimunit(int unit) const
 {
     return PyThrowBadEs(impObj()->setDimunit(unit));
 }
 
-void PyDbDatabase::setDispSilh(bool silh)
+void PyDbDatabase::setDispSilh(bool silh) const
 {
     return PyThrowBadEs(impObj()->setDispSilh(silh));
 }
 
-void PyDbDatabase::setDragmode(Adesk::Int16 mode)
+void PyDbDatabase::setDragmode(Adesk::Int16 mode) const
 {
     return PyThrowBadEs(impObj()->setDragmode(mode));
 }
 
-void PyDbDatabase::setDragVisStyle(const PyDbObjectId& id)
+void PyDbDatabase::setDragVisStyle(const PyDbObjectId& id) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setDragVisStyle(id.m_id));
 #endif
 }
 
-void PyDbDatabase::setDrawOrderCtl(Adesk::UInt8 val)
+void PyDbDatabase::setDrawOrderCtl(Adesk::UInt8 val) const
 {
     return PyThrowBadEs(impObj()->setDrawOrderCtl(val));
 }
 
-void PyDbDatabase::setDwfframe(Adesk::UInt8 val)
+void PyDbDatabase::setDwfframe(Adesk::UInt8 val) const
 {
     return PyThrowBadEs(impObj()->setDwfframe(val));
 }
 
-void PyDbDatabase::setElevation(double elev)
+void PyDbDatabase::setElevation(double elev) const
 {
     return PyThrowBadEs(impObj()->setElevation(elev));
 }
 
-void PyDbDatabase::setEndCaps(AcDb::EndCaps type)
+void PyDbDatabase::setEndCaps(AcDb::EndCaps type) const
 {
     return PyThrowBadEs(impObj()->setEndCaps(type));
 }
 
-void PyDbDatabase::setExtmax(const AcGePoint3d& max)
+void PyDbDatabase::setExtmax(const AcGePoint3d& max) const
 {
     return PyThrowBadEs(impObj()->setExtmax(max));
 }
 
-void PyDbDatabase::setExtmin(const AcGePoint3d& min)
+void PyDbDatabase::setExtmin(const AcGePoint3d& min) const
 {
     return PyThrowBadEs(impObj()->setExtmin(min));
 }
 
-void PyDbDatabase::setFacetres(double _facetres)
+void PyDbDatabase::setFacetres(double _facetres) const
 {
     return PyThrowBadEs(impObj()->setFacetres(_facetres));
 }
 
-void PyDbDatabase::setFilletrad(double radius)
+void PyDbDatabase::setFilletrad(double radius) const
 {
     return PyThrowBadEs(impObj()->setFilletrad(radius));
 }
 
-void PyDbDatabase::setFillmode(bool mode)
+void PyDbDatabase::setFillmode(bool mode) const
 {
     return PyThrowBadEs(impObj()->setFillmode(mode));
 }
 
-void PyDbDatabase::saveAs1(const std::string& fileName)
+void PyDbDatabase::saveAs1(const std::string& fileName) const
 {
     return PyThrowBadEs(impObj()->saveAs(utf8_to_wstr(fileName).c_str()));
 }
 
-void PyDbDatabase::saveAs2(const std::string& fileName, const bool bBakAndRename, const AcDb::AcDbDwgVersion dwgVer)
+void PyDbDatabase::saveAs2(const std::string& fileName, const bool bBakAndRename, const AcDb::AcDbDwgVersion dwgVer) const
 {
     return PyThrowBadEs(impObj()->saveAs(utf8_to_wstr(fileName).c_str(), bBakAndRename, dwgVer));
 }
 
-void PyDbDatabase::setFingerprintGuid(const std::string& newGuid)
+void PyDbDatabase::setFingerprintGuid(const std::string& newGuid) const
 {
     return PyThrowBadEs(impObj()->setFingerprintGuid(utf8_to_wstr(newGuid).c_str()));
 }
 
-void PyDbDatabase::setFullSaveRequired()
+void PyDbDatabase::setFullSaveRequired() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->setFullSaveRequired();
 #endif
 }
 
-void PyDbDatabase::readDwgFile1(const char* fileName)
+void PyDbDatabase::readDwgFile1(const char* fileName) const
 {
     std::wstring wsfileName{ utf8_to_wstr(fileName) };
     return PyThrowBadEs(impObj()->readDwgFile(wsfileName.c_str()));
 }
 
-void PyDbDatabase::readDwgFile2(const char* fileName, int mode, bool bAllowCPConversion, const std::string& password)
+void PyDbDatabase::readDwgFile2(const char* fileName, int mode, bool bAllowCPConversion, const std::string& password) const
 {
     std::wstring wsfileName{ utf8_to_wstr(fileName) };
     std::wstring wspassword{ utf8_to_wstr(password) };
     return PyThrowBadEs(impObj()->readDwgFile(wsfileName.c_str(), (AcDbDatabase::OpenMode)mode, bAllowCPConversion, wspassword.c_str()));
 }
 
-std::string PyDbDatabase::getFilename()
+std::string PyDbDatabase::getFilename() const
 {
     const TCHAR* path = nullptr;
     if (impObj()->getFilename(path) == eOk && path != nullptr)
         return std::string{ wstr_to_utf8(path) };
     return std::string{ };
+}
+
+PyDbObjectId PyDbDatabase::currentLayoutId() const
+{
+    AcString name;
+    AcDbObjectId entryId;
+    auto man = acdbHostApplicationServices()->layoutManager();
+    PyThrowBadEs(man->getActiveLayoutName(name, true, impObj()));
+    AcDbDictionaryPointer pDict(impObj()->layoutDictionaryId());
+    PyThrowBadEs(pDict->getAt(name, entryId));
+    return entryId;
 }
 
 PyDbObjectId PyDbDatabase::currentSpaceId() const
@@ -2251,817 +2390,849 @@ PyDbObjectId PyDbDatabase::blockTableId() const
 
 PyDbObjectId PyDbDatabase::modelSpaceId() const
 {
+#if defined(_IRXTARGET140)
+    return PyDbObjectId(getblockModelSpaceId(impObj()));
+#else
     return PyDbObjectId(acdbSymUtil()->blockModelSpaceId(impObj()));
+#endif
 }
 
-void PyDbDatabase::setGeoMarkerVisibility(bool value)
+PyDbBlockTableRecord PyDbDatabase::modelSpace1() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_IRXTARGET140)
+    return PyDbBlockTableRecord(openAcDbObject<AcDbBlockTableRecord>(getblockModelSpaceId(impObj())), false);
+#else
+    return PyDbBlockTableRecord(openAcDbObject<AcDbBlockTableRecord>(acdbSymUtil()->blockModelSpaceId(impObj())), false);
+#endif
+}
+
+PyDbBlockTableRecord PyDbDatabase::modelSpace2(AcDb::OpenMode mode) const
+{
+#if defined(_IRXTARGET140)
+    return PyDbBlockTableRecord(openAcDbObject<AcDbBlockTableRecord>(getblockModelSpaceId(impObj()), mode), false);
+#else
+    return PyDbBlockTableRecord(openAcDbObject<AcDbBlockTableRecord>(acdbSymUtil()->blockModelSpaceId(impObj()), mode), false);
+#endif
+}
+
+PyDbBlockTableRecord PyDbDatabase::currentSpace1() const
+{
+    return PyDbBlockTableRecord(openAcDbObject<AcDbBlockTableRecord>(impObj()->currentSpaceId()), false);
+}
+
+PyDbBlockTableRecord PyDbDatabase::currentSpace2(AcDb::OpenMode mode) const
+{
+    return PyDbBlockTableRecord(openAcDbObject<AcDbBlockTableRecord>(impObj()->currentSpaceId(), mode), false);
+}
+
+void PyDbDatabase::setGeoMarkerVisibility(bool value) const
+{
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setGeoMarkerVisibility(value));
 #endif
 }
 
-void PyDbDatabase::setHaloGap(Adesk::UInt8 val)
+void PyDbDatabase::setHaloGap(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setHaloGap(val));
 #endif
 }
 
-void PyDbDatabase::setHandseed(const PyDbHandle& handle)
+void PyDbDatabase::setHandseed(const PyDbHandle& handle) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setHandseed(handle.m_hnd));
 #endif
 }
 
-void PyDbDatabase::setHideText(Adesk::UInt8 val)
+void PyDbDatabase::setHideText(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setHideText(val));
 #endif
 }
 
-void PyDbDatabase::setHpInherit(const bool inherit)
+void PyDbDatabase::setHpInherit(const bool inherit) const
 {
     return PyThrowBadEs(impObj()->setHpInherit(inherit));
 }
 
-void PyDbDatabase::setHpOrigin(const AcGePoint2d& origin)
+void PyDbDatabase::setHpOrigin(const AcGePoint2d& origin) const
 {
     return PyThrowBadEs(impObj()->setHpOrigin(origin));
 }
 
-void PyDbDatabase::setHyperlinkBase(const std::string& val)
+void PyDbDatabase::setHyperlinkBase(const std::string& val) const
 {
     return PyThrowBadEs(impObj()->setHyperlinkBase(utf8_to_wstr(val).c_str()));
 }
 
-void PyDbDatabase::setIndexctl(Adesk::UInt8 val)
+void PyDbDatabase::setIndexctl(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setIndexctl(val));
 #endif
 }
 
-void PyDbDatabase::setInsbase(const AcGePoint3d& base)
+void PyDbDatabase::setInsbase(const AcGePoint3d& base) const
 {
     return PyThrowBadEs(impObj()->setInsbase(base));
 }
 
-void PyDbDatabase::setInsunits(const AcDb::UnitsValue units)
+void PyDbDatabase::setInsunits(const AcDb::UnitsValue units) const
 {
     return PyThrowBadEs(impObj()->setInsunits(units));
 }
 
-void PyDbDatabase::setInterfereColor(const AcCmColor& color)
+void PyDbDatabase::setInterfereColor(const AcCmColor& color) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setInterfereColor(color));
 #endif
 }
 
-void PyDbDatabase::setInterfereObjVisStyle(const PyDbObjectId& id)
+void PyDbDatabase::setInterfereObjVisStyle(const PyDbObjectId& id) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setInterfereObjVisStyle(id.m_id));
 #endif
 }
 
-void PyDbDatabase::setInterfereVpVisStyle(const PyDbObjectId& id)
+void PyDbDatabase::setInterfereVpVisStyle(const PyDbObjectId& id) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setInterfereVpVisStyle(id.m_id));
 #endif
 }
 
-void PyDbDatabase::setIntersectColor(Adesk::UInt16 val)
+void PyDbDatabase::setIntersectColor(Adesk::UInt16 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setIntersectColor(val));
 #endif
 }
 
-void PyDbDatabase::setIntersectDisplay(Adesk::UInt8 val)
+void PyDbDatabase::setIntersectDisplay(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setIntersectDisplay(val));
 #endif
 }
 
-void PyDbDatabase::setIsolines(Adesk::Int16 isolines)
+void PyDbDatabase::setIsolines(Adesk::Int16 isolines) const
 {
     return PyThrowBadEs(impObj()->setIsolines(isolines));
 }
 
-void PyDbDatabase::setJoinStyle(AcDb::JoinStyle style)
+void PyDbDatabase::setJoinStyle(AcDb::JoinStyle style) const
 {
     return PyThrowBadEs(impObj()->setJoinStyle(style));
 }
 
-void PyDbDatabase::setLatitude(double lat)
+void PyDbDatabase::setLatitude(double lat) const
 {
     return PyThrowBadEs(impObj()->setLatitude(lat));
 }
 
-void PyDbDatabase::setLayerEval(Adesk::UInt8 val)
+void PyDbDatabase::setLayerEval(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLayerEval(val));
 #endif
 }
 
-void PyDbDatabase::setLayerNotify(Adesk::Int16 val)
+void PyDbDatabase::setLayerNotify(Adesk::Int16 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLayerNotify(val));
 #endif
 }
 
-void PyDbDatabase::setLensLength(const double _lensLength)
+void PyDbDatabase::setLensLength(const double _lensLength) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLensLength(_lensLength));
 #endif
 }
 
-void PyDbDatabase::setLightGlyphDisplay(Adesk::UInt8 val)
+void PyDbDatabase::setLightGlyphDisplay(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLightGlyphDisplay(val));
 #endif
 }
 
-void PyDbDatabase::setLightingUnits(Adesk::UInt8 val)
+void PyDbDatabase::setLightingUnits(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLightingUnits(val));
 #endif
 }
 
-void PyDbDatabase::setLightsInBlocks(bool val)
+void PyDbDatabase::setLightsInBlocks(bool val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLightsInBlocks(val));
 #endif
 }
 
-void PyDbDatabase::setLimcheck(bool check)
+void PyDbDatabase::setLimcheck(bool check) const
 {
     return PyThrowBadEs(impObj()->setLimcheck(check));
 }
 
-void PyDbDatabase::setLimmax(const AcGePoint2d& max)
+void PyDbDatabase::setLimmax(const AcGePoint2d& max) const
 {
     return PyThrowBadEs(impObj()->setLimmax(max));
 }
 
-void PyDbDatabase::setLimmin(const AcGePoint2d& min)
+void PyDbDatabase::setLimmin(const AcGePoint2d& min) const
 {
     return PyThrowBadEs(impObj()->setLimmin(min));
 }
 
-void PyDbDatabase::setLineWeightDisplay(bool display)
+void PyDbDatabase::setLineWeightDisplay(bool display) const
 {
     return PyThrowBadEs(impObj()->setLineWeightDisplay(display));
 }
 
-void PyDbDatabase::setLoftAng1(double ang1)
+void PyDbDatabase::setLoftAng1(double ang1) const
 {
     return PyThrowBadEs(impObj()->setLoftAng1(ang1));
 }
 
-void PyDbDatabase::setLoftAng2(double ang2)
+void PyDbDatabase::setLoftAng2(double ang2) const
 {
     return PyThrowBadEs(impObj()->setLoftAng2(ang2));
 }
 
-void PyDbDatabase::setLoftMag1(double mag1)
+void PyDbDatabase::setLoftMag1(double mag1) const
 {
     return PyThrowBadEs(impObj()->setLoftMag1(mag1));
 }
 
-void PyDbDatabase::setLoftMag2(double mag2)
+void PyDbDatabase::setLoftMag2(double mag2) const
 {
     return PyThrowBadEs(impObj()->setLoftMag2(mag2));
 }
 
-void PyDbDatabase::setLoftNormals(Adesk::UInt8 value)
+void PyDbDatabase::setLoftNormals(Adesk::UInt8 value) const
 {
     return PyThrowBadEs(impObj()->setLoftNormals(value));
 }
 
-void PyDbDatabase::setLoftParam(Adesk::UInt16 flags)
+void PyDbDatabase::setLoftParam(Adesk::UInt16 flags) const
 {
     return PyThrowBadEs(impObj()->setLoftParam(flags));
 }
 
-void PyDbDatabase::setLongitude(double lng)
+void PyDbDatabase::setLongitude(double lng) const
 {
     return PyThrowBadEs(impObj()->setLongitude(lng));
 }
 
-void PyDbDatabase::setLtscale(double scale)
+void PyDbDatabase::setLtscale(double scale) const
 {
     return PyThrowBadEs(impObj()->setLtscale(scale));
 }
 
-void PyDbDatabase::setLunits(Adesk::Int16 lunits)
+void PyDbDatabase::setLunits(Adesk::Int16 lunits) const
 {
     return PyThrowBadEs(impObj()->setLunits(lunits));
 }
 
-void PyDbDatabase::setLuprec(Adesk::Int16 prec)
+void PyDbDatabase::setLuprec(Adesk::Int16 prec) const
 {
     return PyThrowBadEs(impObj()->setLuprec(prec));
 }
 
-void PyDbDatabase::setMaxactvp(Adesk::Int16 max)
+void PyDbDatabase::setMaxactvp(Adesk::Int16 max) const
 {
     return PyThrowBadEs(impObj()->setMaxactvp(max));
 }
 
-void PyDbDatabase::setMeasurement(AcDb::MeasurementValue type)
+void PyDbDatabase::setMeasurement(AcDb::MeasurementValue type) const
 {
     return PyThrowBadEs(impObj()->setMeasurement(type));
 }
 
-void PyDbDatabase::setMirrtext(bool mirror)
+void PyDbDatabase::setMirrtext(bool mirror) const
 {
     return PyThrowBadEs(impObj()->setMirrtext(mirror));
 }
 
-void PyDbDatabase::setMLeaderscale(double scale)
+void PyDbDatabase::setMLeaderscale(double scale) const
 {
     return PyThrowBadEs(impObj()->setMLeaderscale(scale));
 }
 
-void PyDbDatabase::setMLeaderstyle(const PyDbObjectId& objId)
+void PyDbDatabase::setMLeaderstyle(const PyDbObjectId& objId) const
 {
     return PyThrowBadEs(impObj()->setMLeaderstyle(objId.m_id));
 }
 
-void PyDbDatabase::setMsltscale(bool val)
+void PyDbDatabase::setMsltscale(bool val) const
 {
     return PyThrowBadEs(impObj()->setMsltscale(val));
 }
 
-void PyDbDatabase::setMsOleScale(double val)
+void PyDbDatabase::setMsOleScale(double val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setMsOleScale(val));
 #endif
 }
 
-void PyDbDatabase::setNorthDirection(double northdir)
+void PyDbDatabase::setNorthDirection(double northdir) const
 {
     return PyThrowBadEs(impObj()->setNorthDirection(northdir));
 }
 
-void PyDbDatabase::setObscuredColor(Adesk::UInt16 val)
+void PyDbDatabase::setObscuredColor(Adesk::UInt16 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setObscuredColor(val));
 #endif
 }
 
-void PyDbDatabase::setObscuredLineType(Adesk::UInt8 val)
+void PyDbDatabase::setObscuredLineType(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setObscuredLineType(val));
 #endif
 }
 
-void PyDbDatabase::setOleStartUp(bool val)
+void PyDbDatabase::setOleStartUp(bool val) const
 {
     return PyThrowBadEs(impObj()->setOleStartUp(val));
 }
 
-void PyDbDatabase::setOrthomode(bool mode)
+void PyDbDatabase::setOrthomode(bool mode) const
 {
     return PyThrowBadEs(impObj()->setOrthomode(mode));
 }
 
-void PyDbDatabase::setPdfframe(Adesk::Int8 val)
+void PyDbDatabase::setPdfframe(Adesk::Int8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPdfframe(val));
 #endif
 }
 
-void PyDbDatabase::setPdmode(Adesk::Int16 mode)
+void PyDbDatabase::setPdmode(Adesk::Int16 mode) const
 {
     return PyThrowBadEs(impObj()->setPdmode(mode));
 }
 
-void PyDbDatabase::setPdsize(double size)
+void PyDbDatabase::setPdsize(double size) const
 {
     return PyThrowBadEs(impObj()->setPdsize(size));
 }
 
-void PyDbDatabase::setPelevation(double elev)
+void PyDbDatabase::setPelevation(double elev) const
 {
     return PyThrowBadEs(impObj()->setPelevation(elev));
 }
 
-void PyDbDatabase::setPextmax(const AcGePoint3d& max)
+void PyDbDatabase::setPextmax(const AcGePoint3d& max) const
 {
     return PyThrowBadEs(impObj()->setPextmax(max));
 }
 
-void PyDbDatabase::setPextmin(const AcGePoint3d& min)
+void PyDbDatabase::setPextmin(const AcGePoint3d& min) const
 {
     return PyThrowBadEs(impObj()->setPextmin(min));
 }
 
-void PyDbDatabase::setPickstyle(Adesk::Int16 style)
+void PyDbDatabase::setPickstyle(Adesk::Int16 style) const
 {
     return PyThrowBadEs(impObj()->setPickstyle(style));
 }
 
-void PyDbDatabase::setPinsbase(const AcGePoint3d& base)
+void PyDbDatabase::setPinsbase(const AcGePoint3d& base) const
 {
     return PyThrowBadEs(impObj()->setPinsbase(base));
 }
 
-void PyDbDatabase::setPlimcheck(bool check)
+void PyDbDatabase::setPlimcheck(bool check) const
 {
     return PyThrowBadEs(impObj()->setPlimcheck(check));
 }
 
-void PyDbDatabase::setPlimmax(const AcGePoint2d& max)
+void PyDbDatabase::setPlimmax(const AcGePoint2d& max) const
 {
     return PyThrowBadEs(impObj()->setPlimmax(max));
 }
 
-void PyDbDatabase::setPlimmin(const AcGePoint2d& min)
+void PyDbDatabase::setPlimmin(const AcGePoint2d& min) const
 {
     return PyThrowBadEs(impObj()->setPlimmin(min));
 }
 
-void PyDbDatabase::setPlineEllipse(bool pline)
+void PyDbDatabase::setPlineEllipse(bool pline) const
 {
     return PyThrowBadEs(impObj()->setPlineEllipse(pline));
 }
 
-void PyDbDatabase::setPlinegen(bool gen)
+void PyDbDatabase::setPlinegen(bool gen) const
 {
     return PyThrowBadEs(impObj()->setPlinegen(gen));
 }
 
-void PyDbDatabase::setPlinewid(double width)
+void PyDbDatabase::setPlinewid(double width) const
 {
     return PyThrowBadEs(impObj()->setPlinewid(width));
 }
 
-void PyDbDatabase::setPreviewType(Adesk::Int16 val)
+void PyDbDatabase::setPreviewType(Adesk::Int16 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPreviewType(val));
 #endif
 }
 
-void PyDbDatabase::setProjectName(const std::string& val)
+void PyDbDatabase::setProjectName(const std::string& val) const
 {
     return PyThrowBadEs(impObj()->setProjectName(utf8_to_wstr(val).c_str()));
 }
 
-void PyDbDatabase::setPsltscale(bool scale)
+void PyDbDatabase::setPsltscale(bool scale) const
 {
     return PyThrowBadEs(impObj()->setPsltscale(scale));
 }
 
-void PyDbDatabase::setPsolHeight(double height)
+void PyDbDatabase::setPsolHeight(double height) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPsolHeight(height));
 #endif
 }
 
-void PyDbDatabase::setPsolWidth(double width)
+void PyDbDatabase::setPsolWidth(double width) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPsolWidth(width));
 #endif
 }
 
-void PyDbDatabase::setPucs(const AcGePoint3d& ucsOrigin, const AcGeVector3d& ucsXDir, const AcGeVector3d& ucsYDir)
+void PyDbDatabase::setPucs(const AcGePoint3d& ucsOrigin, const AcGeVector3d& ucsXDir, const AcGeVector3d& ucsYDir) const
 {
     return PyThrowBadEs(impObj()->setPucs(ucsOrigin, ucsXDir, ucsYDir));
 }
 
-void PyDbDatabase::setPucsBase(const PyDbObjectId& ucsid)
+void PyDbDatabase::setPucsBase(const PyDbObjectId& ucsid) const
 {
     return PyThrowBadEs(impObj()->setPucsBase(ucsid.m_id));
 }
 
-void PyDbDatabase::setPucsname(const PyDbObjectId& ucsRecId)
+void PyDbDatabase::setPucsname(const PyDbObjectId& ucsRecId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPucsname(ucsRecId.m_id));
 #endif
 }
 
-void PyDbDatabase::setQtextmode(bool mode)
+void PyDbDatabase::setQtextmode(bool mode) const
 {
     return PyThrowBadEs(impObj()->setQtextmode(mode));
 }
 
-void PyDbDatabase::setRealWorldScale(const bool realWorldScale)
+void PyDbDatabase::setRealWorldScale(const bool realWorldScale) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setRealWorldScale(realWorldScale));
 #endif
 }
 
-void PyDbDatabase::setRegenmode(bool mode)
+void PyDbDatabase::setRegenmode(bool mode) const
 {
     return PyThrowBadEs(impObj()->setRegenmode(mode));
 }
 
-void PyDbDatabase::setRetainOriginalThumbnailBitmap(bool retain)
+void PyDbDatabase::setRetainOriginalThumbnailBitmap(bool retain) const
 {
     return impObj()->setRetainOriginalThumbnailBitmap(retain);
 }
 
-void PyDbDatabase::setSaveproxygraphics(Adesk::Int16 saveimg)
+void PyDbDatabase::setSaveproxygraphics(Adesk::Int16 saveimg) const
 {
     return PyThrowBadEs(impObj()->setSaveproxygraphics(saveimg));
 }
 
-void PyDbDatabase::setSectionViewStyle(const PyDbObjectId& objId)
+void PyDbDatabase::setSectionViewStyle(const PyDbObjectId& objId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setSectionViewStyle(objId.m_id));
 #endif
 }
 
-void PyDbDatabase::setShadedge(Adesk::Int16 mode)
+void PyDbDatabase::setShadedge(Adesk::Int16 mode) const
 {
     return PyThrowBadEs(impObj()->setShadedge(mode));
 }
 
-void PyDbDatabase::setShadedif(Adesk::Int16 dif)
+void PyDbDatabase::setShadedif(Adesk::Int16 dif) const
 {
     return PyThrowBadEs(impObj()->setShadedif(dif));
 }
 
-void PyDbDatabase::setShadowPlaneLocation(double val)
+void PyDbDatabase::setShadowPlaneLocation(double val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setShadowPlaneLocation(val));
 #endif
 }
 
-void PyDbDatabase::setShowHist(Adesk::UInt8 val)
+void PyDbDatabase::setShowHist(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setShowHist(val));
 #endif
 }
 
-void PyDbDatabase::setSketchinc(double inc)
+void PyDbDatabase::setSketchinc(double inc) const
 {
     return PyThrowBadEs(impObj()->setSketchinc(inc));
 }
 
-void PyDbDatabase::setSkpoly(bool asPoly)
+void PyDbDatabase::setSkpoly(bool asPoly) const
 {
     return PyThrowBadEs(impObj()->setSkpoly(asPoly));
 }
 
-void PyDbDatabase::setSolidHist(Adesk::UInt8 val)
+void PyDbDatabase::setSolidHist(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setSolidHist(val));
 #endif
 }
 
-void PyDbDatabase::setSortEnts(Adesk::UInt8 sortEnts)
+void PyDbDatabase::setSortEnts(Adesk::UInt8 sortEnts) const
 {
     return PyThrowBadEs(impObj()->setSortEnts(sortEnts));
 }
 
-void PyDbDatabase::setSplframe(bool disp)
+void PyDbDatabase::setSplframe(bool disp) const
 {
     return PyThrowBadEs(impObj()->setSplframe(disp));
 }
 
-void PyDbDatabase::setSplinesegs(Adesk::Int16 segs)
+void PyDbDatabase::setSplinesegs(Adesk::Int16 segs) const
 {
     return PyThrowBadEs(impObj()->setSplinesegs(segs));
 }
 
-void PyDbDatabase::setSplinetype(Adesk::Int16 type)
+void PyDbDatabase::setSplinetype(Adesk::Int16 type) const
 {
     return PyThrowBadEs(impObj()->setSplinetype(type));
 }
 
-void PyDbDatabase::setStepSize(double stepSize)
+void PyDbDatabase::setStepSize(double stepSize) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setStepSize(stepSize));
 #endif
 }
 
-void PyDbDatabase::setStepsPerSec(double stepsPerSec)
+void PyDbDatabase::setStepsPerSec(double stepsPerSec) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setStepsPerSec(stepsPerSec));
 #endif
 }
 
-void PyDbDatabase::setStyleSheet(const std::string& val)
+void PyDbDatabase::setStyleSheet(const std::string& val) const
 {
     return PyThrowBadEs(impObj()->setStyleSheet(utf8_to_wstr(val).c_str()));
 }
 
-void PyDbDatabase::setSurftab1(Adesk::Int16 tab1)
+void PyDbDatabase::setSurftab1(Adesk::Int16 tab1) const
 {
     return PyThrowBadEs(impObj()->setSurftab1(tab1));
 }
 
-void PyDbDatabase::setSurftab2(Adesk::Int16 tab2)
+void PyDbDatabase::setSurftab2(Adesk::Int16 tab2) const
 {
     return PyThrowBadEs(impObj()->setSurftab2(tab2));
 }
 
-void PyDbDatabase::setSurftype(Adesk::Int16 type)
+void PyDbDatabase::setSurftype(Adesk::Int16 type) const
 {
     return PyThrowBadEs(impObj()->setSurftype(type));
 }
 
-void PyDbDatabase::setSurfu(Adesk::Int16 v)
+void PyDbDatabase::setSurfu(Adesk::Int16 v) const
 {
     return PyThrowBadEs(impObj()->setSurfu(v));
 }
 
-void PyDbDatabase::setSurfv(Adesk::Int16 v)
+void PyDbDatabase::setSurfv(Adesk::Int16 v) const
 {
     return PyThrowBadEs(impObj()->setSurfv(v));
 }
 
-void PyDbDatabase::setTablestyle(const PyDbObjectId& objId)
+void PyDbDatabase::setTablestyle(const PyDbObjectId& objId) const
 {
     return PyThrowBadEs(impObj()->setTablestyle(objId.m_id));
 }
 
-void PyDbDatabase::setTextsize(double size)
+void PyDbDatabase::setTextsize(double size) const
 {
     return PyThrowBadEs(impObj()->setTextsize(size));
 }
 
-void PyDbDatabase::setTextstyle(const PyDbObjectId& objId)
+void PyDbDatabase::setTextstyle(const PyDbObjectId& objId) const
 {
     return PyThrowBadEs(impObj()->setTextstyle(objId.m_id));
 }
 
-void PyDbDatabase::setThickness(double thickness)
+void PyDbDatabase::setThickness(double thickness) const
 {
     return PyThrowBadEs(impObj()->setThickness(thickness));
 }
 
-void PyDbDatabase::setTilemode(bool mode)
+void PyDbDatabase::setTilemode(bool mode) const
 {
     return PyThrowBadEs(impObj()->setTilemode(mode));
 }
 
-void PyDbDatabase::setTimeZone(AcDb::TimeZone tz)
+void PyDbDatabase::setTimeZone(AcDb::TimeZone tz) const
 {
     return PyThrowBadEs(impObj()->setTimeZone(tz));
 }
 
-void PyDbDatabase::setTimeZoneAsUtcOffset(double offset)
+void PyDbDatabase::setTimeZoneAsUtcOffset(double offset) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setTimeZoneAsUtcOffset(offset));
 #endif
 }
 
-void PyDbDatabase::setTracewid(double width)
+void PyDbDatabase::setTracewid(double width) const
 {
     return PyThrowBadEs(impObj()->setTracewid(width));
 }
 
-void PyDbDatabase::setTreedepth(Adesk::Int16 depth)
+void PyDbDatabase::setTreedepth(Adesk::Int16 depth) const
 {
     return PyThrowBadEs(impObj()->setTreedepth(depth));
 }
 
-void PyDbDatabase::setTStackAlign(int val)
+void PyDbDatabase::setTStackAlign(int val) const
 {
     return PyThrowBadEs(impObj()->setTStackAlign(val));
 }
 
-void PyDbDatabase::setTStackSize(int val)
+void PyDbDatabase::setTStackSize(int val) const
 {
     return PyThrowBadEs(impObj()->setTStackSize(val));
 }
 
-void PyDbDatabase::setUcs(const AcGePoint3d& ucsOrigin, const AcGeVector3d& ucsXDir, const AcGeVector3d& ucsYDir)
+void PyDbDatabase::setUcs(const AcGePoint3d& ucsOrigin, const AcGeVector3d& ucsXDir, const AcGeVector3d& ucsYDir) const
 {
     return PyThrowBadEs(impObj()->setUcs(ucsOrigin, ucsXDir, ucsYDir));
 }
 
-void PyDbDatabase::setUcsBase(const PyDbObjectId& ucsid)
+void PyDbDatabase::setUcsBase(const PyDbObjectId& ucsid) const
 {
     return PyThrowBadEs(impObj()->setUcsBase(ucsid.m_id));
 }
 
-void PyDbDatabase::setUcsname(const PyDbObjectId& ucsRecId)
+void PyDbDatabase::setUcsname(const PyDbObjectId& ucsRecId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setUcsname(ucsRecId.m_id));
 #endif
 }
 
-void PyDbDatabase::setUnitmode(Adesk::Int16 mode)
+void PyDbDatabase::setUnitmode(Adesk::Int16 mode) const
 {
     return PyThrowBadEs(impObj()->setUnitmode(mode));
 }
 
-void PyDbDatabase::setUpdateThumbnail(Adesk::UInt8 val)
+void PyDbDatabase::setUpdateThumbnail(Adesk::UInt8 val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setUpdateThumbnail(val));
 #endif
 }
 
-void PyDbDatabase::setUseri1(Adesk::Int16 val)
+void PyDbDatabase::setUseri1(Adesk::Int16 val) const
 {
     return PyThrowBadEs(impObj()->setUseri1(val));
 }
 
-void PyDbDatabase::setUseri2(Adesk::Int16 val)
+void PyDbDatabase::setUseri2(Adesk::Int16 val) const
 {
     return PyThrowBadEs(impObj()->setUseri2(val));
 }
 
-void PyDbDatabase::setUseri3(Adesk::Int16 val)
+void PyDbDatabase::setUseri3(Adesk::Int16 val) const
 {
     return PyThrowBadEs(impObj()->setUseri3(val));
 }
 
-void PyDbDatabase::setUseri4(Adesk::Int16 val)
+void PyDbDatabase::setUseri4(Adesk::Int16 val) const
 {
     return PyThrowBadEs(impObj()->setUseri4(val));
 }
 
-void PyDbDatabase::setUseri5(Adesk::Int16 val)
+void PyDbDatabase::setUseri5(Adesk::Int16 val) const
 {
     return PyThrowBadEs(impObj()->setUseri5(val));
 }
 
-void PyDbDatabase::setUserr1(double val)
+void PyDbDatabase::setUserr1(double val) const
 {
     return PyThrowBadEs(impObj()->setUserr1(val));
 }
 
-void PyDbDatabase::setUserr2(double val)
+void PyDbDatabase::setUserr2(double val) const
 {
     return PyThrowBadEs(impObj()->setUserr2(val));
 }
 
-void PyDbDatabase::setUserr3(double val)
+void PyDbDatabase::setUserr3(double val) const
 {
     return PyThrowBadEs(impObj()->setUserr3(val));
 }
 
-void PyDbDatabase::setUserr4(double val)
+void PyDbDatabase::setUserr4(double val) const
 {
     return PyThrowBadEs(impObj()->setUserr4(val));
 }
 
-void PyDbDatabase::setUserr5(double val)
+void PyDbDatabase::setUserr5(double val) const
 {
     return PyThrowBadEs(impObj()->setUserr5(val));
 }
 
-void PyDbDatabase::setUsrtimer(bool timer)
+void PyDbDatabase::setUsrtimer(bool timer) const
 {
     return PyThrowBadEs(impObj()->setUsrtimer(timer));
 }
 
-void PyDbDatabase::setVersionGuid(const std::string& pNewGuid)
+void PyDbDatabase::setVersionGuid(const std::string& pNewGuid) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setVersionGuid(utf8_to_wstr(pNewGuid).c_str()));
 #endif
 }
 
-void PyDbDatabase::setViewportScaleDefault(double newDefaultVPScale)
+void PyDbDatabase::setViewportScaleDefault(double newDefaultVPScale) const
 {
     return PyThrowBadEs(impObj()->setVisretain(newDefaultVPScale));
 }
 
-void PyDbDatabase::setVisretain(bool retain)
+void PyDbDatabase::setVisretain(bool retain) const
 {
     return PyThrowBadEs(impObj()->setVisretain(retain));
 }
 
-void PyDbDatabase::setWorldPucsBaseOrigin(const AcGePoint3d& origin, AcDb::OrthographicView orthoView)
+void PyDbDatabase::setWorldPucsBaseOrigin(const AcGePoint3d& origin, AcDb::OrthographicView orthoView) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setWorldPucsBaseOrigin(origin, orthoView));
 #endif
 }
 
-void PyDbDatabase::setWorldUcsBaseOrigin(const AcGePoint3d& origin, AcDb::OrthographicView orthoView)
+void PyDbDatabase::setWorldUcsBaseOrigin(const AcGePoint3d& origin, AcDb::OrthographicView orthoView) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setWorldUcsBaseOrigin(origin, orthoView));
 #endif
 }
 
-void PyDbDatabase::setWorldview(bool view)
+void PyDbDatabase::setWorldview(bool view) const
 {
     return PyThrowBadEs(impObj()->setWorldview(view));
 }
 
-void PyDbDatabase::setXclipFrame(Adesk::UInt8 disp)
+void PyDbDatabase::setXclipFrame(Adesk::UInt8 disp) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setXclipFrame(disp));
 #endif
 }
 
-void PyDbDatabase::setXrefEditEnabled(bool enable)
+void PyDbDatabase::setXrefEditEnabled(bool enable) const
 {
     return PyThrowBadEs(impObj()->setXrefEditEnabled(enable));
 }
@@ -3078,7 +3249,7 @@ Adesk::Int16 PyDbDatabase::shadedif() const
 
 double PyDbDatabase::shadowPlaneLocation() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->shadowPlaneLocation();
@@ -3087,7 +3258,7 @@ double PyDbDatabase::shadowPlaneLocation() const
 
 Adesk::UInt8 PyDbDatabase::showHist() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->showHist();
@@ -3106,7 +3277,7 @@ bool PyDbDatabase::skpoly() const
 
 Adesk::UInt8 PyDbDatabase::solidHist() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->solidHist();
@@ -3135,7 +3306,7 @@ Adesk::Int16 PyDbDatabase::splinetype() const
 
 double PyDbDatabase::stepSize() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->stepSize();
@@ -3144,7 +3315,7 @@ double PyDbDatabase::stepSize() const
 
 double PyDbDatabase::stepsPerSec() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->stepsPerSec();
@@ -3243,7 +3414,7 @@ bool PyDbDatabase::tilemode() const
 
 Adesk::UInt8 PyDbDatabase::tileModeLightSynch() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->tileModeLightSynch();
@@ -3320,19 +3491,19 @@ Adesk::Int16 PyDbDatabase::unitmode() const
     return impObj()->unitmode();
 }
 
-void PyDbDatabase::updateDataLink(AcDb::UpdateDirection nDir, AcDb::UpdateOption nOption)
+void PyDbDatabase::updateDataLink(AcDb::UpdateDirection nDir, AcDb::UpdateOption nOption) const
 {
     return PyThrowBadEs(impObj()->updateDataLink(nDir, nOption));
 }
 
-void PyDbDatabase::updateExt(bool doBestFit)
+void PyDbDatabase::updateExt(bool doBestFit) const
 {
     return PyThrowBadEs(impObj()->updateExt(doBestFit));
 }
 
 Adesk::UInt8 PyDbDatabase::updateThumbnail() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->updateThumbnail();
@@ -3419,36 +3590,35 @@ PyDbObjectId PyDbDatabase::visualStyleDictionaryId() const
     return PyDbObjectId(impObj()->visualStyleDictionaryId());
 }
 
-void PyDbDatabase::deepCloneObjects1(const boost::python::list& objectIds, const PyDbObjectId& owner, PyDbIdMapping& idMap)
+void PyDbDatabase::deepCloneObjects1(const boost::python::list& objectIds, const PyDbObjectId& owner, PyDbIdMapping& idMap) const
 {
     PyThrowBadEs(impObj()->deepCloneObjects(PyListToObjectIdArray(objectIds), owner.m_id, *idMap.impObj()));
 }
 
-
-void PyDbDatabase::deepCloneObjects2(const boost::python::list& objectIds, const PyDbObjectId& owner, PyDbIdMapping& idMap, bool deferXlation)
+void PyDbDatabase::deepCloneObjects2(const boost::python::list& objectIds, const PyDbObjectId& owner, PyDbIdMapping& idMap, bool deferXlation) const
 {
     PyThrowBadEs(impObj()->deepCloneObjects(PyListToObjectIdArray(objectIds), owner.m_id, *idMap.impObj(), deferXlation));
 }
 
 void PyDbDatabase::wblockCloneObjects1(const boost::python::list& objectIds,
-    const PyDbObjectId& owner, PyDbIdMapping& idMap, AcDb::DuplicateRecordCloning drc)
+    const PyDbObjectId& owner, PyDbIdMapping& idMap, AcDb::DuplicateRecordCloning drc) const
 {
     PyThrowBadEs(impObj()->wblockCloneObjects(PyListToObjectIdArray(objectIds), owner.m_id, *idMap.impObj(), drc));
 }
 
 void PyDbDatabase::wblockCloneObjects2(const boost::python::list& objectIds,
-    const PyDbObjectId& owner, PyDbIdMapping& idMap, AcDb::DuplicateRecordCloning drc, bool deferXlation)
+    const PyDbObjectId& owner, PyDbIdMapping& idMap, AcDb::DuplicateRecordCloning drc, bool deferXlation) const
 {
     PyThrowBadEs(impObj()->wblockCloneObjects(PyListToObjectIdArray(objectIds), owner.m_id, *idMap.impObj(), drc, deferXlation));
 }
 
-void PyDbDatabase::wblock1(PyDbDatabase& pOutputDb, const boost::python::list& outObjIds, const AcGePoint3d& basePoint, AcDb::DuplicateRecordCloning drc)
+void PyDbDatabase::wblock1(PyDbDatabase& pOutputDb, const boost::python::list& outObjIds, const AcGePoint3d& basePoint, AcDb::DuplicateRecordCloning drc) const
 {
     AcDbObjectIdArray ids = PyListToObjectIdArray(outObjIds);
     PyThrowBadEs(impObj()->wblock(pOutputDb.impObj(), ids, basePoint, drc));
 }
 
-PyDbDatabase PyDbDatabase::wblock2(const boost::python::list& outObjIds, const AcGePoint3d& basePoint)
+PyDbDatabase PyDbDatabase::wblock2(const boost::python::list& outObjIds, const AcGePoint3d& basePoint) const
 {
     AcDbObjectIdArray ids = PyListToObjectIdArray(outObjIds);
     AcDbDatabase* _pOutputDb = nullptr;
@@ -3456,28 +3626,28 @@ PyDbDatabase PyDbDatabase::wblock2(const boost::python::list& outObjIds, const A
     return PyDbDatabase(_pOutputDb, true);
 }
 
-PyDbDatabase PyDbDatabase::wblock3(const PyDbObjectId& blockId)
+PyDbDatabase PyDbDatabase::wblock3(const PyDbObjectId& blockId) const
 {
     AcDbDatabase* _pOutputDb = nullptr;
     PyThrowBadEs(impObj()->wblock(_pOutputDb, blockId.m_id));
     return PyDbDatabase(_pOutputDb, true);
 }
 
-PyDbDatabase PyDbDatabase::wblock4()
+PyDbDatabase PyDbDatabase::wblock4() const
 {
     AcDbDatabase* _pOutputDb = nullptr;
     PyThrowBadEs(impObj()->wblock(_pOutputDb));
     return PyDbDatabase(_pOutputDb, true);
 }
 
-void PyDbDatabase::abortDeepClone(PyDbIdMapping& idMap)
+void PyDbDatabase::abortDeepClone(PyDbIdMapping& idMap) const
 {
     impObj()->abortDeepClone(*idMap.impObj());
 }
 
 AcGePoint3d PyDbDatabase::worldPucsBaseOrigin(AcDb::OrthographicView orthoView) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->worldPucsBaseOrigin(orthoView);
@@ -3486,7 +3656,7 @@ AcGePoint3d PyDbDatabase::worldPucsBaseOrigin(AcDb::OrthographicView orthoView) 
 
 AcGePoint3d PyDbDatabase::worldUcsBaseOrigin(AcDb::OrthographicView orthoView) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->worldUcsBaseOrigin(orthoView);
@@ -3500,7 +3670,7 @@ bool PyDbDatabase::worldview() const
 
 Adesk::UInt8 PyDbDatabase::xclipFrame() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->xclipFrame();

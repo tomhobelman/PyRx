@@ -9,9 +9,13 @@
 #include "PyBrxCvDbTinSurface.h"
 #include "PyBrxCvDbLabel.h"
 
+#if defined(_BRXTARGET) && (_BRXTARGET == 260)
+#include "PyBrxCvAttribVariant.h"
+#endif
+
 using namespace boost::python;
 
-void makePyBrxCvTinPointWrapper()
+static void makePyBrxCvTinPointWrapper()
 {
     PyDocString DS("CvTinPoint");
     class_<BrxCvTinPoint>("CvTinPoint")
@@ -22,7 +26,7 @@ void makePyBrxCvTinPointWrapper()
         ;
 }
 
-void makePyBrxCvTinTriangleWrapper()
+static void makePyBrxCvTinTriangleWrapper()
 {
     PyDocString DS("CvTinTriangle");
     class_<BrxCvTinTriangle>("CvTinTriangle")
@@ -35,7 +39,7 @@ void makePyBrxCvTinTriangleWrapper()
         ;
 }
 
-BOOST_PYTHON_MODULE(PyBrxCv)
+static BOOST_PYTHON_MODULE(PyBrxCv)
 {
     docstring_options local_docstring_options(py_show_user_defined, py_show_py_signatures, py_show_cpp_signatures);
 
@@ -132,6 +136,10 @@ BOOST_PYTHON_MODULE(PyBrxCv)
     makeBrxCvDbLabelStyleBlockWrapper();
     makeBrxCvDbLabelStyleLineWrapper();
     makeBrxCvDbLabelStyleTextWrapper();
+#endif
+
+#if defined(_BRXTARGET) && (_BRXTARGET == 260)
+    makePyBrxCvDbAttribVariantWrapper();
 #endif
 
     enum_<PyBrxCvDbStyleManager::EStyleManagerType>("StyleManagerType")

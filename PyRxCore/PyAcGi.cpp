@@ -6,7 +6,31 @@
 #include "PyGiTransientManager.h"
 #include "PyGiGraphicsKernel.h"
 
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
+
 using namespace boost::python;
+
+//---------------------------------------------------------------------------------
+// PyGiPixelBGRA32Array::createFromWxImage
+static PyGiPixelBGRA32Array createFromWxImage2(const boost::python::object& image, Adesk::UInt8 alpha)
+{
+    PyGiPixelBGRA32Array arr;
+    wxImage* wximage = nullptr;// we are NOT the owner!
+    if (!wxPyConvertWrappedPtr(image.ptr(), (void**)&wximage, wxT("wxImage")))
+        return arr;
+    if (!wximage->IsOk())
+        return arr;
+    AcGiImageBGRA32Package _image(*wximage, alpha);
+    std::swap(arr, _image._pixelData);
+    return std::move(arr);
+}
+
+static PyGiPixelBGRA32Array createFromWxImage1(const boost::python::object& image)
+{
+    return createFromWxImage2(image, 255);
+}
+
 
 BOOST_PYTHON_MODULE(PyGi)
 {
@@ -28,6 +52,13 @@ BOOST_PYTHON_MODULE(PyGi)
     makePyGiKernelDescriptorWrapper();
     makePyGiGraphicsKernelWrapper();
 #endif
+
+    PyDocString DS("PyGi.PixelBGRA32Array");
+    class_<PyGiPixelBGRA32Array>("PixelBGRA32Array")
+        .def(boost::python::vector_indexing_suite<PyGiPixelBGRA32Array>())
+        .def("createFromWxImage", &createFromWxImage1)
+        .def("createFromWxImage", &createFromWxImage2, DS.SARGS({ "image: wx.Image", "alpha: int=255" })).staticmethod("createFromWxImage")
+        ;
 
     enum_<AcGiTransientDrawingMode>("TransientDrawingMode")
         .value("kAcGiMain", AcGiTransientDrawingMode::kAcGiMain)
@@ -104,11 +135,23 @@ BOOST_PYTHON_MODULE(PyGi)
     enum_<AcGiViewportTraits::DefaultLightingType>("DefaultLightingType")
         .value("kOneDistantLight", AcGiViewportTraits::DefaultLightingType::kOneDistantLight)
         .value("kTwoDistantLights", AcGiViewportTraits::DefaultLightingType::kTwoDistantLights)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kBackLighting", AcGiViewportTraits::DefaultLightingType::kBackLighting)
 #endif
         .export_values()
         ;
+
+#if !defined (_BRXTARGET260)
+    enum_<AcGiHighlightStyle>("HighlightStyle")
+        .value("kAcGiHighlightNone", AcGiHighlightStyle::kAcGiHighlightNone)
+        .value("kAcGiHighlightCustom", AcGiHighlightStyle::kAcGiHighlightCustom)
+        .value("kAcGiHighlightDashedAndThicken", AcGiHighlightStyle::kAcGiHighlightDashedAndThicken)
+        .value("kAcGiHighlightDim", AcGiHighlightStyle::kAcGiHighlightDim)
+        .value("kAcGiHighlightThickDim", AcGiHighlightStyle::kAcGiHighlightThickDim)
+        .value("kAcGiHighlightGlow", AcGiHighlightStyle::kAcGiHighlightGlow)
+        .export_values()
+        ;
+#endif
 }
 
 void initPyGiModule()

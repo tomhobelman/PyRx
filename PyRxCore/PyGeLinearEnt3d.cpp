@@ -33,11 +33,11 @@ void makePyGeLinearEnt3dWrapper()
         .def("intersectWith", &PyGeLinearEnt3d::intersectWith1)
         .def("intersectWith", &PyGeLinearEnt3d::intersectWith2)
         .def("intersectWith", &PyGeLinearEnt3d::intersectWith3)
-        .def("intersectWith", &PyGeLinearEnt3d::intersectWith4, DS.ARGS({ "other: PyGe.LinearEnt3d | PyGe.PlanarEnt", "tol: PyGe.Tol=None" }))
+        .def("intersectWith", &PyGeLinearEnt3d::intersectWith4, DS.ARGS({ "other: PyGe.LinearEnt3d | PyGe.PlanarEnt", "tol: PyGe.Tol = ..." }))
         .def("projIntersectWith", &PyGeLinearEnt3d::projIntersectWith1)
-        .def("projIntersectWith", &PyGeLinearEnt3d::projIntersectWith2, DS.ARGS({ "other: PyGe.LinearEnt3d", "projDir: PyGe.Vector3d", "tol: PyGe.Tol=None" }))
+        .def("projIntersectWith", &PyGeLinearEnt3d::projIntersectWith2, DS.ARGS({ "other: PyGe.LinearEnt3d", "projDir: PyGe.Vector3d", "tol: PyGe.Tol = ..." }))
         .def("overlap", &PyGeLinearEnt3d::overlap1)
-        .def("overlap", &PyGeLinearEnt3d::overlap2, DS.ARGS({ "other: PyGe.LinearEnt3d", "tol: PyGe.Tol=None" }))
+        .def("overlap", &PyGeLinearEnt3d::overlap2, DS.ARGS({ "other: PyGe.LinearEnt3d", "tol: PyGe.Tol = ..." }))
         .def("isOn", &PyGeLinearEnt3d::isOn1)
         .def("isOn", &PyGeLinearEnt3d::isOn2)
         .def("isOn", &PyGeLinearEnt3d::isOn3)
@@ -53,7 +53,7 @@ void makePyGeLinearEnt3dWrapper()
         .def("isPerpendicularTo", &PyGeLinearEnt3d::isPerpendicularTo3)
         .def("isPerpendicularTo", &PyGeLinearEnt3d::isPerpendicularTo4, DS.OVRL(isPerpendicularToOverloads))
         .def("isColinearTo", &PyGeLinearEnt3d::isColinearTo1)
-        .def("isColinearTo", &PyGeLinearEnt3d::isColinearTo2, DS.ARGS({ "pt: PyGe.LinearEnt3d" ,"tol: PyGe.Tol=None" }))
+        .def("isColinearTo", &PyGeLinearEnt3d::isColinearTo2, DS.ARGS({ "pt: PyGe.LinearEnt3d" ,"tol: PyGe.Tol = ..." }))
         .def("getPerpPlane", &PyGeLinearEnt3d::getPerpPlane, DS.ARGS({ "pt: PyGe.Point3d" }))
         .def("pointOnLine", &PyGeLinearEnt3d::pointOnLine, DS.ARGS())
         .def("direction", &PyGeLinearEnt3d::direction, DS.ARGS())
@@ -285,7 +285,7 @@ void makePyGeLine3dWrapper()
     class_<PyGeLine3d, bases<PyGeLinearEnt3d>>("Line3d")
         .def(init<>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor, 12245)))
         .add_static_property("kXAxis", PyGeLine3d::kXAxis)
         .add_static_property("kYAxis", PyGeLine3d::kYAxis)
         .add_static_property("kZAxis", PyGeLine3d::kZAxis)
@@ -337,12 +337,12 @@ PyGeLine3d PyGeLine3d::kZAxis()
     return PyGeLine3d(AcGeLine3d::kZAxis);
 }
 
-void PyGeLine3d::set1(const AcGePoint3d& pnt, const AcGeVector3d& vec)
+void PyGeLine3d::set1(const AcGePoint3d& pnt, const AcGeVector3d& vec) const
 {
     impObj()->set(pnt, vec);
 }
 
-void PyGeLine3d::set2(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2)
+void PyGeLine3d::set2(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2) const
 {
     impObj()->set(pnt1, pnt2);
 }
@@ -392,7 +392,7 @@ void makePyGeLineSeg3dWrapper()
     class_<PyGeLineSeg3d, bases<PyGeLinearEnt3d>>("LineSeg3d")
         .def(init<>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor, 12288)))
         .def("getBisector", &PyGeLineSeg3d::getBisector, DS.ARGS())
         .def("baryComb", &PyGeLineSeg3d::baryComb, DS.ARGS())
         .def("startPoint", &PyGeLineSeg3d::startPoint, DS.ARGS())
@@ -476,12 +476,12 @@ double PyGeLineSeg3d::length3(double fromParam, double toParam, double tol) cons
     return impObj()->length(fromParam, toParam, tol);
 }
 
-void PyGeLineSeg3d::set1(const AcGePoint3d& pnt, const AcGeVector3d& vec)
+void PyGeLineSeg3d::set1(const AcGePoint3d& pnt, const AcGeVector3d& vec) const
 {
     impObj()->set(pnt, vec);
 }
 
-void PyGeLineSeg3d::set2(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2)
+void PyGeLineSeg3d::set2(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2) const
 {
     impObj()->set(pnt1, pnt2);
 }
@@ -526,7 +526,7 @@ void makePyGeRay3ddWrapper()
     class_<PyGeRay3d, bases<PyGeLinearEnt3d>>("Ray3d")
         .def(init<>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor, 12671)))
         .def("set", &PyGeRay3d::set1)
         .def("set", &PyGeRay3d::set2, DS.OVRL(setOverloads))
         .def("cast", &PyGeRay3d::cast, DS.SARGS({ "otherObject: PyGe.Entity3d" })).staticmethod("cast")
@@ -560,12 +560,12 @@ PyGeRay3d::PyGeRay3d(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2)
 {
 }
 
-void PyGeRay3d::set1(const AcGePoint3d& pnt, const AcGeVector3d& vec)
+void PyGeRay3d::set1(const AcGePoint3d& pnt, const AcGeVector3d& vec) const
 {
     impObj()->set(pnt, vec);
 }
 
-void PyGeRay3d::set2(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2)
+void PyGeRay3d::set2(const AcGePoint3d& pnt1, const AcGePoint3d& pnt2) const
 {
     impObj()->set(pnt1, pnt2);
 }

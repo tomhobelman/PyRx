@@ -16,6 +16,7 @@ class PyDbHardPointerId;
 class PyGeCompositeCurve3d;
 class PyGeCompositeCurve2d;
 class PyDbAttribute;
+class PyRxOverrulableEntity;
 
 
 //-----------------------------------------------------------------------------------
@@ -47,11 +48,14 @@ public:
     void                setBlockTransform(const AcGeMatrix3d& val) const;
     PyDbObjectId        appendAttribute(PyDbAttribute& att) const;
     boost::python::list attributeIds() const;
+    boost::python::dict attdict() const;
+    boost::python::list attlist() const;
     Adesk::Boolean      treatAsAcDbBlockRefForExplode() const;
     AcDbExtents         geomExtentsBestFit1() const;
     AcDbExtents         geomExtentsBestFit2(const AcGeMatrix3d& parentXform) const;
     void                explodeToOwnerSpace() const;
     std::string         getBlockName() const;
+    bool                hasAttributes() const;
 public:
     static std::string  className();
     static PyRxClass    desc();
@@ -145,7 +149,7 @@ class PyDb2dVertex : public PyDbVertex
 public:
     PyDb2dVertex();
     PyDb2dVertex(const AcGePoint3d& pos);
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     PyDb2dVertex(const AcGePoint3d& pos, double bulge, double startWidth, double endWidth, double tangent, Adesk::Int32 vertexIdentifier);
 #endif
     PyDb2dVertex(AcDb2dVertex* ptr, bool autoDelete);
@@ -323,6 +327,7 @@ public:
     PyDb2dPolyline(const PyDbObjectId& id, AcDb::OpenMode mode);
     PyDb2dPolyline(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     PyDb2dPolyline(AcDb::Poly2dType type, const boost::python::list& vertices, Adesk::Boolean closed);
+    PyDb2dPolyline(AcDb::Poly2dType type, const PyGePoint3dArray& vertices, Adesk::Boolean closed);
     AcDb::Poly2dType    polyType() const;
     void                setPolyType(AcDb::Poly2dType val) const;
     void                convertToPolyType(AcDb::Poly2dType val) const;
@@ -378,6 +383,8 @@ public:
     PyDb3dPolyline(const PyDbObjectId& id, AcDb::OpenMode mode);
     PyDb3dPolyline(const PyDbObjectId& id, AcDb::OpenMode mode, bool openErased);
     PyDb3dPolyline(AcDb::Poly3dType, const boost::python::list& vertices, Adesk::Boolean closed);
+    PyDb3dPolyline(AcDb::Poly3dType, const PyGePoint3dArray& vertices, Adesk::Boolean closed);
+
     virtual ~PyDb3dPolyline() override = default;
     double              length() const;
     void                setClosed(Adesk::Boolean val) const;
@@ -418,6 +425,7 @@ public:
     PyDbArc(const PyDbObjectId& id);
     PyDbArc(const PyDbObjectId& id, AcDb::OpenMode mode);
     PyDbArc(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
+    PyDbArc(const AcGePoint3d& p1, const AcGePoint3d& p2, const AcGePoint3d& p3);
     PyDbArc(const AcGePoint3d& center, double radius, double startAngle, double endAngle);
     PyDbArc(const AcGePoint3d& center, const AcGeVector3d& normal, double radius, double startAngle, double endAngle);
     virtual ~PyDbArc() override = default;
@@ -507,6 +515,7 @@ public:
     PyGeLineSeg3d       getAcGeCurve1() const;
     PyGeLineSeg3d       getAcGeCurve2(const AcGeTol& tol) const;
     AcGeVector3d        direction() const;
+    double              length() const;
 public:
     static std::string  className();
     static PyRxClass    desc();
@@ -525,6 +534,8 @@ public:
     PyDbPolyline();
     PyDbPolyline(unsigned int num_verts);
     PyDbPolyline(const boost::python::list& pnts);
+    PyDbPolyline(const PyGePoint2dArray& pnts);
+    PyDbPolyline(const PyGePoint3dArray& pnts);
     PyDbPolyline(AcDbPolyline* ptr, bool autoDelete);
     PyDbPolyline(const PyDbObjectId& id);
     PyDbPolyline(const PyDbObjectId& id, AcDb::OpenMode mode);
@@ -573,6 +584,10 @@ public:
     boost::python::list   toPoint2dList() const;
     boost::python::list   toPoint3dList() const;
     boost::python::list   toList() const;
+    bool                isPointInside(const AcGePoint3d& pnt) const;
+    bool                isCCW() const;
+    void                simplify(double dist) const;
+    double              length() const;
 public:
     static std::string  className();
     static PyRxClass    desc();
@@ -653,8 +668,8 @@ public:
     AcGeVector3d		direction() const;
     boost::python::list getBoundingPoints() const;
     boost::python::list getBoundingPline()  const;
-    void                setDimensionStyle(const PyDbHardPointerId& id) const;
-    PyDbHardPointerId	dimensionStyle() const;
+    void                setDimensionStyle(const PyDbObjectId& id) const;
+    PyDbObjectId	    dimensionStyle() const;
     PyDbDimStyleTableRecord getDimstyleData() const;
     void                setDimstyleData2(const PyDbDimStyleTableRecord& pNewData) const;
     void                setDimstyleData1(const PyDbObjectId& newDataId) const;
@@ -784,6 +799,62 @@ public:
     AcDbShape* impObj(const std::source_location& src = std::source_location::current()) const;
 };
 
+//-------------------------------------------------------------------------------------------------------------
+//PyDbOverrulableEntity
+void makePyDbOverrulableEntity();
 
+class PyDbOverrulableEntity : public PyDbEntity
+{
+public:
+    PyDbOverrulableEntity();
+    PyDbOverrulableEntity(PyRxOverrulableEntity* ptr, bool autoDelete);
+    PyDbOverrulableEntity(const PyDbObjectId& id);
+    PyDbOverrulableEntity(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbOverrulableEntity(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
+    virtual ~PyDbOverrulableEntity() override = default;
+public:
+    AcGePoint3d         position() const;
+    void                setPosition(const AcGePoint3d& val) const;
+    AcGeVector3d        direction() const;
+    void                setDirection(const AcGeVector3d& val) const;
+    AcGeVector3d        normal() const;
+    void                setNormal(const AcGeVector3d& val) const;
+    std::string         guid() const;
+    void                setGuid(const std::string& val) const;
+    std::string         name() const;
+    void                setName(const std::string& val) const;
+    std::string         description() const;
+    void                setdescription(const std::string& val) const;
+    Adesk::Int64        typing() const;
+    void                setTyping(Adesk::Int64 val) const;
+    Adesk::Int64        mask() const;
+    void                setMask(Adesk::Int64 val) const;
+    Adesk::Int64        index() const;
+    void                setIndex(Adesk::Int64 val) const;
+    boost::python::list flags() const;
+    void                setFlags(const boost::python::list& vals) const;
+    boost::python::list ints() const;
+    void                setInts(const boost::python::list& vals) const;
+    boost::python::list doubles() const;
+    void                setDoubles(boost::python::list& vals) const;
+    boost::python::list strings() const;
+    void                setStrings(boost::python::list& vals) const;
+    boost::python::list points() const;
+    void                setPoints(const boost::python::list& vals) const;
+    Adesk::UInt32       version() const;
+    static std::string  className();
+    static PyRxClass    desc();
+    static PyDbOverrulableEntity   cloneFrom(const PyRxObject& src);
+    static PyDbOverrulableEntity   cast(const PyRxObject& src);
+
+    static void         registerOnDoubleClick(const boost::python::object& obj);
+    static void         removeOnDoubleClick(const boost::python::object& obj);
+    static void         OnDblClkFn(AcDbEntity* pEnt, AcGePoint3d pt);
+
+public:
+    PyRxOverrulableEntity* impObj(const std::source_location& src = std::source_location::current()) const;
+
+    inline static std::map<PyObject*, boost::python::object> onDblClkFuncs;
+};
 
 #pragma pack (pop)

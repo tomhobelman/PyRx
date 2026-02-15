@@ -28,7 +28,7 @@
     "rows": [
         [
             "PyEd::Editor::getKword",
-            "tuple[int, str]"
+            "tuple[PyEd.PromptStatus, str]"
         ],
         [
             "PyEd::Editor::getCorner",
@@ -116,19 +116,19 @@
         ],
         [
             "acquireString",
-            "tuple[PyGe.DragStatus,str]"
+            "tuple[PyEd.DragStatus,str]"
         ],
         [
             "acquireAngle",
-            "tuple[PyGe.DragStatus,float]"
+            "tuple[PyEd.DragStatus,float]"
         ],
         [
             "acquireDist",
-            "tuple[PyGe.DragStatus,float]"
+            "tuple[PyEd.DragStatus,float]"
         ],
         [
             "acquirePoint",
-            "tuple[PyGe.DragStatus,PyGe.Point3d]"
+            "tuple[PyEd.DragStatus,PyGe.Point3d]"
         ],
         [
             "PyEd::SelectionSet::toList",
@@ -1220,7 +1220,7 @@
         ],
         [
             "PyGe::Vector3d::toList",
-            "list[float,float,float]"
+            "list[float]"
         ],
         [
             "PyGe::Vector2d::toTuple",
@@ -1228,7 +1228,7 @@
         ],
         [
             "PyGe::Vector2d::toList",
-            "list[float,float]"
+            "list[float]"
         ],
         [
             "PyGe::SurfSurfInt::getIntPointParams",
@@ -1260,7 +1260,7 @@
         ],
         [
             "PyGe::Point3d::toList",
-            "list[float,float,float]"
+            "list[float]"
         ],
         [
             "PyGe::Point2d::toTuple",
@@ -1268,7 +1268,7 @@
         ],
         [
             "PyGe::Point2d::toList",
-            "list[float,float]"
+            "list[float]"
         ],
         [
             "PyGe::Matrix2d::toList",
@@ -1348,7 +1348,7 @@
         ],
         [
             "PyGe::NurbCurve3d::getFitTangents",
-            "tuple[bool.PyGe.Vector3d,PyGe.Vector3d,bool,bool]"
+            "tuple[bool,PyGe.Vector3d,PyGe.Vector3d,bool,bool]"
         ],
         [
             "PyGe::NurbCurve3d::getFitPointAt",
@@ -1376,7 +1376,7 @@
         ],
         [
             "PyGe::NurbCurve2d::getFitTangents",
-            "tuple[bool.PyGe.Vector2d,PyGe.Vector2d]"
+            "tuple[bool,PyGe.Vector2d,PyGe.Vector2d]"
         ],
         [
             "PyGe::NurbCurve2d::getFitPointAt",
@@ -1836,7 +1836,7 @@
         ],
         [
             "PyBrxCv::CvDbGrading::resultDayLight",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbHAlignment::getPIsArray",
@@ -1904,7 +1904,7 @@
         ],
         [
             "PyBrxCv::CvDbTinSurface::contoursAtElevation",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::definitionIndex",
@@ -1912,11 +1912,11 @@
         ],
         [
             "PyBrxCv::CvDbTinSurface::drapeId",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::drapePoints",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::elevationAtPoint",
@@ -1932,7 +1932,7 @@
         ],
         [
             "PyBrxCv::CvDbTinSurface::getBorders",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::getConstraints",
@@ -1952,11 +1952,11 @@
         ],
         [
             "PyBrxCv::CvDbTinSurface::intersectionsWithLine",
-            "tuple[bool,[PyGe.Point3d]]"
+            "tuple[bool,list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::majorContours",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::majorContoursColor",
@@ -1968,7 +1968,7 @@
         ],
         [
             "PyBrxCv::CvDbTinSurface::minorContours",
-            "list[[PyGe.Point3d]]"
+            "list[list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurface::minorContoursColor",
@@ -1992,7 +1992,7 @@
         ],
         [
             "PyBrxCv::CvDbTinSurfaceDefinitionAddDrawingObjects::drawingObjectAt",
-            "tuple[bool,PyBrx.DrawingObjectTypet,[PyGe.Point3d]]"
+            "tuple[bool,PyBrx.DrawingObjectTypet,list[PyGe.Point3d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurfaceDefinitionAddFromFiles::filesPaths",
@@ -2024,7 +2024,7 @@
         ],
         [
             "PyBrxCv::CvDbTinSurfaceDefinitionDeleteEdges::polygonAt",
-            "tuple[bool,[PyGe.Point2d]]"
+            "tuple[bool,list[PyGe.Point2d]]"
         ],
         [
             "PyBrxCv::CvDbTinSurfaceDefinitionModifyPointsElevation::positions",
@@ -2236,7 +2236,564 @@
         ],
         [
             "PyEd::SelectionSet::__iter__",
-            "Iterator[PyDb.ObjectId]"
+            "SelectionSetIterator"
+        ],
+        [
+            "PyAx::Acad3DFace::coordinates",
+            "list[PyGe.point3d]"
+        ],
+        [
+            "PyAx::Acad3DPolyline::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::Acad3DPolyline::explode",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::Acad3DSolid::checkInterference",
+            "tuple[bool,PyAx.Acad3DSolid]"
+        ],
+        [
+            "PyAx::Acad3DSolid::principalDirections",
+            "tuple[PyGe.Vector3d,PyGe.Vector3d,PyGe.Vector3d]"
+        ],
+        [
+            "PyAx::AcadApplication::listArx",
+            "list[str]"
+        ],
+        [
+            "PyAx::AcadArc::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            " PyAx::AcadBlock::addRegion",
+            "list[PyAx.AcadRegion]"
+        ],
+        [
+            "PyAx::AcadBlockReference::attributes",
+            "list[PyAx.AcadAttributeReference]"
+        ],
+        [
+            "PyAx::AcadBlockReference::constantAttributes",
+            "list[PyAx.AcadAttributeReference]"
+        ],
+        [
+            "PyAx::AcadBlockReference::dynamicBlockProperties",
+            "list[PyAx.AcadDynamicBlockReferenceProperty]"
+        ],
+        [
+            " PyAx::AcadBlockReference::explode",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadBlocks::blocks",
+            "list[PyAx.AcadBlock]"
+        ],
+        [
+            "PyAx::AcadBlocks::items",
+            "list[PyAx.AcadBlock]"
+        ],
+        [
+            "PyAx::AcadCircle::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadDatabase::copyObjects",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadDatabase::limits",
+            "tuple[PyGe.Point2d,PyGe.Point2d]"
+        ],
+        [
+            "PyAx::AcadDictionaries::items",
+            "list[PyAx.AcadDictionary]"
+        ],
+        [
+            "PyAx::AcadDictionary::items",
+            "list[PyAx.AcadObject]"
+        ],
+        [
+            "PyAx::AcadDimStyles::items",
+            "list[PyAx.AcadDimStyle]"
+        ],
+        [
+            " PyAx::AcadDynamicBlockReferenceProperty::allowedValues",
+            "list[PyDb.EvalVariant]"
+        ],
+        [
+            "PyAx::AcadEllipse::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadEntity::arrayPolar",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadEntity::arrayRectangular",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadEntity::boundingBox",
+            "tuple[PyGe.Point3d,PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadEntity::intersectWith",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadGroup::items",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadGroups::items",
+            "list[PyAx.AcadGroup]"
+        ],
+        [
+            "PyAx::AcadHatch::loopAt",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadLWPolyline::coordinates",
+            "list[PyGe.Point2d]"
+        ],
+        [
+            "PyAx::AcadLWPolyline::explode",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadLWPolyline::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadLWPolyline::width",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadLayers::items",
+            "list[PyAx.AcadLayer]"
+        ],
+        [
+            "PyAx::AcadLayouts::items",
+            "list[PyAx.AcadLayout]"
+        ],
+        [
+            "PyAx::AcadLeader::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadLine::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadLineTypes::items",
+            "list[PyAx.AcadLineType]"
+        ],
+        [
+            "PyAx::AcadMLeader::leaderLineIndexes",
+            "list[int]"
+        ],
+        [
+            "PyAx::AcadMLeader::leaderLineVertices",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadMLine::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadMaterials::items",
+            "list[PyAx.AcadMaterial]"
+        ],
+        [
+            "PyAx::AcadObject::xdata",
+            "list[tuple[int,Any]]"
+        ],
+        [
+            "PyAx::AcadPViewport::gridSpacing",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadPViewport::snapSpacing",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::canonicalMediaNames",
+            "list[str]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::customScale",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::paperMargins",
+            "tuple[PyGe.Point2d,PyGe.Point2d]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::paperSize",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::plotDeviceNames",
+            "list[str]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::plotStyleTableNames",
+            "list[str]"
+        ],
+        [
+            "PyAx::AcadPlotConfiguration::windowToPlot",
+            "tuple[PyGe.Point2d,PyGe.Point2d]"
+        ],
+        [
+            "PyAx::AcadPolyfaceMesh::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadPolygonMesh::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadPolygonMesh::explode",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadPolyline::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadPolyline::explode",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadPolyline::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::autoTrackingVecColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::graphicsWinLayoutBackgrndColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::graphicsWinModelBackgrndColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::layoutCrosshairColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::modelCrosshairColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::textWinBackgrndColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesDisplay::textWinTextColor",
+            "tuple[int,int,int]"
+        ],
+        [
+            "PyAx::AcadPreferencesProfiles::getAllProfileNames",
+            "list[str]"
+        ],
+        [
+            "PyAx::AcadRegion::explode",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadRegion::principalDirections",
+            "list[PyGe.Vector3d]"
+        ],
+        [
+            "PyAx::AcadRegisteredApplications::items",
+            "list[PyAx.AcadRegisteredApplication]"
+        ],
+        [
+            "PyAx::AcadSection::generateSectionGeometry",
+            "tuple"
+        ],
+        [
+            "PyAx::AcadSection::hitTest",
+            "tuple"
+        ],
+        [
+            "PyAx::AcadSection::vertices",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadSectionTypeSettings::sourceObjects",
+            "list[PyDb.ObjectId]"
+        ],
+        [
+            "PyAx::AcadSelectionSet::entities",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadSolid::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadSortentsTable::fullDrawOrder",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadSortentsTable::relativeDrawOrder",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadSpline::controlPoints",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadSpline::fitPoints",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadSpline::knots",
+            "list[PyGe.Vector3d]"
+        ],
+        [
+            " PyAx::AcadSpline::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyAx::AcadSpline::weights",
+            "list[float]"
+        ],
+        [
+            "PyAx::AcadSummaryInfo::__getitem__",
+            "tuple[str,str]"
+        ],
+        [
+            "PyAx::AcadSummaryInfo::customByIndex",
+            "tuple[str,str]"
+        ],
+        [
+            "PyAx::AcadTable::cellDataType",
+            "tuple[PyAx.AcValueDataType,PyAx.AcValueUnitType]"
+        ],
+        [
+            "PyAx::AcadTable::cellExtents",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            " PyAx::AcadTable::cellStyleOverrides",
+            "list"
+        ],
+        [
+            "PyAx::AcadTable::dataType",
+            "tuple[PyAx.AcValueDataType,PyAx.AcValueUnitType]"
+        ],
+        [
+            "PyAx::AcadTable::hitTest",
+            "tuple[bool,int,int]"
+        ],
+        [
+            "PyAx::AcadTable::isMergedCell",
+            "tuple[bool,int,int,int,int]"
+        ],
+        [
+            "PyAx::AcadTable::select",
+            "tuple[int,int]"
+        ],
+        [
+            "PyAx::AcadTable::selectSubRegion",
+            "tuple[int,int,int,int]"
+        ],
+        [
+            "PyAx::AcadTable::subSelection",
+            "tuple[int,int,int,int]"
+        ],
+        [
+            "PyAx::AcadTable::tableStyleOverrides",
+            "list[int]"
+        ],
+        [
+            "PyAx::AcadTableStyle::cellStyles",
+            "list[str]"
+        ],
+        [
+            "PyAx::AcadTableStyle::dataType",
+            "tuple[PyAx.AcValueDataType,PyAx.AcValueUnitType]"
+        ],
+        [
+            "PyAx::AcadTextStyle::font",
+            "tuple"
+        ],
+        [
+            "PyAx::AcadTextStyles::items",
+            "list[PyAx.AcadTextStyle]"
+        ],
+        [
+            "PyAx::AcadToolbarItem::bitmaps",
+            "tuple[str,str]"
+        ],
+        [
+            "PyAx::AcadTrace::coordinates",
+            "list[PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadUCSs::items",
+            "list[PyAx.AcadUCS]"
+        ],
+        [
+            "PyAx::AcadUtility::getEntity",
+            "tuple[PyAx.AcadEntity,PyGe.Point3d]"
+        ],
+        [
+            "PyAx::AcadUtility::getSubEntity",
+            "tuple"
+        ],
+        [
+            "PyAx::AcadUtility::launchBrowserDialog",
+            "tuple"
+        ],
+        [
+            "PyAx::AcadViewport::gridSpacing",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadViewport::snapSpacing",
+            "tuple[float,float]"
+        ],
+        [
+            "PyAx::AcadViewports::items",
+            "list[PyAx.AcadViewport]"
+        ],
+        [
+            "PyAx::AcadViews::items",
+            "list[PyAx.AcadView]"
+        ],
+        [
+            "PyAx::AcadXline::offset",
+            "list[PyAx.AcadEntity]"
+        ],
+        [
+            "PyDb::BlockTableRecord::getBlockReferences",
+            "list[PyDb.BlockReference]"
+        ],
+        [
+            "PyDb::Database::getBlocks",
+            "dict[str, PyDb.ObjectId]"
+        ],
+        [
+            "PyDb::Dictionary::asDict",
+            "dict[str, PyDb.ObjectId]"
+        ],
+        [
+            "PyDb::Dictionary::toDict",
+            "dict[str, PyDb.ObjectId]"
+        ],
+        [
+            "PyDb::LayoutManager::getLayouts",
+            "dict[str, PyDb.ObjectId]"
+        ],
+        [
+            "PyDb::SymbolTable::asDict",
+            "dict[str, PyDb.ObjectId]"
+        ],
+        [
+            "PyDb::SymbolTable::toDict",
+            "dict[str, PyDb.ObjectId]"
+        ],
+        [
+            "PyBrx::Constraint::arguments",
+            "list[PyDb.FullSubentPath]"
+        ],
+        [
+            "PyBrx::Constraint::getArguments",
+            "list[PyBrx.ConstraintArgument]"
+        ],
+        [
+            "PyBrx::ConstraintsGroup::constraints",
+            "list[PyBrx.Constraint]"
+        ],
+        [
+            "PyBrx::Core::getAllConstraintsGroups",
+            "list[PyBrx.ConstraintsGroup]"
+        ],
+        [
+            "PyBrx::Core::getBlockParametersNames",
+            "list[str]"
+        ],
+        [
+            "PyBrx::Core::getOpenObjects",
+            "list[PyDb.ObjectId]"
+        ],
+        [
+            "PyBrx::DbProperties::listAll",
+            "list[str]"
+        ],
+        [
+            "PyBrx::DesignTable::configurations",
+            "list[PyBrx.DesignTableConfiguration]"
+        ],
+        [
+            "PyBrx::DesignTable::getAllDesignTables",
+            "list[PyBrx.DesignTable]"
+        ],
+        [
+            "PyBrx::DesignTableConfiguration::variables",
+            "list[PyBrx.DesignTableConfigurationEntry]"
+        ],
+        [
+            "PyBrx::MechanicalPropertyDefinition::enumValues",
+            "list[tuple[str,str]]"
+        ],
+        [
+            "PyBrx::MechanicalPropertySet::getAllCustomProperties",
+            "list[PyBrx.MechanicalPropertyDefinition]"
+        ],
+        [
+            "PyBrx::Variable::getFromBlock",
+            "list[PyBrx.Variable]"
+        ],
+        [
+            "PyDb::Extents2d::clipLineSeg2d",
+            "tuple[bool,PyGe.LineSeg2d]"
+        ],
+        [
+            "PyGe::BoundBlock2d::clipLineSeg2d",
+            "tuple[bool,PyGe.LineSeg2d]"
+        ],
+        [
+            "PyDb::Extents2d::clipCircArc2d",
+            "tuple[bool,list[PyGe.CircArc2d]]"
+        ],
+        [
+            "PyGe::BoundBlock2d::clipCircArc2d",
+            "tuple[bool,list[PyGe.CircArc2d]]"
+        ],
+        [
+            "PyGe::ClipBoundary2d::clipPolygon",
+            "tuple[list[PyGe.Point2d],PyGe.ClipCondition,list[int]]"
+        ],
+        [
+            "PyGe::ClipBoundary2d::clipPolyline",
+            "tuple[list[PyGe.Point2d],PyGe.ClipCondition,list[int]]"
+        ],
+        [
+            "PyGe::Point2dTree::knnSearch",
+            "tuple[list[int],list[int]]"
+        ],
+        [
+            "PyGe::Point2dTree::radiusSearch",
+            "tuple[list[int],list[int]]"
+        ],
+        [
+            "PyGe::Point3dTree::knnSearch",
+            "tuple[list[int],list[int]]"
+        ],
+        [
+            "PyGe::Point3dTree::radiusSearch",
+            "tuple[list[int],list[int]]"
         ]
     ]
 }
+

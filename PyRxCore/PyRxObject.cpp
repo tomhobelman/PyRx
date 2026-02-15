@@ -17,7 +17,7 @@ void makePyRxObjectWrapper()
         .def("keepAlive", &PyRxObject::forceKeepAlive, DS.ARGS({ "flag: bool" }))
         .def("dispose", &PyRxObject::dispose, DS.ARGS())
         .def("intPtr", &PyRxObject::intPtr, DS.ARGS())
-        .def("queryX", &PyRxObject::queryX, DS.ARGS({ "rhs: PyRx.RxClass" }, 15564))
+        .def("queryX", &PyRxObject::queryX, DS.ARGS({ "protocolClass: PyRx.RxClass" }, 15564))
         .def("copyFrom", &PyRxObject::copyFrom, DS.ARGS({ "other: PyRx.RxObject" }, 15559))
         .def("comparedTo", &PyRxObject::comparedTo, DS.ARGS({ "other: PyRx.RxObject" }, 15558))
         .def("__eq__", &PyRxObject::operator==, DS.ARGS({ "rhs: PyRx.RxObject" }))
@@ -35,31 +35,21 @@ struct PyRxObjectDeleter
     {
     }
 
-    // in the case of a side database GC'd before one of its member objects 
-    // we crash. p is invalid. this can be handled in python. but there could be 
-    // a clever solution
     inline bool isDbroThenClose(AcRxObject* p) const
     {
-        static constexpr const wchar_t* fmt = _T("\nStatus = %ls in %ls: ");
         if (m_isDbObject)
         {
             AcDbObject* pDbo = static_cast<AcDbObject*>(p);
             if (!pDbo->objectId().isNull())
             {
-#ifdef PYRXDEBUG
-                //acutPrintf(_T("\n%ls is closing %ls"), pDbo->isA()->name());
-#endif
-                if (const auto es = pDbo->close(); es != eOk) [[unlikely]] {
-                    acutPrintf(fmt, acadErrorStatusText(es), __FUNCTIONW__);
-                }
+                if (const auto es = pDbo->close(); es != eOk) [[unlikely]]
+                    acutPrintf(_T("\nStatus = %ls in %ls: "), acadErrorStatusText(es), __FUNCTIONW__);
                 return true;
             }
         }
         return false;
     }
 
-    // TODO: this could be a little cleaner, 
-    // consider making a PyDisposableObject
     inline void operator()(AcRxObject* p) const
     {
         if (p == nullptr)
@@ -202,7 +192,7 @@ void makePyRxClassWrapper()
         .def("dxfName", &PyRxClass::dxfName, DS.ARGS(15278))
         .def("name", &PyRxClass::name, DS.ARGS(15284))
         .def("myParent", &PyRxClass::myParent, DS.ARGS(15283))
-        .def("queryX", &PyRxObject::queryX, DS.ARGS({ "rhs :  PyRx.RxClass" }, 15288))
+        .def("queryX", &PyRxObject::queryX, DS.ARGS({ "protocolClass :  PyRx.RxClass" }, 15288))
         .def("desc", &PyRxClass::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyRxClass::className, DS.SARGS()).staticmethod("className")
         ;

@@ -4,7 +4,10 @@
 #include "PyGiSubEntityTraits.h"
 #include "PyDbObjectId.h"
 
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
 using namespace boost::python;
+
 //-----------------------------------------------------------------------------------------
 //PyGiDrawable
 void makePyGiObjectWrapper()
@@ -34,7 +37,7 @@ void makePyGiObjectWrapper()
         .value("kImageBackground", AcGiDrawable::DrawableType::kImageBackground)
         .value("kGroundPlaneBackground", AcGiDrawable::DrawableType::kGroundPlaneBackground)
         .value("kViewport", AcGiDrawable::DrawableType::kViewport)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kWebLight", AcGiDrawable::DrawableType::kWebLight)
         .value("kSkyBackground", AcGiDrawable::DrawableType::kSkyBackground)
         .value("kImageBasedLightingBackground", AcGiDrawable::DrawableType::kImageBasedLightingBackground)
@@ -73,22 +76,22 @@ PyGiDrawable::PyGiDrawable(AcGiDrawable* ptr, bool autoDelete, bool isDbObject)
 {
 }
 
-Adesk::UInt32 PyGiDrawable::setAttributes(PyGiDrawableTraits& traits)
+Adesk::UInt32 PyGiDrawable::setAttributes(PyGiDrawableTraits& traits) const
 {
     return impObj()->setAttributes(traits.impObj());
 }
 
-Adesk::Boolean PyGiDrawable::worldDraw(PyGiWorldDraw& wd)
+Adesk::Boolean PyGiDrawable::worldDraw(PyGiWorldDraw& wd) const
 {
     return impObj()->worldDraw(wd.impObj());
 }
 
-void PyGiDrawable::viewportDraw(PyGiViewportDraw& vd)
+void PyGiDrawable::viewportDraw(PyGiViewportDraw& vd) const
 {
     return impObj()->viewportDraw(vd.impObj());
 }
 
-Adesk::UInt32 PyGiDrawable::viewportDrawLogicalFlags(PyGiViewportDraw& vd)
+Adesk::UInt32 PyGiDrawable::viewportDrawLogicalFlags(PyGiViewportDraw& vd) const
 {
     return impObj()->viewportDrawLogicalFlags(vd.impObj());
 }
@@ -108,7 +111,7 @@ AcGiDrawable::DrawableType PyGiDrawable::drawableType(void) const
     return impObj()->drawableType();
 }
 
-Adesk::Boolean PyGiDrawable::rolloverHit(Adesk::ULongPtr nSubentId, Adesk::ULongPtr nMouseFlags, Adesk::Boolean bReset)
+Adesk::Boolean PyGiDrawable::rolloverHit(Adesk::ULongPtr nSubentId, Adesk::ULongPtr nMouseFlags, Adesk::Boolean bReset) const
 {
     return impObj()->RolloverHit(nSubentId, nMouseFlags, bReset);
 }
@@ -145,7 +148,7 @@ AcGiDrawable* PyGiDrawable::impObj(const std::source_location& src /*= std::sour
 //PyGiDrawableOverrule
 void makePyGiDrawableOverruleWrapper()
 {
-    class_<PyGiDrawableOverrule, bases<PyRxOverrule>>("DrawableOverrule")
+    class_<PyGiDrawableOverrule, bases<PyRxOverrule>, boost::noncopyable>("DrawableOverrule")
         .def("setAttributes", &PyGiDrawableOverrule::setAttributes)
         .def("isApplicable", &PyGiDrawableOverrule::isApplicableWr)
         .def("worldDraw", &PyGiDrawableOverrule::worldDrawWr)
@@ -164,7 +167,7 @@ PyGiDrawableOverrule::PyGiDrawableOverrule()
 {
 }
 
-Adesk::UInt32 PyGiDrawableOverrule::setAttributes(PyGiDrawable& pSubject, PyGiDrawableTraits& traits)
+Adesk::UInt32 PyGiDrawableOverrule::setAttributes(PyGiDrawable& pSubject, PyGiDrawableTraits& traits) const
 {
     return impObj()->setAttributes(pSubject.impObj(), traits.impObj());
 }
@@ -211,7 +214,8 @@ void PyGiDrawableOverrule::viewportDrawWr(PyGiDrawable& pSubject, PyGiViewportDr
     {
         if (const override& f = this->get_override("viewportDraw"))
             f(pSubject, vd);
-        baseViewportDraw(pSubject, vd);
+        else
+            baseViewportDraw(pSubject, vd);
     }
     catch (...)
     {

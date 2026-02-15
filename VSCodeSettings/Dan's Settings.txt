@@ -4,9 +4,9 @@
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnType": true
     },
-    "autolispext.format.MaxLineChars": 120,
+    "isort.args":["--profile", "black"],
+    "autolispext.format.MaxLineChars": 100,
     "debug.allowBreakpointsEverywhere": true,
-    "debugpy.debugJustMyCode": false,
     "editor.fontFamily": "Cascadia Code Light",
     "editor.fontLigatures": true,
     "editor.fontSize": 12,
@@ -17,9 +17,9 @@
         "Autodesk.autolispext"
     ],
     "git.openRepositoryInParentFolders": "never",
-
     //debug configurations
     "launch": {
+        "version":"0.2.0",
         "compounds": [],
         "configurations": [
             {
@@ -32,13 +32,11 @@
                 "request": "attach",
                 "type": "debugpy"
             }
+
         ]
     },
-
-
     "python.analysis.autoImportCompletions": true,
     "python.analysis.completeFunctionParens": false,
-
     // [optional] to add stub paths if you're working uninstalled 
     // example during C++ devlopment
     "python.analysis.extraPaths": [
@@ -48,7 +46,6 @@
     "python.analysis.inlayHints.functionReturnTypes": true,
     "python.analysis.inlayHints.pytestParameters": true,
     "python.languageServer": "Pylance",
-
     //personal configuration
     "security.workspace.trust.untrustedFiles": "open",
     "terminal.integrated.tabStopWidth": 4,
@@ -57,5 +54,26 @@
     "workbench.colorCustomizations": {
         "tab.inactiveBackground": "#000000",
         "tab.activeBackground": "#383838",
+    },
+    "black-formatter.args": [
+        "--line-length",
+        "99"
+    ],
+    "autoDocstring.docstringFormat": "google-notypes",
+    "python.defaultInterpreterPath": "C:\\Users\\Dan\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false,
+        "python": false,
+        "toml": false
+    },
+    "debugpy.debugJustMyCode": false,
+    "debugpy.showPythonInlineValues": false,
+    "debug.inlineValues": "off",
+    "[autolisp]": {
+        "editor.defaultFormatter": "Autodesk.autolispext"
     }
+
 }

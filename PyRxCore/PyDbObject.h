@@ -41,10 +41,6 @@ public:
     void                setOwnerId(const PyDbObjectId&  constobjId) const;
     PyDbDatabase        database() const;
     PyDbDatabase        databaseToUse() const;
-#ifdef NEVER //AutoCAD bug
-    PyDbDatabase        intendedDatabase();
-    void                setIntendedDatabase(PyDbDatabase& pDb);
-#endif
     void                createExtensionDictionary() const;
     PyDbObjectId        extensionDictionary() const;
     void                releaseExtensionDictionary() const;

@@ -1,6 +1,8 @@
 import os
 import traceback
-from pyrx import Rx, Ge, Gi, Db, Ap, Ed
+
+from pyrx import Ap
+
 
 def OnPyInitApp() -> None:
     print("\nOnPyInitApp _onpyload")
@@ -32,4 +34,4 @@ def PyRxLisp_mylisp(args):
 gitpath = os.path.abspath("..\\..\\..\\..\\")
 print("GITPATH={}".format(gitpath))
 Ap.Application.loadPythonModule(os.path.join(gitpath,"gen_pyi.py"))
-Ap.Application.loadPythonModule(os.path.join(gitpath,"unitTests\\UnitTestRunner.py"))
+

@@ -109,7 +109,8 @@ CString PyIAcadBlockImpl::GetPath() const
 
 void PyIAcadBlockImpl::SetPath(const CString& val) const
 {
-    _bstr_t bstrVal{ val };
+    std::filesystem::path path = (const TCHAR*)val;
+    _bstr_t bstrVal{ path.make_preferred().c_str() };
     PyThrowBadHr(impObj()->put_Path(bstrVal));
 }
 
@@ -455,7 +456,7 @@ PyIAcad3DSolidPtr PyIAcadBlockImpl::AddEllipticalCylinder(const AcGePoint3d& cen
 PyIAcad3DSolidPtr PyIAcadBlockImpl::AddExtrudedSolid(const PyIAcadRegionImpl& impl, double height, double taperAngle) const
 {
     IAcad3DSolid* pEnt = nullptr;
-    PyThrowBadHr(impObj()->AddExtrudedSolid(impl.impObj(), height, height, &pEnt));
+    PyThrowBadHr(impObj()->AddExtrudedSolid(impl.impObj(), height, taperAngle, &pEnt));
     return std::make_unique<PyIAcad3DSolidImpl>(pEnt);
 }
 
@@ -666,7 +667,8 @@ PyIAcadXlinePtr PyIAcadBlockImpl::AddXline(const AcGePoint3d& p1, const AcGePoin
 
 PyIAcadBlockReferencePtr PyIAcadBlockImpl::InsertBlock(const AcGePoint3d& insertionPoint, const CString& name, const AcGeScale3d& scale, double rotation) const
 {
-    _bstr_t bstrname{ name };
+    std::filesystem::path path = (const TCHAR*)name;
+    _bstr_t bstrname{ path.make_preferred().c_str() };
     _variant_t vtinsertionPoint;
     IAcadBlockReference* pEnt = nullptr;
     PyThrowBadHr(AcGePoint3dToVariant(vtinsertionPoint.GetVARIANT(), insertionPoint));
@@ -1349,9 +1351,23 @@ PyIAcadUtilityPtr PyIAcadDocumentImpl::GetUtility() const
     return std::make_unique<PyIAcadUtilityImpl>(ptr);
 }
 
+static bool isSDI()
+{
+    resbuf rb;
+    if (acedGetVar(_T("SDI"), &rb) == RTNORM && rb.restype == RTSHORT && rb.resval.rint != 0)
+        return true;
+    return false;
+}
+
 PyIAcadDocumentPtr PyIAcadDocumentImpl::Open(const CString& path) const
 {
-    _bstr_t bstrpath{ path };
+    if (!isSDI())
+    {
+        acutPrintf(_T("\nPlease use Documents.open with SDI 0: \n"));
+        PyThrowBadEs(eInvalidInput);
+    }
+    std::filesystem::path stdpath = (const TCHAR*)path;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     IAcadDocument* ptr = nullptr;
     PyThrowBadHr(impObj()->Open(bstrpath, vtMissing, &ptr));
     return std::make_unique<PyIAcadDocumentImpl>(ptr);
@@ -1364,7 +1380,8 @@ void PyIAcadDocumentImpl::AuditInfo(bool flag) const
 
 PyIAcadBlockReferencePtr PyIAcadDocumentImpl::Import(const CString& path, const AcGePoint3d& InsertionPoint, double ScaleFactor) const
 {
-    _bstr_t bstrpath{ path };
+    std::filesystem::path stdpath = (const TCHAR*)path;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     VARIANT vaInsertionPoint;
     VariantInit(&vaInsertionPoint);
     constexpr ULONG s = sizeof(AcGePoint3d) / sizeof(double);
@@ -1383,7 +1400,8 @@ void PyIAcadDocumentImpl::Export(const CString& fileName, const CString& extensi
 
 PyIAcadDocumentPtr PyIAcadDocumentImpl::New(const CString& path) const
 {
-    _bstr_t bstrpath{ path };
+    std::filesystem::path stdpath = (const TCHAR*)path;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     IAcadDocument* ptr = nullptr;
     PyThrowBadHr(impObj()->New(bstrpath, &ptr));
     return std::make_unique<PyIAcadDocumentImpl>(ptr);
@@ -1396,20 +1414,23 @@ void PyIAcadDocumentImpl::Save() const
 
 void PyIAcadDocumentImpl::SaveAs(const CString& fileName) const
 {
-    _bstr_t bstrpath{ fileName };
+    std::filesystem::path stdpath = (const TCHAR*)fileName;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     PyThrowBadHr(impObj()->SaveAs(bstrpath));
 }
 
 void PyIAcadDocumentImpl::SaveAs(const CString& fileName, PyAcSaveAsType saType) const
 {
-    _bstr_t bstrpath{ fileName };
+    std::filesystem::path stdpath = (const TCHAR*)fileName;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     _variant_t vasaType{ saType };
     PyThrowBadHr(impObj()->SaveAs(bstrpath, vasaType));
 }
 
 void PyIAcadDocumentImpl::SaveAs(const CString& fileName, PyAcSaveAsType saType, const PyIAcadSecurityParamsImpl& pr) const
 {
-    _bstr_t bstrpath{ fileName };
+    std::filesystem::path stdpath = (const TCHAR*)fileName;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     _variant_t vasaType{ saType };
     _variant_t vapr{ (IDispatch*)pr.impObj() };
     PyThrowBadHr(impObj()->SaveAs(bstrpath, vasaType, vapr));
@@ -1417,7 +1438,8 @@ void PyIAcadDocumentImpl::SaveAs(const CString& fileName, PyAcSaveAsType saType,
 
 void PyIAcadDocumentImpl::Wblock(const CString& fileName, const PyIAcadSelectionSetImpl& sset) const
 {
-    _bstr_t bstrpath{ fileName };
+    std::filesystem::path stdpath = (const TCHAR*)fileName;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     PyThrowBadHr(impObj()->Wblock(bstrpath, sset.impObj()));
 }
 
@@ -1513,9 +1535,10 @@ void PyIAcadDocumentImpl::SetVariable(const CString& name, const TypedVariant& t
     }
 }
 
-void PyIAcadDocumentImpl::LoadShapeFile(const CString& name) const
+void PyIAcadDocumentImpl::LoadShapeFile(const CString& fileName) const
 {
-    _bstr_t bstrpath{ name };
+    std::filesystem::path stdpath = (const TCHAR*)fileName;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     PyThrowBadHr(impObj()->LoadShapeFile(bstrpath));
 }
 
@@ -1526,7 +1549,7 @@ void PyIAcadDocumentImpl::Regen(PyAcRegenType rt) const
 
 PyIAcadSelectionSetPtr PyIAcadDocumentImpl::GetPickfirstSelectionSet() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     IDispatch* ptr = nullptr;
     PyThrowBadHr(impObj()->get_PickfirstSelectionSet(&ptr));
     return std::make_unique<PyIAcadSelectionSetImpl>((IAcadSelectionSet*)ptr);
@@ -1623,7 +1646,7 @@ void PyIAcadDocumentImpl::SendCommand(const CString& cmd) const
 
 void PyIAcadDocumentImpl::PostCommand(const CString& cmd) const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET240)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET240)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrcmd{ cmd };
@@ -1657,7 +1680,7 @@ void PyIAcadDocumentImpl::EndUndoMark() const
 
 PyIAcadDatabasePtr PyIAcadDocumentImpl::GetDatabase() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     IAcadDatabase* ptr = nullptr;
     PyThrowBadHr(impObj()->get_database(&ptr));
     return std::make_unique<PyIAcadDatabaseImpl>(ptr);
@@ -1733,7 +1756,8 @@ PyIAcadDocumentPtr PyIAcadDocumentsImpl::GetItem(long index) const
 
 PyIAcadDocumentPtr PyIAcadDocumentsImpl::Open(const CString& path, bool readOnly) const
 {
-    _bstr_t bstrpath{ path };
+    std::filesystem::path stdpath = (const TCHAR*)path;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
     _variant_t breadOnly{ readOnly };
     IAcadDocument* ptr = nullptr;
     PyThrowBadHr(impObj()->Open(bstrpath, breadOnly, vtMissing, &ptr));
@@ -1796,18 +1820,21 @@ wstringArray PyAcadApplicationImpl::ListArx() const
 
 void PyAcadApplicationImpl::LoadArx(const CString& csVal) const
 {
-    _bstr_t bstrVal{ csVal };
+    std::filesystem::path stdpath = (const TCHAR*)csVal;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
 #if defined(_ZRXTARGET)
-    PyThrowBadHr(impObj()->LoadZrx(bstrVal));
+    PyThrowBadHr(impObj()->LoadZrx(bstrpath));
 #elif defined(_GRXTARGET)
-    PyThrowBadHr(impObj()->LoadGrx(bstrVal));
+    PyThrowBadHr(impObj()->LoadGrx(bstrpath));
 #else
-    PyThrowBadHr(impObj()->LoadArx(bstrVal));
+    PyThrowBadHr(impObj()->LoadArx(bstrpath));
 #endif
 }
 
 void PyAcadApplicationImpl::LoadDVB(const CString& csVal) const
 {
+    std::filesystem::path stdpath = (const TCHAR*)csVal;
+    _bstr_t bstrpath{ stdpath.make_preferred().c_str() };
 #if defined(_ZRXTARGET)
     throw PyNotimplementedByHost();
 #else

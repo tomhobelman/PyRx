@@ -1,5 +1,8 @@
 from __future__ import annotations
-from pyrx import Ap, Ax, Db, Ge
+
+import pytest
+
+from pyrx import Ap, Ax, Ge
 
 
 def is_before(objs: list[Ax.AcadEntity], left: Ax.AcadEntity, right: Ax.AcadEntity):
@@ -9,8 +12,10 @@ def is_before(objs: list[Ax.AcadEntity], left: Ax.AcadEntity, right: Ax.AcadEnti
         elif obj == left:
             return True
 
-
 class TestAcadSortentsTable:
+    
+    @pytest.mark.known_failure_IRX
+    @pytest.mark.known_failure_GRX
     def test_getinstance(self):
         axApp = Ap.Application.acadApplication()
         axDoc = axApp.activeDocument()
@@ -20,7 +25,7 @@ class TestAcadSortentsTable:
         axEnt2 = axModel.addLine(Ge.Point3d(0, 0, 0), Ge.Point3d(100, 0, 0))
 
         ex = axModel.extensionDictionary()
-        if not "AcDbSortentsTable" in [i.objectName() for i in ex.items()]:
+        if "AcDbSortentsTable" not in [i.objectName() for i in ex.items()]:
             ex.addObject("ACAD_SORTENTS", "AcDbSortentsTable")
 
         axSortEnts = Ax.AcadSortentsTable.cast(ex.object("ACAD_SORTENTS"))

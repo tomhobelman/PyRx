@@ -9,6 +9,12 @@ class PyDbPlotSettings;
 class PyDbPlotSettingsValidator;
 class AcadInternalServices;
 
+#if (defined(_ARXTARGET) && (_ARXTARGET >= 260)) || defined(_BRXTARGET260)
+#define PYRXOVERRIDE
+#else
+#define PYRXOVERRIDE override
+#endif
+
 //---------------------------------------------------------------------------------------- -
 //OutputDisplayServiceImpl
 class OutputDisplayServiceImpl : public AcDbHostApplicationServices
@@ -16,9 +22,10 @@ class OutputDisplayServiceImpl : public AcDbHostApplicationServices
 public:
     OutputDisplayServiceImpl();
     virtual ~OutputDisplayServiceImpl() override;
-    virtual Acad::ErrorStatus findFile(ACHAR* pthOut,int nBufLength,const ACHAR* pcFname,AcDbDatabase* pDb = NULL,AcDbHostApplicationServices::FindFileHint hint = kDefault) override;
-#if !defined(_BRXTARGET250)
-    virtual AcadInternalServices* acadInternalServices() override;
+    virtual Acad::ErrorStatus findFile(ACHAR* pthOut, int nBufLength, const ACHAR* pcFname, AcDbDatabase* pDb = NULL, AcDbHostApplicationServices::FindFileHint hint = kDefault) override;
+    virtual AcadInternalServices* acadInternalServices() PYRXOVERRIDE;
+#if (defined(_ARXTARGET) && (_ARXTARGET >= 260))
+    virtual bool notifyCorruptDrawingFoundOnOpen(AcDbObjectId id, Acad::ErrorStatus es) override;
 #endif
     virtual const ProdIdCode prodcode() override;
     virtual void displayChar(ACHAR c) const override;
@@ -26,6 +33,8 @@ public:
     std::wstring getOutput() const;
     bool getMuteCmdLine() const { return m_muteCmdLine; }
     void setMuteCmdLine(bool val) { m_muteCmdLine = val; }
+    virtual AcDbTransactionManager* workingTransactionManager() override;
+
 private:
     inline static std::wstring ms_buffer;
     AcDbHostApplicationServices* m_pOldHostServices = acdbHostApplicationServices();
@@ -42,14 +51,13 @@ public:
     ~PyOutputDisplayService() = default;
     std::string         output() const;
     bool                getMuteCmdLine() const;
-    void                setMuteCmdLine(bool val);
+    void                setMuteCmdLine(bool val) const;
     static std::string  className();
 public:
     OutputDisplayServiceImpl* impObj(const std::source_location& src = std::source_location::current()) const;
 private:
     std::shared_ptr<OutputDisplayServiceImpl> m_pyImp;
 };
-
 
 //---------------------------------------------------------------------------------------- -
 //PyDbHostApplicationServices
@@ -170,34 +178,40 @@ void makePyDbDatabaseSummaryInfoWrapper();
 class PyDbDatabaseSummaryInfo : public PyRxObject
 {
 public:
+    PyDbDatabaseSummaryInfo();
+    PyDbDatabaseSummaryInfo(const PyDbDatabase& db);
     PyDbDatabaseSummaryInfo(AcDbDatabaseSummaryInfo* ptr);
     virtual ~PyDbDatabaseSummaryInfo() override = default;
     std::string         getTitle() const;
-    void                setTitle(const std::string& title);
+    void                setTitle(const std::string& title) const;
     std::string         getSubject() const;
-    void                setSubject(const std::string& subject);
+    void                setSubject(const std::string& subject) const;
     std::string         getAuthor() const;
-    void                setAuthor(const std::string& author);
+    void                setAuthor(const std::string& author) const;
     std::string         getKeywords() const;
-    void                setKeywords(const std::string& keywordlist);
+    void                setKeywords(const std::string& keywordlist) const;
     std::string         getComments() const;
-    void                setComments(const std::string& comments);
+    void                setComments(const std::string& comments) const;
     std::string         getLastSavedBy() const;
-    void                setLastSavedBy(const std::string& lastSavedBy);
+    void                setLastSavedBy(const std::string& lastSavedBy) const;
     std::string         getRevisionNumber() const;
-    void                setRevisionNumber(const std::string& revisionNumber);
+    void                setRevisionNumber(const std::string& revisionNumber) const;
     std::string         getHyperlinkBase() const;
-    void                setHyperlinkBase(const std::string& HyperlinkBase);
+    void                setHyperlinkBase(const std::string& HyperlinkBase) const;
     int                 numCustomInfo() const;
-    void                addCustomSummaryInfo(const std::string& key, const std::string& value);
-    void                deleteCustomSummaryInfo1(int index);
-    void                deleteCustomSummaryInfo2(const std::string& key);
+    void                addCustomSummaryInfo(const std::string& key, const std::string& value) const;
+    void                deleteCustomSummaryInfo1(int index) const;
+    void                deleteCustomSummaryInfo2(const std::string& key) const;
     boost::python::tuple getCustomSummaryInfo1(const std::string& customInfoKey) const;
     boost::python::tuple getCustomSummaryInfo2(int index) const;
-    void                setCustomSummaryInfo1(const std::string& customInfoKey, const std::string& value);
-    void                setCustomSummaryInfo2(int index, const std::string& key, const std::string& value);
-    void                setCustomSummaryFromDict(boost::python::dict& pydict);
+    void                setCustomSummaryInfo1(const std::string& customInfoKey, const std::string& value) const;
+    void                setCustomSummaryInfo2(int index, const std::string& key, const std::string& value) const;
+    void                setCustomSummaryFromDict(boost::python::dict& pydict) const;
     boost::python::dict asDict() const;
+    void                removeAllCustomSummaryInfo() const;
+    bool                hasCustomKey(const std::string& key) const;
+    void                setIntoDatabase1() const;
+    void                setIntoDatabase2(const PyDbDatabase& db) const;
     static std::string  className();
 public:
     AcDbDatabaseSummaryInfo* impObj(const std::source_location& src = std::source_location::current()) const;
@@ -213,31 +227,31 @@ public:
     PyDbPlotSettingsValidator(AcDbPlotSettingsValidator* ptr);
 
     ~PyDbPlotSettingsValidator() = default;
-    void                setPlotCfgName1(PyDbPlotSettings& settings, const std::string& plotDeviceName);
-    void                setPlotCfgName2(PyDbPlotSettings& settings, const std::string& plotDeviceName, const std::string& mediaName);
-    void                setCanonicalMediaName(PyDbPlotSettings& settings, const std::string& mediaName);
-    void                setPlotOrigin(PyDbPlotSettings& settings, const double xCoordinate, const double yCoordinate);
-    void                setPlotPaperUnits(PyDbPlotSettings& pPlotSet, const PlotPaperUnits units);
-    void                setPlotRotation(PyDbPlotSettings& pPlotSet, const PlotRotation rotationType);
-    void                setPlotCentered(PyDbPlotSettings& pPlotSet, Adesk::Boolean isCentered);
-    void                setPlotType(PyDbPlotSettings& pPlotSet, const PlotType plotAreaType);
-    void                setPlotWindowArea1(PyDbPlotSettings& pPlotSet, const double xmin, const double ymin, const double xmax, const double ymax);
-    void                setPlotWindowArea2(PyDbPlotSettings& pPlotSet, AcDbExtents2d& ex);
-    void                setPlotViewName(PyDbPlotSettings& pPlotSet, const std::string& viewName);
-    void                setUseStandardScale(PyDbPlotSettings& pPlotSet, Adesk::Boolean useStandard);
-    void                setCustomPrintScale(PyDbPlotSettings& pPlotSet, const double numerator, const double denominator);
-    void                setCurrentStyleSheet(PyDbPlotSettings& pPlotSet, const std::string& styleSheetName);
-    void                setStdScaleType(PyDbPlotSettings& pPlotSet, const StdScaleType scaleType);
-    void                setStdScale(PyDbPlotSettings& pPlotSet, const double standardScale);
-    boost::python::list plotDeviceList();
-    boost::python::list canonicalMediaNameList(PyDbPlotSettings& pPlotSet);
-    std::string         getLocaleMediaName1(PyDbPlotSettings& pPlotSet, const std::string& canonicalName);
-    std::string         getLocaleMediaName2(PyDbPlotSettings& pPlotSet, int index);
-    void                setClosestMediaName(PyDbPlotSettings& pPlotSet, double paperWidth, double paperHeight, PlotPaperUnits units, Adesk::Boolean matchPrintableArea);
-    boost::python::list plotStyleSheetList();
-    void                refreshLists(PyDbPlotSettings& pPlotSet);
-    void                setZoomToPaperOnUpdate(PyDbPlotSettings& pPlotSet, Adesk::Boolean doZoom);
-    void                setDefaultPlotConfig(PyDbPlotSettings& pPlotSet);
+    void                setPlotCfgName1(PyDbPlotSettings& settings, const std::string& plotDeviceName) const;
+    void                setPlotCfgName2(PyDbPlotSettings& settings, const std::string& plotDeviceName, const std::string& mediaName) const;
+    void                setCanonicalMediaName(PyDbPlotSettings& settings, const std::string& mediaName) const;
+    void                setPlotOrigin(PyDbPlotSettings& settings, const double xCoordinate, const double yCoordinate) const;
+    void                setPlotPaperUnits(PyDbPlotSettings& pPlotSet, const PlotPaperUnits units) const;
+    void                setPlotRotation(PyDbPlotSettings& pPlotSet, const PlotRotation rotationType) const;
+    void                setPlotCentered(PyDbPlotSettings& pPlotSet, Adesk::Boolean isCentered) const;
+    void                setPlotType(PyDbPlotSettings& pPlotSet, const PlotType plotAreaType) const;
+    void                setPlotWindowArea1(PyDbPlotSettings& pPlotSet, const double xmin, const double ymin, const double xmax, const double ymax) const;
+    void                setPlotWindowArea2(PyDbPlotSettings& pPlotSet, AcDbExtents2d& ex) const;
+    void                setPlotViewName(PyDbPlotSettings& pPlotSet, const std::string& viewName) const;
+    void                setUseStandardScale(PyDbPlotSettings& pPlotSet, Adesk::Boolean useStandard) const;
+    void                setCustomPrintScale(PyDbPlotSettings& pPlotSet, const double numerator, const double denominator) const;
+    void                setCurrentStyleSheet(PyDbPlotSettings& pPlotSet, const std::string& styleSheetName) const;
+    void                setStdScaleType(PyDbPlotSettings& pPlotSet, const StdScaleType scaleType) const;
+    void                setStdScale(PyDbPlotSettings& pPlotSet, const double standardScale) const;
+    boost::python::list plotDeviceList() const;
+    boost::python::list canonicalMediaNameList(PyDbPlotSettings& pPlotSet) const;
+    std::string         getLocaleMediaName1(PyDbPlotSettings& pPlotSet, const std::string& canonicalName) const;
+    std::string         getLocaleMediaName2(PyDbPlotSettings& pPlotSet, int index) const;
+    void                setClosestMediaName(PyDbPlotSettings& pPlotSet, double paperWidth, double paperHeight, PlotPaperUnits units, Adesk::Boolean matchPrintableArea) const;
+    boost::python::list plotStyleSheetList() const;
+    void                refreshLists(PyDbPlotSettings& pPlotSet) const;
+    void                setZoomToPaperOnUpdate(PyDbPlotSettings& pPlotSet, Adesk::Boolean doZoom) const;
+    void                setDefaultPlotConfig(PyDbPlotSettings& pPlotSet) const;
     static std::string  className();
 public:
     AcDbPlotSettingsValidator* impObj(const std::source_location& src = std::source_location::current()) const;

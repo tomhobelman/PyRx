@@ -6,6 +6,7 @@
 class PyRxClass;
 class AdsName;
 typedef std::array<int64_t, 2> PySSName;
+typedef std::vector<PyDbObjectId> PyDbObjectIdArray;
 
 void makePyEdSelectionSetWrapper();
 
@@ -18,25 +19,29 @@ public:
     ~PyEdSelectionSet() = default;
     bool			    isInitialized() const;
     size_t              size() const;
+    PyDbObjectId        getAt(size_t index) const;
+    size_t              subentLength(size_t index) const;
     void                clear();
-    void                add(const PyDbObjectId& objId);
-    void                remove(const PyDbObjectId& objId);
-    bool                hasMember(const PyDbObjectId& objId);
+    void                add(const PyDbObjectId& objId) const;
+    void                remove(const PyDbObjectId& objId) const;
+    bool                hasMember(const PyDbObjectId& objId) const;
     AdsName             adsname() const;
-    bool                ssSetFirst();
-    Acad::PromptStatus  ssXform(const AcGeMatrix3d& xform);
-    boost::python::list ssNameX1();
-    boost::python::list ssNameX2(int ind);
-    boost::python::list objectIds();
-    boost::python::list objectIdsOfType(const PyRxClass& _class);
-    boost::python::list objectIdsOfTypeList(const boost::python::list& _classes);//must be list
-    void                forceKeepAlive(bool keepIt);
+    PyDbFullSubentPath  subentName(size_t entIndex, size_t subentIndex) const;
+    boost::python::list subentNameX(size_t entIndex, size_t subentIndex, int flags) const;
+    bool                ssSetFirst() const;
+    Acad::PromptStatus  ssXform(const AcGeMatrix3d& xform) const;
+    boost::python::list ssNameX1() const;
+    boost::python::list ssNameX2(int ind) const;
+    boost::python::list objectIds() const;
+    boost::python::list objectIdsOfType(const PyRxClass& _class) const;
+    boost::python::list objectIdsOfTypeList(const boost::python::list& _classes) const;//must be list
+
+    PyDbObjectIdArray   objectIdArray1() const;
+    PyDbObjectIdArray   objectIdArray2(const PyRxClass& _class) const;
+    PyDbObjectIdArray   objectIdArray3(const boost::python::list& _classes) const;
+
+    void                forceKeepAlive(bool keepIt) const;
     AcDbObjectIdArray   objectIdsImpl() const;
-public:
-    void filliterator();
-    std::vector<PyDbObjectId>::iterator begin();
-    std::vector<PyDbObjectId>::iterator end();
-    std::vector<PyDbObjectId> m_iterable{ 0 };
 public:
     PySSName* impObj(const std::source_location& src = std::source_location::current()) const;
 public:
