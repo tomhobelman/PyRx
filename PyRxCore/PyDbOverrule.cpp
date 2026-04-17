@@ -12,8 +12,8 @@ static std::mutex PyDbObjectOverruleMutex;
 void makePyDbObjectOverruleWrapper()
 {
     PyDocString DS("DbObjectOverrule");
-    class_<PyDbObjectOverrule, bases<PyRxOverrule>>("DbObjectOverrule")
-        .def(init<>(DS.ARGS()))
+    class_<PyDbObjectOverrule, bases<PyRxOverrule>, boost::noncopyable>("DbObjectOverrule")
+        .def(init<>(DS.ARGS(7101)))
         .def("isApplicable", &PyDbObjectOverrule::isApplicableWr, DS.ARGS({ "object: PyRx.RxObject" }))
         .def("open", &PyDbObjectOverrule::openWr, DS.ARGS({ "object: PyDb.DbObject","mode: OpenMode" }))
         .def("close", &PyDbObjectOverrule::closeWr, DS.ARGS({ "object: PyDb.DbObject" }))
@@ -310,12 +310,13 @@ AcDbObjectOverrule* PyDbObjectOverrule::impObj(const std::source_location& src /
     return static_cast<AcDbObjectOverrule*>(m_pyImp.get());
 }
 
+
 //-----------------------------------------------------------------------------------------
 //PyDbOsnapOverrule
 void makePyDbOsnapOverruleWrapper()
 {
     PyDocString DS("OsnapOverrule");
-    class_<PyDbOsnapOverrule, bases<PyRxOverrule>>("OsnapOverrule")
+    class_<PyDbOsnapOverrule, bases<PyRxOverrule>, boost::noncopyable>("OsnapOverrule")
         .def(init<>(DS.ARGS()))
 
         .def("isApplicable", &PyDbOsnapOverrule::isApplicableWr, DS.ARGS({ "object: PyRx.RxObject" }))
@@ -338,6 +339,7 @@ void makePyDbOsnapOverruleWrapper()
         .def("desc", &PyDbOsnapOverrule::desc, DS.SARGS(15560)).staticmethod("desc")
         ;
 }
+
 
 static std::mutex PyDbOsnapOverruleMutex;
 
@@ -405,7 +407,6 @@ Acad::ErrorStatus PyDbOsnapOverrule::getOsnapPoints(
         return eOk;
     }
     return eInvalidInput;
-
 }
 
 Acad::ErrorStatus PyDbOsnapOverrule::getOsnapPoints(const AcDbEntity* pSubject,

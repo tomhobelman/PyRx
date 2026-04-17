@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import pytest
-from tests import HOST
-from pyrx import Ap, Ge, Ax
+
+from pyrx import Ap, Ge
 
 
 class TestAx3DPolyline:
@@ -97,7 +98,6 @@ class TestAx3DPolyline:
         ent = axSpace.add3DPoly(pnts)
 
         entinfo = set()
-        ent: Ax.AcadEntity
         i = 0
         for ent in ent.explode():
             i += 1

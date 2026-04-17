@@ -12,6 +12,7 @@ void makePyApApplictionWrapper();
 class PyApApplication
 {
 public:
+    static PyObject* getwxApp();
     static PyApDocManager       docManager();
     static PyAcadApplication    acadApplication();
     static void                 applyHostIcon(UINT_PTR hwnd);
@@ -19,7 +20,6 @@ public:
     static UINT_PTR             mainWnd();
     static std::string          className();
     static UINT_PTR             acadGetIDispatch();
-    static PyObject* getwxApp();
     static std::string          hostAPI();
     static std::string          hostAPIVER();
     static std::string          hostFileInfo();
@@ -33,12 +33,19 @@ public:
     static boost::python::object reloadPythonModule(const std::string& fullpath);
     static std::string          getPyRxModulePath();
     static std::string          getPyRxModuleName();
+    static std::string          getLocalAppDataPath1();
+    static std::string          getLocalAppDataPath2(bool createIfNotFound);
+    static std::string          getAppDataPath1();
+    static std::string          getAppDataPath2(bool createIfNotFound);
     static boost::python::list  getLoadedModules();
     static boost::python::list  getLoadedModuleNames();
     static void                 acedWatchWinMsgFn(const MSG* message);
     static int                  showModalDialog1(const boost::python::object& window);
-    static void                 apregcommand(const std::string& fullpath, const std::string& modulename, const std::string& name, const boost::python::object& func, int flags);
+    static void                 appregcommand(const std::string& fullpath, const std::string& modulename, const std::string& name, const boost::python::object& func, int flags);
     static void                 apremovecommand(const std::string& modulename, const std::string& name);
+
+    static boost::python::list  listFilesInPath(const std::string& spath, const std::string& ext);
+    static boost::python::list  listFilesInPathRecursive(const std::string& spath, const std::string& ext);
     static std::string          testFlags(PyRxTestFlags flags);
 
 public:
@@ -57,7 +64,7 @@ public:
     ~PyApResourceOverride() = default;
     static std::string className();
 public:
-    CAcModuleResourceOverride myResources;
+    std::shared_ptr<CAcModuleResourceOverride> myResources{ new CAcModuleResourceOverride() };
 };
 
 #pragma pack (pop)

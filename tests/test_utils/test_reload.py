@@ -13,6 +13,7 @@ from pyrx.utils.reload import Reloader
 
 BASE_DIR = Path(__file__).parent
 PACKAGE = "tests.test_utils"
+RESOURCES = BASE_DIR / "resources/reload"
 
 
 @contextmanager
@@ -58,6 +59,7 @@ def create_temp_module(name: str, is_package=False):
                         shutil.rmtree(pycache_path)
                     path.rmdir()
 
+@pytest.mark.known_failure_IRX #no evaluateLisp
 class Test_Reload:
     @pytest.mark.slow
     def test_reload(self):
@@ -67,9 +69,9 @@ class Test_Reload:
                 with create_temp_module("package1.module2") as (m12_name, m12_path):
                     with create_temp_module("package2.module2") as (m22_name, m22_path):
                         m112 = importlib.import_module(m112_name)
-                        m12 = importlib.import_module(m12_name)
-                        m21 = importlib.import_module(m21_name)
-                        m22 = importlib.import_module(m22_name)
+                        m12 = importlib.import_module(m12_name) #noqa: F841
+                        m21 = importlib.import_module(m21_name) #noqa: F841
+                        m22 = importlib.import_module(m22_name) #noqa: F841
                         to_reload = set(reloader.modules_to_reload)
                         assert len(to_reload) == 7
                         assert m112_name in to_reload
@@ -122,7 +124,19 @@ class Test_Reload:
             Ap.Application.reloadPythonModule(str(m1_path))
             assert capsys.readouterr().out == "reloaded\n"
 
+    def test_register_func_with_exception(self, capsys: pytest.CaptureFixture[str]):
+        module_path = RESOURCES / "m_test_reload_with_exception.py"
+        Ed.Core.evaluateLisp(f'(adspyload "{module_path.as_posix()}")\n')
+        assert capsys.readouterr().out == ""
+        Ed.Core.evaluateLisp(f'(adspyreload "{module_path.as_posix()}")\n')
+        stderr = capsys.readouterr().err
+        assert (
+            stderr.startswith("Traceback (most recent call last):\n")
+            and str(RuntimeError("Reload exception")) in stderr
+        )
 
+
+@pytest.mark.known_failure_IRX #no evaluateLisp
 class Test_reload_func:
     def test_valid(self, tmp_path: Path):
         with (

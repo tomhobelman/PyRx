@@ -42,10 +42,25 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: Microsoft :: Windows",
 ]
-dependencies = ["wxpython>=4.2.3", "pywin32", "debugpy>=1.8.0"]
+dependencies = [
+    "wxpython>=4.2.3; os_name == 'nt'", # Hard to install on Ubuntu for the CI
+    "pywin32; os_name == 'nt'",
+    "debugpy>=1.8.0",
+    "pydantic_settings",
+]
 
 [project.optional-dependencies]
-dev = ["pytest", "build", "ruff"]
+dev = [
+    "pytest",
+    "build",
+    "ruff",
+    "python-dotenv[cli]",
+    "pre-commit",
+    "mypy",
+    "types-pywin32",
+    "asttokens",
+    "setuptools-scm>=8",
+]
 ptrepl = ["ptpython", "prompt_toolkit"]
 
 [project.urls]
@@ -55,3 +70,58 @@ Issues = "https://github.com/CEXT-Dan/PyRx/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+per-file-ignores = { "tests/**/*.py" = ["E711", "E712"] }
+
+[tool.ruff.lint.isort]
+known-first-party = ["pyrx"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.mypy]
+disable_error_code = "overload-cannot-match"
+follow_imports = "skip"
+check_untyped_defs = true
+files = [
+    "pyrx/*/**/*.py",
+    "pyrx/_host_init.py",
+    "pyrx/commands.py",
+    "pyrx/console.py",
+    "pyrx/PyAp.pyi",
+    "pyrx/PyAx.pyi",
+    "pyrx/PyBr.pyi",
+    "pyrx/PyBrx.pyi",
+    "pyrx/PyBrxBim.pyi",
+    "pyrx/PyBrxCv.pyi", 
+    "pyrx/PyDb.pyi",
+    "pyrx/PyEd.pyi", 
+    "pyrx/PyGe.pyi", 
+    "pyrx/PyGi.pyi",
+    "pyrx/PyGs.pyi",
+    "pyrx/PyPl.pyi",
+    "pyrx/PyRx.pyi",
+    "pyrx/PyRxDebug.py",
+    "pyrx/PySm.pyi",
+    #    "PySamples",  # Needs extra work
+    #    "tests",
+    "gen_pyi.py",
+    "in_test_runner.py",
+]
+ignore_missing_imports = true
+
+
+[[tool.mypy.overrides]]
+module = ["wx.*", "debugpy.*"]
+ignore_missing_imports = true

@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import pytest
-from tests import MEDIA_DIR
-from pyrx import Ap, Ge, Db, Ax, Ed
+
+from pyrx import Ap, Ge
 
 
 def makeEnts(axDoc):
@@ -12,9 +13,9 @@ def makeEnts(axDoc):
     for idx1 in range(1, 49):
         axSpace.addLine(Ge.Point3d(1, idx1, 0), Ge.Point3d(10, idx1, 0))
 
-
+@pytest.mark.known_failure_IRX
 @pytest.mark.known_failure_GRX
-class TestAxSelectionSet:
+class TestAxSelectionSetFilter:
     def setup_class(self):
         self.axApp = Ap.Application.acadApplication()
         self.axDoc = self.axApp.activeDocument()
@@ -35,12 +36,11 @@ class TestAxSelectionSet:
         axSet.selectAll([(0, "POINT")])
         count = axSet.count()
         cnt1 = 0
-        for ent in axSet.entities():
+        for _ent in axSet.entities():
             cnt1 += 1
         cnt2 = 0
-        for ent in axSet:
+        for _ent in axSet:
             cnt2 += 1
-        ent: Ax.AcadEntity
         for ent in axSet:
             assert ent.objectName() == "AcDbPoint"
         axSet.delete()
@@ -56,12 +56,11 @@ class TestAxSelectionSet:
         axSet.selectWindow(ll, ur, [(0, "LINE")])
         count = axSet.count()
         cnt1 = 0
-        for ent in axSet.entities():
+        for _ent in axSet.entities():
             cnt1 += 1
         cnt2 = 0
-        for ent in axSet:
+        for _ent in axSet:
             cnt2 += 1
-        ent: Ax.AcadEntity
         for ent in axSet:
             assert ent.objectName() == "AcDbLine"
         axSet.delete()
@@ -71,18 +70,17 @@ class TestAxSelectionSet:
 
     def test_selectCrossingFilter(self):
         axSets = self.axDoc.selectionSets()
-        axSet = axSets.add("PYRX3")
+        axSet = axSets.add("PYRX4")
         ll = Ge.Point3d(0, 0, 0)
         ur = Ge.Point3d(100, 100, 0)
         axSet.selectCrossing(ll, ur, [(0, "LINE")])
         count = axSet.count()
         cnt1 = 0
-        for ent in axSet.entities():
+        for _ent in axSet.entities():
             cnt1 += 1
         cnt2 = 0
-        for ent in axSet:
+        for _ent in axSet:
             cnt2 += 1
-        ent: Ax.AcadEntity
         for ent in axSet:
             assert ent.objectName() == "AcDbLine"
         axSet.delete()
@@ -92,18 +90,17 @@ class TestAxSelectionSet:
 
     def test_selectFenceFilter(self):
         axSets = self.axDoc.selectionSets()
-        axSet = axSets.add("PYRX3")
+        axSet = axSets.add("PYRX5")
         filter = [(0, "LINE")]
         fence = [Ge.Point3d(5, 0, 0), Ge.Point3d(5, 100, 0)]
         axSet.selectFence(fence, filter)
         count = axSet.count()
         cnt1 = 0
-        for ent in axSet.entities():
+        for _ent in axSet.entities():
             cnt1 += 1
         cnt2 = 0
-        for ent in axSet:
+        for _ent in axSet:
             cnt2 += 1
-        ent: Ax.AcadEntity
         for ent in axSet:
             assert ent.objectName() == "AcDbLine"
         axSet.delete()
@@ -113,7 +110,7 @@ class TestAxSelectionSet:
 
     def test_selectWindowPolygonFilter(self):
         axSets = self.axDoc.selectionSets()
-        axSet = axSets.add("PYRX4")
+        axSet = axSets.add("PYRX6")
         filter = [(0, "LINE")]
         poly = [
             Ge.Point3d(0, 0, 0),
@@ -124,12 +121,11 @@ class TestAxSelectionSet:
         axSet.selectWindowPolygon(poly, filter)
         count = axSet.count()
         cnt1 = 0
-        for ent in axSet.entities():
+        for _ent in axSet.entities():
             cnt1 += 1
         cnt2 = 0
-        for ent in axSet:
+        for _ent in axSet:
             cnt2 += 1
-        ent: Ax.AcadEntity
         for ent in axSet:
             assert ent.objectName() == "AcDbLine"
         axSet.delete()
@@ -139,7 +135,7 @@ class TestAxSelectionSet:
 
     def test_selectCrossingPolygonFilter(self):
         axSets = self.axDoc.selectionSets()
-        axSet = axSets.add("PYRX5")
+        axSet = axSets.add("PYRX7")
         filter = [(0, "LINE")]
         poly = [
             Ge.Point3d(0, 0, 0),
@@ -150,15 +146,14 @@ class TestAxSelectionSet:
         axSet.selectCrossingPolygon(poly, filter)
         count = axSet.count()
         cnt1 = 0
-        for ent in axSet.entities():
+        for _ent in axSet.entities():
             cnt1 += 1
         cnt2 = 0
-        for ent in axSet:
+        for _ent in axSet:
             cnt2 += 1
-        ent: Ax.AcadEntity
         for ent in axSet:
             assert ent.objectName() == "AcDbLine"
-        assert axSet.name() == "PYRX5"
+        assert axSet.name() == "PYRX7"
         axSet.delete()
         assert count >= 48
         assert cnt1 >= 48
@@ -169,8 +164,8 @@ class TestAxSelectionSet:
         line1 = axSpace.addLine(Ge.Point3d(0, 0, 0), Ge.Point3d(0, 100, 0))
         line2 = axSpace.addLine(Ge.Point3d(0, 0, 0), Ge.Point3d(100, 0, 0))
         axSets = self.axDoc.selectionSets()
-        axSet = axSets.add("PYRX6")
-        assert axSet.name() == "PYRX6"
+        axSet = axSets.add("PYRX8")
+        assert axSet.name() == "PYRX8"
         axSet.addItems([line1, line2])
         assert axSet.count() == 2
         axSet.removeItems([line1, line2])

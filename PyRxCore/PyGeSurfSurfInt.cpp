@@ -8,7 +8,7 @@ using namespace boost::python;
 
 void makePyGeSurfSurfIntWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
         "- srf1: PyGe.Surface, srf2: PyGe.Surface\n"
@@ -18,7 +18,7 @@ void makePyGeSurfSurfIntWrapper()
     class_<PyGeSurfSurfInt, bases<PyGeEntity3d>>("SurfSurfInt")
         .def(init<>())
         .def(init<const PyGeSurface&, const PyGeSurface&>())
-        .def(init<const PyGeSurface&, const PyGeSurface&, const AcGeTol&>(DS.CTOR(ctor)))
+        .def(init<const PyGeSurface&, const PyGeSurface&, const AcGeTol&>(DS.CTOR(ctor, 12791)))
         .def("surface1", &PyGeSurfSurfInt::surface1, DS.ARGS())
         .def("surface2", &PyGeSurfSurfInt::surface2, DS.ARGS())
         .def("tolerance", &PyGeSurfSurfInt::tolerance, DS.ARGS())
@@ -31,7 +31,7 @@ void makePyGeSurfSurfIntWrapper()
         .def("getDimension", &PyGeSurfSurfInt::getDimension, DS.ARGS({ "intNum: int" }))
         .def("getType", &PyGeSurfSurfInt::getType, DS.ARGS({ "intNum: int" }))
         .def("set", &PyGeSurfSurfInt::set1)
-        .def("set", &PyGeSurfSurfInt::set2, DS.ARGS({ "srf1: PyGe.Surface","srf2: PyGe.Surface","tol: PyGe.Tol=None" }))
+        .def("set", &PyGeSurfSurfInt::set2, DS.ARGS({ "srf1: PyGe.Surface","srf2: PyGe.Surface","tol: PyGe.Tol = ..." }))
         .def("cast", &PyGeSurfSurfInt::cast, DS.SARGS({ "otherObject: PyGe.Entity3d" })).staticmethod("cast")
         .def("copycast", &PyGeSurfSurfInt::copycast, DS.SARGS({ "otherObject: PyGe.Entity3d" })).staticmethod("copycast")
         .def("className", &PyGeSurfSurfInt::className, DS.SARGS()).staticmethod("className")
@@ -39,7 +39,7 @@ void makePyGeSurfSurfIntWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeSurfSurfInt::PyGeSurfSurfInt()
     : PyGeEntity3d(new AcGeSurfSurfInt())
 {
@@ -80,7 +80,7 @@ AcGeTol PyGeSurfSurfInt::tolerance() const
     return impObj()->tolerance();
 }
 
-int PyGeSurfSurfInt::numResults()
+int PyGeSurfSurfInt::numResults() const
 {
     AcGe::AcGeIntersectError err = AcGe::kXXOk;
     int result = impObj()->numResults(err);
@@ -162,12 +162,12 @@ int PyGeSurfSurfInt::getType(int intNum) const
     return result;
 }
 
-void PyGeSurfSurfInt::set1(const PyGeSurface& srf1, const PyGeSurface& srf2)
+void PyGeSurfSurfInt::set1(const PyGeSurface& srf1, const PyGeSurface& srf2) const
 {
     impObj()->set(*srf1.impObj(), *srf2.impObj());
 }
 
-void PyGeSurfSurfInt::set2(const PyGeSurface& srf1, const PyGeSurface& srf2, const AcGeTol& tol)
+void PyGeSurfSurfInt::set2(const PyGeSurface& srf1, const PyGeSurface& srf2, const AcGeTol& tol) const
 {
     impObj()->set(*srf1.impObj(), *srf2.impObj(), tol);
 }

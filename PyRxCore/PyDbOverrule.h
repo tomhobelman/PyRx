@@ -148,4 +148,5 @@ public:
     mutable bool reg_getOsnapPoints = true;
     mutable bool reg_getOsnapPointsXform = true;
 };
+
 #pragma pack (pop)

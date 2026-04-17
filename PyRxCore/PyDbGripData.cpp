@@ -7,7 +7,7 @@ void makePyDbGripDataWrapper()
 {
     PyDocString DS("GripData");
     class_<PyDbGripData>("GripData")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.ARGS(5083)))
         .def("gripPoint", &PyDbGripData::gripPoint, DS.ARGS(5100))
         .def("setGripPoint", &PyDbGripData::setGripPoint, DS.ARGS({ "pt: PyGe.Point3d" }, 5123))
         .def("className", &PyDbGripData::className, DS.SARGS()).staticmethod("className")
@@ -29,7 +29,7 @@ AcGePoint3d PyDbGripData::gripPoint() const
     return impObj()->gripPoint();
 }
 
-void PyDbGripData::setGripPoint(const AcGePoint3d& pt)
+void PyDbGripData::setGripPoint(const AcGePoint3d& pt) const
 {
     impObj()->setGripPoint(pt);
 }

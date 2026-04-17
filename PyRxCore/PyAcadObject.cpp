@@ -2,6 +2,9 @@
 #include "PyAcadObject.h"
 #include "PyAcadObjectImpl.h"
 #include "PyDbEval.h"
+#include "PyAcadApplication.h"
+#include "PyAcadApplicationImpl.h"
+#include "PyCmColorBase.h"
 
 using namespace boost::python;
 
@@ -11,11 +14,15 @@ void makePyAcadAcCmColorWrapper()
 {
     constexpr const std::string_view initOverloads = "Overloads:\n"
         "- None: Any\n"
-        "- r: int, g: int, b: int\n";
+        "- htmlColor: str\n"
+        "- colorIndex: PyAx.AcColor\n"
+        "- red: int, green: int, blue: int\n";
 
     PyDocString DS("AcadAcCmColor");
     class_<PyAcadAcCmColor>("AcadAcCmColor")
         .def(init<>())
+        .def(init<PyAcColor>())
+        .def(init<const std::string&>())
         .def(init<Adesk::UInt8, Adesk::UInt8, Adesk::UInt8>(DS.CTOR(initOverloads)))
         .def("setEntityColor", &PyAcadAcCmColor::setEntityColor, DS.ARGS({ "val:int" }))
         .def("entityColor", &PyAcadAcCmColor::entityColor, DS.ARGS())
@@ -28,6 +35,8 @@ void makePyAcadAcCmColorWrapper()
         .def("blue", &PyAcadAcCmColor::blue, DS.ARGS())
         .def("setRGB", &PyAcadAcCmColor::setRGB, DS.ARGS({ "red:int", "green:int", "blue:int" }))
         .def("colorMethod", &PyAcadAcCmColor::colorMethod, DS.ARGS())
+        .def("toHTMLColor", &PyAcadAcCmColor::toHTMLColor, DS.ARGS())
+        .def("fromHTMLColor", &PyAcadAcCmColor::fromHTMLColor, DS.ARGS({"colorString: str"}))
         .def("setColorMethod", &PyAcadAcCmColor::setColorMethod, DS.ARGS({ "flags:PyAx.AcColorMethod" }))
         .def("colorIndex", &PyAcadAcCmColor::colorIndex, DS.ARGS())
         .def("setColorIndex", &PyAcadAcCmColor::setColorIndex, DS.ARGS({ "flags:PyAx.AcColor" }))
@@ -41,9 +50,22 @@ PyAcadAcCmColor::PyAcadAcCmColor()
 {
 }
 
+PyAcadAcCmColor::PyAcadAcCmColor(PyAcColor colorindex)
+    : m_pyImp(PyIAcadAcCmColorImpl::CreateInstance())
+{
+    this->setColorIndex(colorindex);
+}
+
 PyAcadAcCmColor::PyAcadAcCmColor(Adesk::UInt8 r, Adesk::UInt8 g, Adesk::UInt8 b)
     : m_pyImp(PyIAcadAcCmColorImpl::CreateInstance())
 {
+    this->setRGB(r, g, b);
+}
+
+PyAcadAcCmColor::PyAcadAcCmColor(const std::string& val)
+    : m_pyImp(PyIAcadAcCmColorImpl::CreateInstance())
+{
+    auto [r, g, b] = hexToRGB(val);
     this->setRGB(r, g, b);
 }
 
@@ -70,6 +92,17 @@ std::string PyAcadAcCmColor::colorName() const
 std::string PyAcadAcCmColor::bookName() const
 {
     return wstr_to_utf8(impObj()->GetBookName());
+}
+
+std::string PyAcadAcCmColor::toHTMLColor() const
+{
+    return rgbToHex(impObj()->GetRed(), impObj()->GetGreen(), impObj()->GetBlue());
+}
+
+void PyAcadAcCmColor::fromHTMLColor(const std::string& code) const
+{
+    auto [r, g, b] = hexToRGB(code);
+    impObj()->SetRGB(r, g, b);
 }
 
 void PyAcadAcCmColor::setNames(const std::string& colorName, const std::string& bookName) const
@@ -147,12 +180,12 @@ void makePyAcadHyperlinkWrapper()
     PyDocString DS("AcadHyperlink");
     class_<PyAcadHyperlink>("AcadHyperlink", boost::python::no_init)
         .def("url", &PyAcadHyperlink::url, DS.ARGS())
-        .def("setURL", &PyAcadHyperlink::setURL, DS.ARGS({ "val:str" }))
+        .def("setURL", &PyAcadHyperlink::setURL, DS.ARGS({ "url_val:str" }))
         .def("urlDescription", &PyAcadHyperlink::urlDescription, DS.ARGS())
-        .def("setURLDescription", &PyAcadHyperlink::setURLDescription, DS.ARGS({ "val:str" }))
+        .def("setURLDescription", &PyAcadHyperlink::setURLDescription, DS.ARGS({ "description:str" }))
         .def("clear", &PyAcadHyperlink::clear, DS.ARGS())
         .def("urlNamedLocation", &PyAcadHyperlink::urlNamedLocation, DS.ARGS())
-        .def("setURLNamedLocation", &PyAcadHyperlink::setURLNamedLocation, DS.ARGS({ "val:str" }))
+        .def("setURLNamedLocation", &PyAcadHyperlink::setURLNamedLocation, DS.ARGS({ "named_location:str" }))
         .def("className", &PyAcadHyperlink::className, DS.SARGS()).staticmethod("className")
         ;
 }
@@ -218,8 +251,8 @@ void makePyAcadHyperlinksWrapper()
     class_<PyAcadHyperlinks>("AcadHyperlinks", boost::python::no_init)
         .def("count", &PyAcadHyperlinks::count, DS.ARGS())
         .def("item", &PyAcadHyperlinks::item, DS.ARGS({ "index: int" }))
-        .def("add", &PyAcadHyperlinks::add, DS.ARGS({ "index: int" }))
-        .def("__getitem__", &PyAcadHyperlinks::item, DS.ARGS({ "name: str", "description: str","namedLocation: str" }))
+        .def("add", &PyAcadHyperlinks::add, DS.ARGS({ "name: str", "description: str","namedLocation: str" }))
+        .def("__getitem__", &PyAcadHyperlinks::item, DS.ARGS({ "index: int" }))
         .def("className", &PyAcadHyperlinks::className, DS.SARGS()).staticmethod("className")
         ;
 }
@@ -269,8 +302,8 @@ void makePyAcadSectionTypeSettingsWrapper()
         .def("setGenerationOptions", &PyAcadSectionTypeSettings::setGenerationOptions, DS.ARGS({ "val:PyAx.AcSectionGeneration" }))
         .def("sourceObjects", &PyAcadSectionTypeSettings::sourceObjects, DS.ARGS())
         .def("setSourceObjects", &PyAcadSectionTypeSettings::setSourceObjects, DS.ARGS({ "ids:list[PyDb.ObjectId]" }))
-        //.def("destinationBlock", &PyAcadSectionTypeSettings::destinationBlock, DS.ARGS())
-        //.def("setDestinationBlock", &PyAcadSectionTypeSettings::setDestinationBlock, DS.ARGS({ "val:PyAx.AcadBlock" }))
+        .def("destinationBlock", &PyAcadSectionTypeSettings::destinationBlock, DS.ARGS())
+        .def("setDestinationBlock", &PyAcadSectionTypeSettings::setDestinationBlock, DS.ARGS({ "val:PyAx.AcadBlock" }))
         .def("destinationFile", &PyAcadSectionTypeSettings::destinationFile, DS.ARGS())
         .def("setDestinationFile", &PyAcadSectionTypeSettings::setDestinationFile, DS.ARGS({ "val:str" }))
         .def("intersectionBoundaryColor", &PyAcadSectionTypeSettings::intersectionBoundaryColor, DS.ARGS())
@@ -390,6 +423,16 @@ boost::python::list PyAcadSectionTypeSettings::sourceObjects() const
 void PyAcadSectionTypeSettings::setSourceObjects(const boost::python::list& ids) const
 {
     impObj()->SetSourceObjects(PyListToObjectIdArray(ids));
+}
+
+PyAcadBlock PyAcadSectionTypeSettings::destinationBlock() const
+{
+    return PyAcadBlock{ impObj()->GetDestinationBlock() };
+}
+
+void PyAcadSectionTypeSettings::setDestinationBlock(const PyAcadBlock& val) const
+{
+    impObj()->SetDestinationBlock(*val.impObj());
 }
 
 std::string PyAcadSectionTypeSettings::destinationFile() const
@@ -3637,7 +3680,7 @@ void makePyAcadMenuGroupsWrapper()
         .def("count", &PyAcadMenuGroups::count, DS.ARGS())
         .def("item", &PyAcadMenuGroups::item, DS.ARGS({ "idx : int" }))
         .def("load", &PyAcadMenuGroups::load1)
-        .def("load", &PyAcadMenuGroups::load2, DS.ARGS({ "menuFileName : str","baseMenu : PyAx.AcadMenuGroup = None" }))
+        .def("load", &PyAcadMenuGroups::load2, DS.ARGS({ "menuFileName : str","baseMenu : PyAx.AcadMenuGroup = ..." }))
         .def("__getitem__", &PyAcadMenuGroups::item, DS.ARGS({ "index: int" }))
         .def("className", &PyAcadMenuGroups::className, DS.SARGS()).staticmethod("className")
         ;

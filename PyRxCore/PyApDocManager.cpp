@@ -10,21 +10,21 @@ using namespace boost::python;
 void makePyApDocManagerReactorWrapper()
 {
     PyDocString DS("DocManagerReactor");
-    class_<PyApDocManagerReactor>("DocManagerReactor")
+    class_<PyApDocManagerReactor, boost::noncopyable>("DocManagerReactor")
         .def(init<>(DS.ARGS(78)))
-        .def("documentCreateStarted", &PyApDocManagerReactor::documentCreateStartedWr, DS.ARGS({ "val : Document" }, 85))
-        .def("documentCreated", &PyApDocManagerReactor::documentCreatedWr, DS.ARGS({ "val : Document" }, 84))
-        .def("documentToBeDestroyed", &PyApDocManagerReactor::documentToBeDestroyedWr, DS.ARGS({ "val : Document" }, 93))
-        .def("documentDestroyed", &PyApDocManagerReactor::documentDestroyedWr, DS.ARGS({ "val : str" }, 86))
-        .def("documentCreateCanceled", &PyApDocManagerReactor::documentCreateCanceledWr, DS.ARGS({ "val : Document" }, 83))
+        .def("documentCreateStarted", &PyApDocManagerReactor::documentCreateStartedWr, DS.ARGS({ "doc : Document" }, 85))
+        .def("documentCreated", &PyApDocManagerReactor::documentCreatedWr, DS.ARGS({ "doc : Document" }, 84))
+        .def("documentToBeDestroyed", &PyApDocManagerReactor::documentToBeDestroyedWr, DS.ARGS({ "doc : Document" }, 93))
+        .def("documentDestroyed", &PyApDocManagerReactor::documentDestroyedWr, DS.ARGS({ "doc : str" }, 86))
+        .def("documentCreateCanceled", &PyApDocManagerReactor::documentCreateCanceledWr, DS.ARGS({ "doc : Document" }, 83))
         .def("documentLockModeWillChange", &PyApDocManagerReactor::documentLockModeWillChangeWr, DS.ARGS({ "myCurMode : DocLockMode","myNewMode : DocLockMode" ,"curMode : DocLockMode","globalCmdName : str" }, 89))
         .def("documentLockModeChangeVetoed", &PyApDocManagerReactor::documentLockModeChangeVetoedWr, DS.ARGS({ "doc : Document", "globalCmdName : str" }, 88))
         .def("documentLockModeChanged", &PyApDocManagerReactor::documentLockModeChangedWr, DS.ARGS({ "doc : Document","myPrevMode : DocLockMode" ,"myCurMode : DocLockMode","currentMode : DocLockMode","globalCmdName : str" }, 87))
-        .def("documentBecameCurrent", &PyApDocManagerReactor::documentBecameCurrentWr, DS.ARGS({ "val : Document" }, 82))
-        .def("documentToBeActivated", &PyApDocManagerReactor::documentToBeActivatedWr, DS.ARGS({ "val : Document" }, 91))
-        .def("documentToBeDeactivated", &PyApDocManagerReactor::documentToBeDeactivatedWr, DS.ARGS({ "val : Document" }, 92))
-        .def("documentActivationModified", &PyApDocManagerReactor::documentActivationModifiedWr, DS.ARGS({ "val : bool" }, 81))
-        .def("documentActivated", &PyApDocManagerReactor::documentActivatedWr, DS.ARGS({ "val : Document" }, 80))
+        .def("documentBecameCurrent", &PyApDocManagerReactor::documentBecameCurrentWr, DS.ARGS({ "doc : Document" }, 82))
+        .def("documentToBeActivated", &PyApDocManagerReactor::documentToBeActivatedWr, DS.ARGS({ "doc : Document" }, 91))
+        .def("documentToBeDeactivated", &PyApDocManagerReactor::documentToBeDeactivatedWr, DS.ARGS({ "doc : Document" }, 92))
+        .def("documentActivationModified", &PyApDocManagerReactor::documentActivationModifiedWr, DS.ARGS({ "doc : bool" }, 81))
+        .def("documentActivated", &PyApDocManagerReactor::documentActivatedWr, DS.ARGS({ "doc : Document" }, 80))
         .def("addReactor", &PyApDocManagerReactor::addReactor, DS.ARGS(97))
         .def("removeReactor", &PyApDocManagerReactor::removeReactor, DS.ARGS(127))
         ;
@@ -399,7 +399,7 @@ void makePyApDocManagerWrapper()
         .def("document", &PyApDocManager::document, DS.ARGS({ "db: PyDb.Database" }, 112))
         .def("lockDocument", &PyApDocManager::lockDocument1)
         .def("lockDocument", &PyApDocManager::lockDocument2)
-        .def("lockDocument", &PyApDocManager::lockDocument3, DS.ARGS({ "doc: PyAp.Document", "mode: PyAp.DocLockMode = kWrite","gcmd: str = None","lcmd: str = None","prmt: bool = True" }, 120))
+        .def("lockDocument", &PyApDocManager::lockDocument3, DS.ARGS({ "doc: PyAp.Document", "mode: PyAp.DocLockMode = kWrite","gcmd: str = ...","lcmd: str = ...","prmt: bool = True" }, 120))
         .def("unlockDocument", &PyApDocManager::unlockDocument, DS.ARGS({ "doc: PyAp.Document" }, 132))
         .def("documents", &PyApDocManager::newAcApDocumentIterator, DS.ARGS())
         .def("setDefaultFormatForSave", &PyApDocManager::setDefaultFormatForSave, DS.ARGS({ "fmt : PyAp.SaveFormat" }, 131))
@@ -429,7 +429,8 @@ void makePyApDocManagerWrapper()
         .def("executeInApplicationContext", &PyApDocManager::executeInApplicationContext, DS.ARGS({ "func: Any","data: Any" }, 115))
         .def("beginExecuteInCommandContext", &PyApDocManager::beginExecuteInCommandContext, DS.ARGS({ "func: Any","data: Any" }, 105))
         .def("beginExecuteInApplicationContext", &PyApDocManager::beginExecuteInApplicationContext, DS.ARGS({ "func: Any","data: Any" }, 104))
-        .def("autoLock", &PyApDocManager::autoLock, DS.SARGS(120)).staticmethod("autoLock")
+        .def("autoLock", &PyApDocManager::autoLock1)
+        .def("autoLock", &PyApDocManager::autoLock2, DS.SARGS({ "docToLock: PyAp.Document = ..." }, 120)).staticmethod("autoLock")
         .def("className", &PyApDocManager::className, DS.SARGS()).staticmethod("className")
         ;
 }
@@ -547,7 +548,7 @@ void PyApDocManager::appContextOpenDocument(const std::string& pszDrawingName) c
 
 void PyApDocManager::appContextRecoverDocument(const std::string& pszDrawingName) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->appContextRecoverDocument(utf8_to_wstr(pszDrawingName).c_str()));
@@ -678,9 +679,14 @@ Acad::ErrorStatus PyApDocManager::beginExecuteInApplicationContext(const boost::
 #endif
 }
 
-PyAutoDocLock PyApDocManager::autoLock()
+PyAutoDocLock PyApDocManager::autoLock1()
 {
     return PyAutoDocLock{};
+}
+
+PyAutoDocLock PyApDocManager::autoLock2(const PyApDocument& doc)
+{
+    return PyAutoDocLock{ doc };
 }
 
 std::string PyApDocManager::className()
@@ -702,30 +708,58 @@ void makePyAutoDocLockWrapper()
 {
     PyDocString DS("AutoDocLock");
     class_<PyAutoDocLock>("AutoDocLock")
-        .def(init<>(DS.ARGS(120)))
+        .def(init<>())
+        .def(init<const PyApDocument&>(DS.ARGS({ "docToLock: PyAp.Document = ..." }, 120)))
+        .def("doc", &PyAutoDocLock::doc, DS.ARGS())
         .def("className", &PyAutoDocLock::className, DS.SARGS()).staticmethod("className")
         ;
 }
 
 PyAutoDocLockImp::PyAutoDocLockImp()
+    : pDoc(curDoc())
 {
-    pDoc = curDoc();
-    if (pDoc != nullptr)
-        acDocManagerPtr()->lockDocument(pDoc);
+    PyThrowBadEs(acDocManagerPtr()->disableDocumentActivation());
+    PyThrowBadEs(acDocManagerPtr()->lockDocument(pDoc));
+}
+
+PyAutoDocLockImp::PyAutoDocLockImp(AcApDocument* doc)
+    : pDoc(doc)
+{
+    PyThrowBadEs(acDocManagerPtr()->disableDocumentActivation());
+    PyThrowBadEs(acDocManagerPtr()->lockDocument(pDoc));
 }
 
 PyAutoDocLockImp::~PyAutoDocLockImp()
 {
-    if (pDoc != nullptr)
-        acDocManagerPtr()->unlockDocument(pDoc);
+    PyThrowBadEs(acDocManagerPtr()->enableDocumentActivation());
+    PyThrowBadEs(acDocManagerPtr()->unlockDocument(pDoc));
 }
 
 PyAutoDocLock::PyAutoDocLock()
-    : imp(new PyAutoDocLockImp())
+    : m_pyImp(new PyAutoDocLockImp())
 {
+}
+
+PyAutoDocLock::PyAutoDocLock(const PyApDocument& doc)
+    : m_pyImp(new PyAutoDocLockImp(doc.impObj()))
+{
+}
+
+PyApDocument PyAutoDocLock::doc() const
+{
+    return PyApDocument(impObj());
 }
 
 std::string PyAutoDocLock::className()
 {
     return "AutoDocLock";
 }
+
+AcApDocument* PyAutoDocLock::impObj(const std::source_location& src /*= std::source_location::current()*/) const
+{
+    if (m_pyImp == nullptr || m_pyImp->pDoc == nullptr) [[unlikely]] {
+        throw PyNullObject(src);
+    }
+    return static_cast<AcApDocument*>(m_pyImp->pDoc);
+}
+

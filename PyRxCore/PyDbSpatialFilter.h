@@ -39,17 +39,17 @@ public:
         double                  elevation,
         double                  frontClip,
         double                  backClip,
-        Adesk::Boolean          enabled);
+        Adesk::Boolean          enabled) const;
 
-    boost::python::tuple        getDefinition();
+    boost::python::tuple        getDefinition() const;
 
     AcGeMatrix3d                getClipSpaceToWCSMatrix() const;
     AcGeMatrix3d                getOriginalInverseBlockXform() const;
-    void                        setPerspectiveCamera(const AcGePoint3d& fromPt);
+    void                        setPerspectiveCamera(const AcGePoint3d& fromPt) const;
     Adesk::Boolean              clipVolumeIntersectsExtents(const AcDbExtents& ext) const;
     Adesk::Boolean              hasPerspectiveCamera() const;
     bool                        isInverted() const;
-    void                        setInverted(bool bInverted);
+    void                        setInverted(bool bInverted) const;
 
     static PyRxClass            desc();
     static std::string          className();
@@ -57,6 +57,23 @@ public:
     static PyDbSpatialFilter    cast(const PyRxObject& src);
 public:
     AcDbSpatialFilter* impObj(const std::source_location& src = std::source_location::current()) const;
+};
+
+//----------------------------------------------------------------------------------------
+//PyDbIndexFilterManager
+void makePyDbIndexFilterManagerWrapper();
+
+class PyDbIndexFilterManager
+{
+public:
+    PyDbIndexFilterManager() = default;
+    ~PyDbIndexFilterManager() noexcept = default;
+    int                         numIndexes(const PyDbBlockTableRecord& pBtr);
+    static void                 addFilter(const PyDbBlockReference& pBlkRef, const PyDbSpatialFilter& pFilter);
+    static void                 removeFilter(const PyDbBlockReference& blkRef, const PyRxClass& key);
+    static PyDbSpatialFilter    getFilter1(const PyDbBlockReference& pRef, const PyRxClass& key, AcDb::OpenMode readOrWrite);
+    static PyDbSpatialFilter    getFilter2(const PyDbBlockReference& pRef, int index, AcDb::OpenMode readOrWrite);
+    static std::string          className();
 };
 
 //----------------------------------------------------------------------------------------
@@ -74,8 +91,8 @@ public:
     virtual ~PyDbLayerFilter() override = default;
     PyRxClass                 indexClass() const;
     Adesk::Boolean            isValid() const;
-    void                      add(const std::string& pLayer);
-    void                      remove(const std::string& pLayer);
+    void                      add(const std::string& pLayer) const;
+    void                      remove(const std::string& pLayer) const;
     std::string               getAt(int index) const;
     int                       layerCount() const;
     static PyRxClass          desc();

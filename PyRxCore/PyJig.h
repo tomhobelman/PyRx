@@ -7,6 +7,7 @@ class PyDbObjectId;
 
 class PyGiWorldDraw;
 class PyGiViewportDraw;
+
 //--------------------------------------------------------------------------------------------------------
 //PyJig
 void makePyEdJigWrapper();
@@ -14,14 +15,14 @@ class PyJig : public AcEdJig, public boost::python::wrapper<PyJig>
 {
 public:
     PyJig(const PyDbEntity& ent);
-    virtual ~PyJig() = default;
+    virtual ~PyJig() override = default;
     AcEdJig::DragStatus         dragwr1();
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     AcEdJig::DragStatus         dragwr2(const AcEdDragStyle& style);
 #endif
     virtual AcEdJig::DragStatus sampler() override;
     virtual Adesk::Boolean      update() override;
-    virtual AcDbEntity* entity() const override;
+    virtual AcDbEntity*/*     */entity() const override;
     PyDbObjectId                appendwr();
     std::string                 keywordListWr();
     void                        setKeywordListWr(const std::string& val);
@@ -43,7 +44,6 @@ public:
     AcDbEntity* m_pEnt = nullptr;
 };
 
-
 //--------------------------------------------------------------------------------------------------------
 //PyDrawJig
 void makePyEdDrawJigWrapper();
@@ -52,9 +52,10 @@ class PyDrawJig : public AcEdJig, public AcDbEntity, public boost::python::wrapp
 {
 public:
     PyDrawJig();
+    virtual ~PyDrawJig() override = default;
     AcEdJig::DragStatus         dragwr1();
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     AcEdJig::DragStatus         dragwr2(const AcEdDragStyle& style);
 #endif
     virtual AcEdJig::DragStatus sampler() override;
@@ -78,7 +79,7 @@ public:
     virtual void                viewportDrawWr(PyGiViewportDraw& vd);
     virtual Adesk::Boolean      subWorldDraw(AcGiWorldDraw* wd) override;
     virtual void                subViewportDraw(AcGiViewportDraw* vd) override;
-    virtual AcDbEntity*         entity() const override;
+    virtual AcDbEntity*/*     */entity() const override;
     static std::string          className();
 };
 #pragma pack (pop)

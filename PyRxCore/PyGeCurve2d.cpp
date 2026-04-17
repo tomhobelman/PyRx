@@ -20,48 +20,48 @@ void makePyGeCurve2dWrapper()
         .def("getEndPoint", &PyGeCurve2d::getEndPoint, DS.ARGS())
         .def("reverseParam", &PyGeCurve2d::reverseParam, DS.ARGS())
         .def("setInterval", &PyGeCurve2d::setInterval1)
-        .def("setInterval", &PyGeCurve2d::setInterval2, DS.ARGS({ "val : PyGe.Interval = None" }))
+        .def("setInterval", &PyGeCurve2d::setInterval2, DS.ARGS({ "val : PyGe.Interval = ..." }))
         .def("distanceTo", &PyGeCurve2d::distanceTo1)
         .def("distanceTo", &PyGeCurve2d::distanceTo2)
         .def("distanceTo", &PyGeCurve2d::distanceTo3)
-        .def("distanceTo", &PyGeCurve2d::distanceTo4, DS.ARGS({ "pt : PyGe.Point2d | PyGe.Curve2d","tol : PyGe.Tol=None" }))
+        .def("distanceTo", &PyGeCurve2d::distanceTo4, DS.ARGS({ "pt : PyGe.Point2d | PyGe.Curve2d","tol : PyGe.Tol = ..." }))
         .def("closestPointTo", &PyGeCurve2d::closestPointTo1)
         .def("closestPointTo", &PyGeCurve2d::closestPointTo2)
         .def("closestPointTo", &PyGeCurve2d::closestPointTo3)
-        .def("closestPointTo", &PyGeCurve2d::closestPointTo4, DS.ARGS({ "other : PyGe.Point2d | PyGe.Curve2d","tol : PyGe.Tol=None" }))
+        .def("closestPointTo", &PyGeCurve2d::closestPointTo4, DS.ARGS({ "other : PyGe.Point2d | PyGe.Curve2d","tol : PyGe.Tol = ..." }))
         .def("getClosestPointTo", &PyGeCurve2d::getClosestPointTo1)
-        .def("getClosestPointTo", &PyGeCurve2d::getClosestPointTo2, DS.ARGS({ "other : PyGe.Point2d","tol : PyGe.Tol=None" }))
+        .def("getClosestPointTo", &PyGeCurve2d::getClosestPointTo2, DS.ARGS({ "other : PyGe.Point2d","tol : PyGe.Tol = ..." }))
         .def("getClosestPointsTo", &PyGeCurve2d::getClosestPointsTo1)
-        .def("getClosestPointsTo", &PyGeCurve2d::getClosestPointsTo2, DS.ARGS({ "other : PyGe.Curve2d","tol : PyGe.Tol=None" }))
+        .def("getClosestPointsTo", &PyGeCurve2d::getClosestPointsTo2, DS.ARGS({ "other : PyGe.Curve2d","tol : PyGe.Tol = ..." }))
         .def("getNormalPoint", &PyGeCurve2d::getNormalPoint1)
-        .def("getNormalPoint", &PyGeCurve2d::getNormalPoint2, DS.ARGS({ "pnt : PyGe.Point2d","tol : PyGe.Tol=None" }))
+        .def("getNormalPoint", &PyGeCurve2d::getNormalPoint2, DS.ARGS({ "pnt : PyGe.Point2d","tol : PyGe.Tol = ..." }))
         .def("isOn", &PyGeCurve2d::isOn1)
         .def("isOn", &PyGeCurve2d::isOn2)
         .def("isOn", &PyGeCurve2d::isOn3)
-        .def("isOn", &PyGeCurve2d::isOn4, DS.ARGS({ "pt : float | PyGe.Point2d","tol : PyGe.Tol=None" }))
+        .def("isOn", &PyGeCurve2d::isOn4, DS.ARGS({ "pt : float | PyGe.Point2d","tol : PyGe.Tol = ..." }))
         .def("paramOf", &PyGeCurve2d::paramOf1)
-        .def("paramOf", &PyGeCurve2d::paramOf2, DS.ARGS({ "pt : PyGe.Point2d","tol : PyGe.Tol=None" }))
+        .def("paramOf", &PyGeCurve2d::paramOf2, DS.ARGS({ "pt : PyGe.Point2d","tol : PyGe.Tol = ..." }))
         .def("getTrimmedOffset", &PyGeCurve2d::getTrimmedOffset1)
-        .def("getTrimmedOffset", &PyGeCurve2d::getTrimmedOffset2, DS.ARGS({ "dist : float","extensionType : PyGe.OffsetCrvExtType","tol : PyGe.Tol=None" }))
+        .def("getTrimmedOffset", &PyGeCurve2d::getTrimmedOffset2, DS.ARGS({ "dist : float","extensionType : PyGe.OffsetCrvExtType","tol : PyGe.Tol = ..." }))
         .def("isClosed", &PyGeCurve2d::isClosed1)
-        .def("isClosed", &PyGeCurve2d::isClosed2, DS.ARGS({ "tol : PyGe.Tol=None" }))
+        .def("isClosed", &PyGeCurve2d::isClosed2, DS.ARGS({ "tol : PyGe.Tol = ..." }))
         .def("isPeriodic", &PyGeCurve2d::isPeriodic, DS.ARGS())
         .def("isLinear", &PyGeCurve2d::isLinear1)
-        .def("isLinear", &PyGeCurve2d::isLinear2, DS.ARGS({ "tol : PyGe.Tol=None" }))
+        .def("isLinear", &PyGeCurve2d::isLinear2, DS.ARGS({ "tol : PyGe.Tol = ..." }))
         .def("length", &PyGeCurve2d::length1)
-        .def("length", &PyGeCurve2d::length2, DS.ARGS({ "frm : float", "to : float", "tol : float = None" }))
+        .def("length", &PyGeCurve2d::length2, DS.ARGS({ "frm : float", "to : float", "tol : float = ..." }))
         .def("paramAtLength", &PyGeCurve2d::paramAtLength1)
-        .def("paramAtLength", &PyGeCurve2d::paramAtLength2, DS.ARGS({ "datumParam: float", "length: float","posParamDir: bool=True", "tol: float=None" }))
+        .def("paramAtLength", &PyGeCurve2d::paramAtLength2, DS.ARGS({ "datumParam: float", "length: float","posParamDir: bool=True", "tol: float = ..." }))
         .def("area", &PyGeCurve2d::area1)
-        .def("area", &PyGeCurve2d::area2, DS.ARGS({ "startParam : float", "endParam : float", "tol : float = None" }))
+        .def("area", &PyGeCurve2d::area2, DS.ARGS({ "startParam : float", "endParam : float", "tol : float = ..." }))
         .def("isDegenerate", &PyGeCurve2d::isDegenerate1)
-        .def("isDegenerate", &PyGeCurve2d::isDegenerate2, DS.ARGS({ "tol : PyGe.Tol=None" }))
+        .def("isDegenerate", &PyGeCurve2d::isDegenerate2, DS.ARGS({ "tol : PyGe.Tol = ..." }))
         .def("explode", &PyGeCurve2d::explode1)
-        .def("explode", &PyGeCurve2d::explode2, DS.ARGS({ "val : PyGe.Interval = None" }))
+        .def("explode", &PyGeCurve2d::explode2, DS.ARGS({ "val : PyGe.Interval = ..." }))
         .def("boundBlock", &PyGeCurve2d::boundBlock1)
-        .def("boundBlock", &PyGeCurve2d::boundBlock2, DS.ARGS({ "range : PyGe.Interval = None" }))
+        .def("boundBlock", &PyGeCurve2d::boundBlock2, DS.ARGS({ "range : PyGe.Interval = ..." }))
         .def("orthoBoundBlock", &PyGeCurve2d::orthoBoundBlock1)
-        .def("orthoBoundBlock", &PyGeCurve2d::orthoBoundBlock2, DS.ARGS({ "range : PyGe.Interval = None" }))
+        .def("orthoBoundBlock", &PyGeCurve2d::orthoBoundBlock2, DS.ARGS({ "range : PyGe.Interval = ..." }))
         .def("hasStartPoint", &PyGeCurve2d::hasStartPoint, DS.ARGS())
         .def("hasEndPoint", &PyGeCurve2d::hasEndPoint, DS.ARGS())
         .def("evalPoint", &PyGeCurve2d::evalPoint1)
@@ -108,17 +108,17 @@ AcGePoint2d PyGeCurve2d::getEndPoint() const
     return e;
 }
 
-void PyGeCurve2d::reverseParam()
+void PyGeCurve2d::reverseParam() const
 {
     impObj()->reverseParam();
 }
 
-void PyGeCurve2d::setInterval1()
+void PyGeCurve2d::setInterval1() const
 {
     impObj()->setInterval();
 }
 
-Adesk::Boolean PyGeCurve2d::setInterval2(const PyGeInterval& intrvl)
+Adesk::Boolean PyGeCurve2d::setInterval2(const PyGeInterval& intrvl) const
 {
     return impObj()->setInterval(intrvl.imp);
 }
@@ -169,21 +169,21 @@ boost::python::tuple  PyGeCurve2d::closestPointTo4(const PyGeCurve2d& curve2d, c
     return make_tuple(pnt, pntOnOtherCrv);
 }
 
-PyGePointOnCurve2d PyGeCurve2d::getClosestPointTo1(const AcGePoint2d& pnt)
+PyGePointOnCurve2d PyGeCurve2d::getClosestPointTo1(const AcGePoint2d& pnt) const
 {
     AcGePointOnCurve2d curve;
     impObj()->getClosestPointTo(pnt, curve);
     return PyGePointOnCurve2d(curve);
 }
 
-PyGePointOnCurve2d PyGeCurve2d::getClosestPointTo2(const AcGePoint2d& pnt, const AcGeTol& tol)
+PyGePointOnCurve2d PyGeCurve2d::getClosestPointTo2(const AcGePoint2d& pnt, const AcGeTol& tol) const
 {
     AcGePointOnCurve2d curve;
     impObj()->getClosestPointTo(pnt, curve, tol);
     return PyGePointOnCurve2d(curve);
 }
 
-boost::python::tuple PyGeCurve2d::getClosestPointsTo1(const PyGeCurve2d& curve)
+boost::python::tuple PyGeCurve2d::getClosestPointsTo1(const PyGeCurve2d& curve) const
 {
     PyAutoLockGIL lock;
     AcGePointOnCurve2d curvea, curveb;
@@ -191,7 +191,7 @@ boost::python::tuple PyGeCurve2d::getClosestPointsTo1(const PyGeCurve2d& curve)
     return make_tuple(PyGePointOnCurve2d(curvea), PyGePointOnCurve2d(curveb));
 }
 
-boost::python::tuple PyGeCurve2d::getClosestPointsTo2(const PyGeCurve2d& curve, const AcGeTol& tol)
+boost::python::tuple PyGeCurve2d::getClosestPointsTo2(const PyGeCurve2d& curve, const AcGeTol& tol) const
 {
     PyAutoLockGIL lock;
     AcGePointOnCurve2d curvea, curveb;
@@ -199,7 +199,7 @@ boost::python::tuple PyGeCurve2d::getClosestPointsTo2(const PyGeCurve2d& curve, 
     return make_tuple(PyGePointOnCurve2d(curvea), PyGePointOnCurve2d(curveb));
 }
 
-PyGePointOnCurve2d PyGeCurve2d::getNormalPoint1(const AcGePoint2d& pnt)
+PyGePointOnCurve2d PyGeCurve2d::getNormalPoint1(const AcGePoint2d& pnt) const
 {
     AcGePointOnCurve2d curve;
     if (auto flag = impObj()->getNormalPoint(pnt, curve); flag == false)
@@ -207,7 +207,7 @@ PyGePointOnCurve2d PyGeCurve2d::getNormalPoint1(const AcGePoint2d& pnt)
     return PyGePointOnCurve2d(curve);
 }
 
-PyGePointOnCurve2d PyGeCurve2d::getNormalPoint2(const AcGePoint2d& pnt, const AcGeTol& tol)
+PyGePointOnCurve2d PyGeCurve2d::getNormalPoint2(const AcGePoint2d& pnt, const AcGeTol& tol) const
 {
     AcGePointOnCurve2d curve;
     if (auto flag = impObj()->getNormalPoint(pnt, curve, tol); flag == false)
@@ -345,7 +345,7 @@ double PyGeCurve2d::area2(double startParam, double endParam, const AcGeTol& tol
 
 boost::python::tuple PyGeCurve2d::isDegenerate1() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -357,7 +357,7 @@ boost::python::tuple PyGeCurve2d::isDegenerate1() const
 
 boost::python::tuple PyGeCurve2d::isDegenerate2(const AcGeTol& tol) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -368,7 +368,7 @@ boost::python::tuple PyGeCurve2d::isDegenerate2(const AcGeTol& tol) const
 }
 
 //TODO: Test ... leak... looks wonky?
-boost::python::list PyGeCurve2d::explode1()
+boost::python::list PyGeCurve2d::explode1() const
 {
     PyAutoLockGIL lock;
     boost::python::list curves;
@@ -386,7 +386,7 @@ boost::python::list PyGeCurve2d::explode1()
 }
 
 //TODO: Test ... leak... looks wonky?
-boost::python::list PyGeCurve2d::explode2(const PyGeInterval& interval)
+boost::python::list PyGeCurve2d::explode2(const PyGeInterval& interval) const
 {
     PyAutoLockGIL lock;
     boost::python::list curves;
@@ -405,7 +405,7 @@ boost::python::list PyGeCurve2d::explode2(const PyGeInterval& interval)
 
 PyGeBoundBlock2d PyGeCurve2d::boundBlock1() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyGeBoundBlock2d(impObj()->boundBlock().copy());
@@ -414,7 +414,7 @@ PyGeBoundBlock2d PyGeCurve2d::boundBlock1() const
 
 PyGeBoundBlock2d PyGeCurve2d::boundBlock2(const PyGeInterval& range) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyGeBoundBlock2d(impObj()->boundBlock(range.imp).copy());
@@ -423,7 +423,7 @@ PyGeBoundBlock2d PyGeCurve2d::boundBlock2(const PyGeInterval& range) const
 
 PyGeBoundBlock2d PyGeCurve2d::orthoBoundBlock1() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyGeBoundBlock2d(impObj()->orthoBoundBlock().copy());
@@ -432,7 +432,7 @@ PyGeBoundBlock2d PyGeCurve2d::orthoBoundBlock1() const
 
 PyGeBoundBlock2d PyGeCurve2d::orthoBoundBlock2(const PyGeInterval& range) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyGeBoundBlock2d(impObj()->orthoBoundBlock(range.imp).copy());
@@ -467,12 +467,18 @@ boost::python::tuple PyGeCurve2d::evalPoint2(double param, int numDeriv) const
     return boost::python::make_tuple(pnt, vecs);
 }
 
-boost::python::list PyGeCurve2d::getSamplePoints1(int numSample) const
+boost::python::tuple PyGeCurve2d::getSamplePoints1(int numSample) const
 {
     PyAutoLockGIL lock;
+    AcGeDoubleArray paramArray;
     AcGePoint2dArray pointArray;
     impObj()->getSamplePoints(numSample, pointArray);
-    return Point2dArrayToPyList(pointArray);
+
+    AcGeTol tol;
+    tol.setEqualPoint(0.0001);
+    for (const auto& sp : pointArray)
+        paramArray.append(impObj()->paramOf(sp, tol));
+    return boost::python::make_tuple(Point2dArrayToPyList(pointArray), DoubleArrayToPyList(paramArray));
 }
 
 boost::python::tuple PyGeCurve2d::getSamplePoints2(double fromParam, double toParam, double approxEps) const
@@ -485,7 +491,7 @@ boost::python::tuple PyGeCurve2d::getSamplePoints2(double fromParam, double toPa
     return boost::python::make_tuple(Point2dArrayToPyList(pointArray), DoubleArrayToPyList(paramArray));
 }
 
-boost::python::tuple PyGeCurve2d::getSplitCurves(double param)
+boost::python::tuple PyGeCurve2d::getSplitCurves(double param) const
 {
     PyAutoLockGIL lock;
     AcGeCurve2d* p1 = nullptr;
@@ -544,15 +550,15 @@ void makePyGeCircArc2dWrapper()
         .def(init<const AcGePoint2d&, double, double, double>())
         .def(init<const AcGePoint2d&, double, double, double, const AcGeVector2d&, bool>())
         .def(init<const AcGePoint2d&, const AcGePoint2d&, const AcGePoint2d&>())
-        .def(init<const AcGePoint2d&, const AcGePoint2d&, double, bool>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint2d&, const AcGePoint2d&, double, bool>(DS.CTOR(ctor, 11716)))
         .def("intersectWith", &PyGeCircArc2d::intersectWith1)
         .def("intersectWith", &PyGeCircArc2d::intersectWith2)
         .def("intersectWith", &PyGeCircArc2d::intersectWith3)
-        .def("intersectWith", &PyGeCircArc2d::intersectWith4, DS.ARGS({ "val: PyGe.CircArc2d | PyGe.LinearEnt2d", "tol: PyGe.Tol=None" }))
+        .def("intersectWith", &PyGeCircArc2d::intersectWith4, DS.ARGS({ "val: PyGe.CircArc2d | PyGe.LinearEnt2d", "tol: PyGe.Tol = ..." }))
         .def("tangent", &PyGeCircArc2d::tangent1)
-        .def("tangent", &PyGeCircArc2d::tangent2, DS.ARGS({ "pt: PyGe.Point2d","tol: PyGe.Tol=None" }))
+        .def("tangent", &PyGeCircArc2d::tangent2, DS.ARGS({ "pt: PyGe.Point2d","tol: PyGe.Tol = ..." }))
         .def("isInside", &PyGeCircArc2d::isInside1)
-        .def("isInside", &PyGeCircArc2d::isInside2, DS.ARGS({ "pt: PyGe.Point2d","tol: PyGe.Tol=None" }))
+        .def("isInside", &PyGeCircArc2d::isInside2, DS.ARGS({ "pt: PyGe.Point2d","tol: PyGe.Tol = ..." }))
         .def("center", &PyGeCircArc2d::center, DS.ARGS())
         .def("radius", &PyGeCircArc2d::radius, DS.ARGS())
         .def("startAng", &PyGeCircArc2d::startAng, DS.ARGS())
@@ -656,7 +662,7 @@ boost::python::tuple PyGeCircArc2d::intersectWith4(const PyGeCircArc2d& arc, con
 
 boost::python::tuple PyGeCircArc2d::tangent1(const AcGePoint2d& pnt) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -669,7 +675,7 @@ boost::python::tuple PyGeCircArc2d::tangent1(const AcGePoint2d& pnt) const
 
 boost::python::tuple PyGeCircArc2d::tangent2(const AcGePoint2d& pnt, const AcGeTol& tol) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -730,52 +736,52 @@ AcGePoint2d PyGeCircArc2d::endPoint() const
     return impObj()->endPoint();
 }
 
-void PyGeCircArc2d::setCenter(const AcGePoint2d& cent)
+void PyGeCircArc2d::setCenter(const AcGePoint2d& cent) const
 {
     impObj()->setCenter(cent);
 }
 
-void PyGeCircArc2d::setRadius(double radius)
+void PyGeCircArc2d::setRadius(double radius) const
 {
     impObj()->setRadius(radius);
 }
 
-void  PyGeCircArc2d::setAngles(double startAng, double endAng)
+void  PyGeCircArc2d::setAngles(double startAng, double endAng) const
 {
     impObj()->setAngles(startAng, endAng);
 }
 
-void PyGeCircArc2d::setToComplement()
+void PyGeCircArc2d::setToComplement() const
 {
     impObj()->setToComplement();
 }
 
-void PyGeCircArc2d::setRefVec(const AcGeVector2d& vec)
+void PyGeCircArc2d::setRefVec(const AcGeVector2d& vec) const
 {
     impObj()->setRefVec(vec);
 }
 
-void PyGeCircArc2d::set1(const AcGePoint2d& cent, double radius)
+void PyGeCircArc2d::set1(const AcGePoint2d& cent, double radius) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(cent, radius);
 #endif
 }
 
-void  PyGeCircArc2d::set2(const AcGePoint2d& cent, double radius, double ang1, double ang2, const AcGeVector2d& refVec, Adesk::Boolean isClockWise)
+void  PyGeCircArc2d::set2(const AcGePoint2d& cent, double radius, double ang1, double ang2, const AcGeVector2d& refVec, Adesk::Boolean isClockWise) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(cent, radius, ang1, ang2, refVec, isClockWise);
 #endif
 }
 
-void PyGeCircArc2d::set3(const AcGePoint2d& startPoint, const AcGePoint2d& pnt, const AcGePoint2d& endPoint)
+void PyGeCircArc2d::set3(const AcGePoint2d& startPoint, const AcGePoint2d& pnt, const AcGePoint2d& endPoint) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     AcGeError err;
@@ -785,18 +791,18 @@ void PyGeCircArc2d::set3(const AcGePoint2d& startPoint, const AcGePoint2d& pnt, 
 #endif
 }
 
-void PyGeCircArc2d::set4(const AcGePoint2d& startPoint, const AcGePoint2d& endPoint, double bulge, Adesk::Boolean bulgeFlag)
+void PyGeCircArc2d::set4(const AcGePoint2d& startPoint, const AcGePoint2d& endPoint, double bulge, Adesk::Boolean bulgeFlag) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(startPoint, endPoint, bulge, bulgeFlag);
 #endif
 }
 
-void  PyGeCircArc2d::set5(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2, double radius)
+void  PyGeCircArc2d::set5(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2, double radius) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     double param1 = 0.0;
@@ -808,9 +814,9 @@ void  PyGeCircArc2d::set5(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2, 
 #endif
 }
 
-void PyGeCircArc2d::set6(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2, const PyGeCurve2d& curve3)
+void PyGeCircArc2d::set6(const PyGeCurve2d& curve1, const PyGeCurve2d& curve2, const PyGeCurve2d& curve3) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     double param1 = 0.0;
@@ -850,7 +856,7 @@ AcGeCircArc2d* PyGeCircArc2d::impObj(const std::source_location& src /*= std::so
 //AcGeCircArc2d wrapper
 void makePyGeEllipArc2Wrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
         "- carc: PyGe.CircArc2d\n"
@@ -867,13 +873,13 @@ void makePyGeEllipArc2Wrapper()
         .def(init<>())
         .def(init<const PyGeCircArc2d&>())
         .def(init<const AcGePoint2d&, const AcGeVector2d&, const AcGeVector2d&, double, double>())
-        .def(init<const AcGePoint2d&, const AcGeVector2d&, const AcGeVector2d&, double, double, double, double>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint2d&, const AcGeVector2d&, const AcGeVector2d&, double, double, double, double>(DS.CTOR(ctor, 11974)))
         .def("intersectWith", &PyGeEllipArc2d::intersectWith1)
-        .def("intersectWith", &PyGeEllipArc2d::intersectWith2, DS.ARGS({ "val: PyGe.LinearEnt2d",  "tol: PyGe.Tol = None" }))
+        .def("intersectWith", &PyGeEllipArc2d::intersectWith2, DS.ARGS({ "val: PyGe.LinearEnt2d",  "tol: PyGe.Tol = ..." }))
         .def("isCircular", &PyGeEllipArc2d::isCircular1)
-        .def("isCircular", &PyGeEllipArc2d::isCircular2, DS.ARGS({ "tol: PyGe.Tol=None" }))
+        .def("isCircular", &PyGeEllipArc2d::isCircular2, DS.ARGS({ "tol: PyGe.Tol = ..." }))
         .def("isInside", &PyGeEllipArc2d::isInside1)
-        .def("isInside", &PyGeEllipArc2d::isInside2, DS.ARGS({ "pt: PyGe.Point2d","tol: PyGe.Tol=None" }))
+        .def("isInside", &PyGeEllipArc2d::isInside2, DS.ARGS({ "pt: PyGe.Point2d","tol: PyGe.Tol = ..." }))
         .def("center", &PyGeEllipArc2d::center, DS.ARGS())
         .def("minorRadius", &PyGeEllipArc2d::minorRadius, DS.ARGS())
         .def("majorRadius", &PyGeEllipArc2d::majorRadius, DS.ARGS())
@@ -899,7 +905,7 @@ void makePyGeEllipArc2Wrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeEllipArc2d::PyGeEllipArc2d()
     : PyGeCurve2d(new AcGeEllipArc2d())
 {
@@ -1018,42 +1024,42 @@ Adesk::Boolean PyGeEllipArc2d::isClockWise() const
     return impObj()->isClockWise();
 }
 
-void PyGeEllipArc2d::setCenter(const AcGePoint2d& cent)
+void PyGeEllipArc2d::setCenter(const AcGePoint2d& cent) const
 {
     impObj()->setCenter(cent);
 }
 
-void PyGeEllipArc2d::setMinorRadius(double rad)
+void PyGeEllipArc2d::setMinorRadius(double rad) const
 {
     impObj()->setMinorRadius(rad);
 }
 
-void PyGeEllipArc2d::setMajorRadius(double rad)
+void PyGeEllipArc2d::setMajorRadius(double rad) const
 {
     impObj()->setMajorRadius(rad);
 }
 
-void PyGeEllipArc2d::setAxes(const AcGeVector2d& majorAxis, const AcGeVector2d& minorAxis)
+void PyGeEllipArc2d::setAxes(const AcGeVector2d& majorAxis, const AcGeVector2d& minorAxis) const
 {
     impObj()->setAxes(majorAxis, minorAxis);
 }
 
-void PyGeEllipArc2d::setAngles(double startAngle, double endAngle)
+void PyGeEllipArc2d::setAngles(double startAngle, double endAngle) const
 {
     impObj()->setAngles(startAngle, endAngle);
 }
 
-void PyGeEllipArc2d::set1(const AcGePoint2d& cent, const AcGeVector2d& majorAxis, const AcGeVector2d& minorAxis, double majorRadius, double minorRadius)
+void PyGeEllipArc2d::set1(const AcGePoint2d& cent, const AcGeVector2d& majorAxis, const AcGeVector2d& minorAxis, double majorRadius, double minorRadius) const
 {
     impObj()->set(cent, majorAxis, minorAxis, majorRadius, minorRadius);
 }
 
-void PyGeEllipArc2d::set2(const AcGePoint2d& cent, const AcGeVector2d& majorAxis, const AcGeVector2d& minorAxis, double majorRadius, double minorRadius, double startAngle, double endAngle)
+void PyGeEllipArc2d::set2(const AcGePoint2d& cent, const AcGeVector2d& majorAxis, const AcGeVector2d& minorAxis, double majorRadius, double minorRadius, double startAngle, double endAngle) const
 {
     impObj()->set(cent, majorAxis, minorAxis, majorRadius, minorRadius, startAngle, endAngle);
 }
 
-void PyGeEllipArc2d::set3(const PyGeCircArc2d& arc)
+void PyGeEllipArc2d::set3(const PyGeCircArc2d& arc) const
 {
     impObj()->set(*arc.impObj());
 }
@@ -1085,7 +1091,7 @@ AcGeEllipArc2d* PyGeEllipArc2d::impObj(const std::source_location& src /*= std::
 //PyGeExternalCurve2d wrapper
 void makePyGeExternalCurve2dWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     PyDocString DS("ExternalCurve2d");
     class_<PyGeExternalCurve2d, bases<PyGeCurve2d>>("ExternalCurve2d", boost::python::no_init)
         .def("cast", &PyGeExternalCurve2d::cast, DS.SARGS({ "otherObject: PyGe.Entity2d" })).staticmethod("cast")
@@ -1095,7 +1101,7 @@ void makePyGeExternalCurve2dWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeExternalCurve2d::PyGeExternalCurve2d(AcGeEntity2d* pEnt)
     : PyGeCurve2d(pEnt)
 {
@@ -1129,7 +1135,7 @@ AcGeExternalCurve2d* PyGeExternalCurve2d::impObj(const std::source_location& src
 //AcGeOffsetCurve2d wrapper
 void makePyGeOffsetCurve2dWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     PyDocString DS("OffsetCurve2d");
     class_<PyGeOffsetCurve2d, bases<PyGeCurve2d>>("OffsetCurve2d", boost::python::no_init)
         .def(init<const PyGeCurve2d&, double>(DS.ARGS({ "baseCurve: PyGe.Curve2d",  "offsetDistance: float" })))
@@ -1140,7 +1146,7 @@ void makePyGeOffsetCurve2dWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeOffsetCurve2d::PyGeOffsetCurve2d(const PyGeCurve2d& baseCurve, double offsetDistance)
     : PyGeCurve2d(new AcGeOffsetCurve2d(*baseCurve.impObj(), offsetDistance))
 {
@@ -1192,7 +1198,7 @@ void makePyGeCompositeCurve2dWrapper()
     class_<PyGeCompositeCurve2d, bases<PyGeCurve2d>>("CompositeCurve2d")
         .def(init<>())
         .def(init<const boost::python::list&>())
-        .def(init<const boost::python::list&, const boost::python::list&>(DS.CTOR(ctor)))
+        .def(init<const boost::python::list&, const boost::python::list&>(DS.CTOR(ctor, 11764)))
         .def("getCurveList", &PyGeCompositeCurve2d::getCurveList, DS.ARGS())
         .def("setCurveList", &PyGeCompositeCurve2d::setCurveList1)
         .def("setCurveList", &PyGeCompositeCurve2d::setCurveList2, DS.OVRL(setCurveListOverloads))
@@ -1240,12 +1246,12 @@ boost::python::list PyGeCompositeCurve2d::getCurveList() const
     return pylist;
 }
 
-void PyGeCompositeCurve2d::setCurveList1(const boost::python::list& curveList)
+void PyGeCompositeCurve2d::setCurveList1(const boost::python::list& curveList) const
 {
     impObj()->setCurveList(PyListToGe2dVoidPointerArray(curveList));
 }
 
-void PyGeCompositeCurve2d::setCurveList2(const boost::python::list& curveList, const boost::python::list& isOwnerOfCurves)
+void PyGeCompositeCurve2d::setCurveList2(const boost::python::list& curveList, const boost::python::list& isOwnerOfCurves) const
 {
     impObj()->setCurveList(PyListToGe2dVoidPointerArray(curveList), PyListToIntArray(isOwnerOfCurves));
 }

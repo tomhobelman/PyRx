@@ -1,26 +1,30 @@
 import traceback
-from pyrx import Ge, Db
 
-#uncomment to set a break point manually
-#import debugpy
+from pyrx import Ap, Db, Ge
 
-print("added command = pystartdebug")
+# uncomment to set a break point manually
+# import debugpy
+
 print("added command = pytestdebug")
 
-# run the built-in command PYDEBUG
+# 1- run the built-in command PYDEBUG, 
+# 2- attach from VS code
+# 3- setup the break point in pytestdebug
+# 4- run pytestdebug
 
-def PyRxCmd_doit():
+@Ap.Command()
+def pytestdebug():
     try:
-        #uncomment to set a break point manually
-        #debugpy.breakpoint()
-        
+        # uncomment to set a break point manually
+        # debugpy.breakpoint()
+
         db = Db.curDb()
         model = Db.BlockTableRecord(db.modelSpaceId())
 
         mat = Ge.Matrix3d()
         mat.setToTranslation(Ge.Point3d(100, 100, 0).asVector())
 
-        transformedPoints = [
+        _transformedPoints = [
             Db.Point(id, Db.OpenMode.kForWrite).transformBy(mat)
             for id in model.objectIds(Db.Point.desc())
         ]

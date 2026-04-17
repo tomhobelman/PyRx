@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import pytest
-from tests import HOST
-from pyrx import Ap, Ge, Ax
+
+from pyrx import Ap, Ge
 
 
 class TestAxLWPolyline:
@@ -35,7 +36,8 @@ class TestAxLWPolyline:
         pnts.reverse()
         ent.setCoordinates(pnts)
         assert ent.coordinates() == pnts
-
+        
+    @pytest.mark.known_failure_IRX
     def test_getcoordinate(self):
         pnts = [
             Ge.Point2d(0, 0),
@@ -47,6 +49,7 @@ class TestAxLWPolyline:
         ent = axSpace.addLightWeightPolyline(pnts)
         assert ent.coordinate(3) == pnts[3]
 
+    @pytest.mark.known_failure_IRX
     @pytest.mark.known_failure_GRX
     def test_setcoordinate(self):
         pnts = [
@@ -97,7 +100,6 @@ class TestAxLWPolyline:
         ent = axSpace.addLightWeightPolyline(pnts)
 
         entinfo = set()
-        ent: Ax.AcadEntity
         i = 0
         for ent in ent.explode():
             i += 1

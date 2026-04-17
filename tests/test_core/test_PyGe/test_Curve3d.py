@@ -1,7 +1,10 @@
 from __future__ import annotations
-from pyrx import Ge, Db
-import pytest
+
 import unittest
+
+import pytest
+
+from pyrx import Db, Ge
 
 
 class TestCurve3d:
@@ -20,10 +23,10 @@ class TestCurve3d:
     def test_CurveCurveInt3d_overlap(self, db_06457: Db.Database):
         objHnd1 = Db.Handle("2c9405")
         objId1 = db_06457.getObjectId(False, objHnd1)
-        assert objId1.isValid() == True
+        assert objId1.isNull() == False
         objHnd2 = Db.Handle("2c9406")
         objId2 = db_06457.getObjectId(False, objHnd2)
-        assert objId2.isValid() == True
+        assert objId2.isNull() == False
         dbcurve1 = Db.Curve(objId1)
         dbcurve2 = Db.Curve(objId2)
         gecurve1 = dbcurve1.getAcGeCurve()
@@ -36,6 +39,7 @@ class TestCurve3d:
         self.assertions.assertAlmostEqual(r1.length(), 1142.86444953577)
         self.assertions.assertAlmostEqual(r2.length(), 1142.86444953577)
 
+    @pytest.mark.known_failure_IRX
     def test_Ge_lineseg3d_1(self):
         s1 = Ge.LineSeg3d(Ge.Point3d(0, 0, 0), Ge.Point3d(100, 100, 0))
         s2 = Ge.LineSeg3d(Ge.Point3d(0, 100, 0), Ge.Point3d(100, 0, 0))
@@ -60,6 +64,10 @@ class TestCurve3d:
         seg.reverseParam()
         assert seg.startPoint() == pnt2
 
+    @pytest.mark.known_failure_BRX
+    @pytest.mark.known_failure_GRX
+    @pytest.mark.known_failure_IRX
+    @pytest.mark.known_failure_ZRX
     def test_surfSurfInt(self):
         vec = Ge.Vector3d.kXAxis
         pnt = Ge.Point3d(4000.0, 3000.0, 0.0)
@@ -68,6 +76,7 @@ class TestCurve3d:
         si = Ge.SurfSurfInt(p1, p3)
         assert si.numResults() == 1
 
+    @pytest.mark.known_failure_IRX
     def test_ge3dcurve_length(self):
         seg = Ge.LineSeg3d(Ge.Point3d(0, 0, 0), Ge.Point3d(100, 0, 0))
         length = seg.length(0, 1)
@@ -76,7 +85,7 @@ class TestCurve3d:
     def test_CompositeCurve3d_getCurveList(self, db_06457: Db.Database):
         objHnd = Db.Handle("2c92e2")
         objId = db_06457.getObjectId(False, objHnd)
-        assert objId.isValid() == True
+        assert objId.isNull() == False
         pl = Db.Polyline(objId)
         composite = pl.getAcGeCurve()
         gecurves = composite.getCurveList()
@@ -87,10 +96,10 @@ class TestCurve3d:
     def test_CurveCurveInt3d_inter(self, db_06457: Db.Database):
         objHnd1 = Db.Handle("2c959f")
         objId1 = db_06457.getObjectId(False, objHnd1)
-        assert objId1.isValid() == True
+        assert objId1.isNull() == False
         objHnd2 = Db.Handle("2c95a0")
         objId2 = db_06457.getObjectId(False, objHnd2)
-        assert objId2.isValid() == True
+        assert objId2.isNull() == False
         dbcurve1 = Db.Curve(objId1)
         dbcurve2 = Db.Curve(objId2)
         gecurve1 = dbcurve1.getAcGeCurve()

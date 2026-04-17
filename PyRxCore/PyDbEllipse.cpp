@@ -21,14 +21,14 @@ void makePyDbEllipseWrapper()
         "- center: PyGe.Point3d, unitNormal: PyGe.Vector3d, majorAxis: PyGe.Vector3d, radiusRatio: float\n"
         "- center: PyGe.Point3d, unitNormal: PyGe.Vector3d, majorAxis: PyGe.Vector3d, radiusRatio: float, startAngle: float, endAngle: float\n";
 
-    PyDocString DS("PyDb.Ellipse");
+    PyDocString DS("Ellipse");
     class_<PyDbEllipse, bases<PyDbCurve>>("Ellipse")
         .def(init<>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&, double>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&, double, double, double>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 4240)))
         .def("center", &PyDbEllipse::center, DS.ARGS(4243))
         .def("setCenter", &PyDbEllipse::setCenter, DS.ARGS({ "val : PyGe.Point3d" }, 4255))
         .def("normal", &PyDbEllipse::normal, DS.ARGS(4251))
@@ -99,7 +99,7 @@ AcGePoint3d PyDbEllipse::center() const
     return impObj()->center();
 }
 
-void PyDbEllipse::setCenter(const AcGePoint3d& center)
+void PyDbEllipse::setCenter(const AcGePoint3d& center) const
 {
     PyThrowBadEs(impObj()->setCenter(center));
 }
@@ -129,12 +129,12 @@ double PyDbEllipse::minorRadius() const
     return impObj()->minorRadius();
 }
 
-void PyDbEllipse::setMajorRadius(double val)
+void PyDbEllipse::setMajorRadius(double val) const
 {
     PyThrowBadEs(impObj()->setMajorRadius(val));
 }
 
-void PyDbEllipse::setMinorRadius(double val)
+void PyDbEllipse::setMinorRadius(double val) const
 {
     PyThrowBadEs(impObj()->setMinorRadius(val));
 }
@@ -144,7 +144,7 @@ double PyDbEllipse::radiusRatio() const
     return impObj()->radiusRatio();
 }
 
-void PyDbEllipse::setRadiusRatio(double ratio)
+void PyDbEllipse::setRadiusRatio(double ratio) const
 {
     PyThrowBadEs(impObj()->setRadiusRatio(ratio));
 }
@@ -154,7 +154,7 @@ double PyDbEllipse::startAngle() const
     return impObj()->startAngle();
 }
 
-void PyDbEllipse::setStartAngle(double startAngle)
+void PyDbEllipse::setStartAngle(double startAngle) const
 {
     PyThrowBadEs(impObj()->setStartAngle(startAngle));
 }
@@ -164,17 +164,17 @@ double PyDbEllipse::endAngle() const
     return impObj()->endAngle();
 }
 
-void PyDbEllipse::setEndAngle(double endAngle)
+void PyDbEllipse::setEndAngle(double endAngle) const
 {
     PyThrowBadEs(impObj()->setEndAngle(endAngle));
 }
 
-void PyDbEllipse::setStartParam(double startParam)
+void PyDbEllipse::setStartParam(double startParam) const
 {
     PyThrowBadEs(impObj()->setStartParam(startParam));
 }
 
-void PyDbEllipse::setEndParam(double endParam)
+void PyDbEllipse::setEndParam(double endParam) const
 {
     PyThrowBadEs(impObj()->setEndParam(endParam));
 }
@@ -194,19 +194,19 @@ boost::python::tuple PyDbEllipse::get() const
     AcGePoint3d center;
     AcGeVector3d unitNormal;
     AcGeVector3d majorAxis;
-    double radiusRatio;
-    double startAngle;
-    double endAngle;
+    double radiusRatio = 0.0;
+    double startAngle = 0.0;
+    double endAngle = 0.0;
     PyThrowBadEs(impObj()->get(center, unitNormal, majorAxis, radiusRatio, startAngle, endAngle));
     return boost::python::make_tuple(center, unitNormal, majorAxis, radiusRatio, startAngle, endAngle);
 }
 
-void PyDbEllipse::set1(const AcGePoint3d& center, const AcGeVector3d& unitNormal, const AcGeVector3d& majorAxis, double radiusRatio)
+void PyDbEllipse::set1(const AcGePoint3d& center, const AcGeVector3d& unitNormal, const AcGeVector3d& majorAxis, double radiusRatio) const
 {
     PyThrowBadEs(impObj()->set(center, unitNormal, majorAxis, radiusRatio));
 }
 
-void PyDbEllipse::set2(const AcGePoint3d& center, const AcGeVector3d& unitNormal, const AcGeVector3d& majorAxis, double radiusRatio, double startAngle, double endAngle)
+void PyDbEllipse::set2(const AcGePoint3d& center, const AcGeVector3d& unitNormal, const AcGeVector3d& majorAxis, double radiusRatio, double startAngle, double endAngle) const
 {
     PyThrowBadEs(impObj()->set(center, unitNormal, majorAxis, radiusRatio, startAngle, endAngle));
 }

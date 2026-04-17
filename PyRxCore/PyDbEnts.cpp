@@ -7,7 +7,16 @@
 #include "PyGeCurve3d.h"
 #include "PyDbMText.h"
 #include "PyDbEval.h"
+#include "PyRxOverrulableEntity.h"
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/linestring.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+
 using namespace boost::python;
+
+#if defined(_BRXTARGET)
+#include "AcConstraints3d.h"
+#endif
 
 //-----------------------------------------------------------------------------------
 //PyDbBlockReference
@@ -20,7 +29,7 @@ void makePyDbBlockReferenceWrapper()
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
 
-    PyDocString DS("PyDb.BlockReference");
+    PyDocString DS("BlockReference");
     class_<PyDbBlockReference, bases<PyDbEntity>>("BlockReference")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
@@ -28,26 +37,30 @@ void makePyDbBlockReferenceWrapper()
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
         .def(init<const AcGePoint3d&, const PyDbObjectId&>(DS.CTOR(ctords, 2501)))
         .def("blockTableRecord", &PyDbBlockReference::blockTableRecord, DS.ARGS(2514))
-        .def("setBlockTableRecord", &PyDbBlockReference::setBlockTableRecord, DS.ARGS({ "val : ObjectId" }, 2528))
+        .def("setBlockTableRecord", &PyDbBlockReference::setBlockTableRecord, DS.ARGS({ "blockId : PyDb.ObjectId" }, 2528))
         .def("position", &PyDbBlockReference::position, DS.ARGS(2525))
-        .def("setPosition", &PyDbBlockReference::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 2531))
+        .def("setPosition", &PyDbBlockReference::setPosition, DS.ARGS({ "position : PyGe.Point3d" }, 2531))
         .def("scaleFactors", &PyDbBlockReference::scaleFactors, DS.ARGS(2527))
         .def("nonAnnotationScaleFactors", &PyDbBlockReference::nonAnnotationScaleFactors, DS.ARGS(2521))
-        .def("setScaleFactors", &PyDbBlockReference::setScaleFactors, DS.ARGS({ "val : PyGe.Scale3d" }, 2533))
+        .def("setScaleFactors", &PyDbBlockReference::setScaleFactors, DS.ARGS({ "scale : PyGe.Scale3d" }, 2533))
         .def("rotation", &PyDbBlockReference::rotation, DS.ARGS(2526))
-        .def("setRotation", &PyDbBlockReference::setRotation, DS.ARGS({ "val : float" }, 2532))
+        .def("setRotation", &PyDbBlockReference::setRotation, DS.ARGS({ "angle : float" }, 2532))
         .def("normal", &PyDbBlockReference::normal, DS.ARGS(2522))
-        .def("setNormal", &PyDbBlockReference::setNormal, DS.ARGS({ "val : PyGe.Vector3d" }, 2530))
+        .def("setNormal", &PyDbBlockReference::setNormal, DS.ARGS({ "normalVector : PyGe.Vector3d" }, 2530))
         .def("blockTransform", &PyDbBlockReference::blockTransform, DS.ARGS(2515))
         .def("nonAnnotationBlockTransform", &PyDbBlockReference::nonAnnotationBlockTransform, DS.ARGS(2520))
-        .def("setBlockTransform", &PyDbBlockReference::setBlockTransform, DS.ARGS({ "val : PyGe.Matrix3d" }, 2529))
-        .def("appendAttribute", &PyDbBlockReference::appendAttribute, DS.ARGS({ "val : PyDb.AttributeReference" }, 2512))
+        .def("setBlockTransform", &PyDbBlockReference::setBlockTransform, DS.ARGS({ "transform : PyGe.Matrix3d" }, 2529))
+        .def("appendAttribute", &PyDbBlockReference::appendAttribute, DS.ARGS({ "attribute : PyDb.AttributeReference" }, 2512))
         .def("attributeIds", &PyDbBlockReference::attributeIds, DS.ARGS())
         .def("treatAsAcDbBlockRefForExplode", &PyDbBlockReference::treatAsAcDbBlockRefForExplode, DS.ARGS(2535))
         .def("geomExtentsBestFit", &PyDbBlockReference::geomExtentsBestFit1)
-        .def("geomExtentsBestFit", &PyDbBlockReference::geomExtentsBestFit2, DS.ARGS({ "val : PyGe.Matrix3d=PyGe.Matrix3d.kIdentity" }, 2517))
+        .def("geomExtentsBestFit", &PyDbBlockReference::geomExtentsBestFit2, DS.ARGS({ "transform : PyGe.Matrix3d=PyGe.Matrix3d.kIdentity" }, 2517))
         .def("explodeToOwnerSpace", &PyDbBlockReference::explodeToOwnerSpace, DS.ARGS(2516))
         .def("getBlockName", &PyDbBlockReference::getBlockName, DS.ARGS())
+        .def("effectiveName", &PyDbBlockReference::getBlockName, DS.ARGS())
+        .def("attdict", &PyDbBlockReference::attdict, DS.ARGS())
+        .def("attlist", &PyDbBlockReference::attlist, DS.ARGS())
+        .def("hasAttributes", &PyDbBlockReference::hasAttributes, DS.ARGS())
         .def("className", &PyDbBlockReference::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbBlockReference::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbBlockReference::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -157,19 +170,44 @@ void PyDbBlockReference::setBlockTransform(const AcGeMatrix3d& val) const
 
 PyDbObjectId PyDbBlockReference::appendAttribute(PyDbAttribute& att) const
 {
-    AcDbObjectId id;
-    PyThrowBadEs(impObj()->appendAttribute(id, att.impObj()));
-    return PyDbObjectId(id);
+    PyDbObjectId id;
+    PyThrowBadEs(impObj()->appendAttribute(id.m_id, att.impObj()));
+    return id;
 }
 
 boost::python::list PyDbBlockReference::attributeIds() const
 {
     PyAutoLockGIL lock;
-    AcDbObjectId id;
     boost::python::list ids;
-    for (std::unique_ptr<AcDbObjectIterator> iter(impObj()->attributeIterator()); !iter->done(); iter->step())
+    for (AcDbObjectIteratorUPtr iter(impObj()->attributeIterator()); !iter->done(); iter->step())
         ids.append(PyDbObjectId(iter->objectId()));
     return ids;
+}
+
+boost::python::dict PyDbBlockReference::attdict() const
+{
+    PyAutoLockGIL lock;
+    boost::python::dict pydict;
+    for (AcDbObjectIteratorUPtr iter(impObj()->attributeIterator()); !iter->done(); iter->step())
+    {
+        AcDbAttributePointer attref(iter->objectId());
+        if (attref.openStatus() == eOk)
+            pydict[wstr_to_utf8(attref->tagConst())] = wstr_to_utf8(attref->textStringConst());
+    }
+    return pydict;
+}
+
+boost::python::list PyDbBlockReference::attlist() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pylist;
+    for (AcDbObjectIteratorUPtr iter(impObj()->attributeIterator()); !iter->done(); iter->step())
+    {
+        AcDbAttributePointer attref(iter->objectId());
+        if (attref.openStatus() == eOk)
+            pylist.append(boost::python::make_tuple(wstr_to_utf8(attref->tagConst()), wstr_to_utf8(attref->textStringConst())));
+    }
+    return pylist;
 }
 
 Adesk::Boolean PyDbBlockReference::treatAsAcDbBlockRefForExplode() const
@@ -208,9 +246,22 @@ std::string PyDbBlockReference::getBlockName() const
     {
         AcDbBlockTableRecordPointer bBlock(impObj()->blockTableRecord());
         PyThrowBadEs(bBlock.openStatus());
+#if defined (_BRXTARGET) //related to (SR196681) parametric block
+        if (bBlock->isAnonymous())
+        {
+            if (AcString efname = acdbEffectiveBlockRefName(impObj()->objectId()); !efname.isEmpty())
+                return wstr_to_utf8(efname);
+        }
+#endif
         PyThrowBadEs(bBlock->getName(name));
     }
     return wstr_to_utf8(name);
+}
+
+bool PyDbBlockReference::hasAttributes() const
+{
+    AcDbObjectIteratorUPtr iter(impObj()->attributeIterator());
+    return !iter->done();
 }
 
 std::string PyDbBlockReference::className()
@@ -245,14 +296,14 @@ AcDbBlockReference* PyDbBlockReference::impObj(const std::source_location& src /
 //PyDbDynBlockReference
 void makePyDbDynBlockReferenceWrapper() //TODO: Make test
 {
-    PyDocString DS("PyDb.DynBlockReference");
+    PyDocString DS("DynBlockReference");
     class_<PyDbDynBlockReference>("DynBlockReference", no_init)
-        .def(init<const PyDbObjectId&>(DS.ARGS({ "val :  PyDb.ObjectId" })))
+        .def(init<const PyDbObjectId&>(DS.ARGS({ "blockId :  PyDb.ObjectId" }, 4192)))
         .def("isDynamicBlock", &PyDbDynBlockReference::isDynamicBlock1, DS.ARGS(4216))
         .def("blockId", &PyDbDynBlockReference::blockId, DS.ARGS(4212))
         .def("resetBlock", &PyDbDynBlockReference::resetBlock, DS.ARGS(4217))
         .def("convertToStaticBlock", &PyDbDynBlockReference::convertToStaticBlock1)
-        .def("convertToStaticBlock", &PyDbDynBlockReference::convertToStaticBlock2, DS.ARGS({ "val : str=None" }, 4213))
+        .def("convertToStaticBlock", &PyDbDynBlockReference::convertToStaticBlock2, DS.ARGS({ "blockName : str = ..." }, 4213))
         .def("dynamicBlockTableRecord", &PyDbDynBlockReference::dynamicBlockTableRecord, DS.ARGS(4214))
         .def("anonymousBlockTableRecord", &PyDbDynBlockReference::anonymousBlockTableRecord, DS.ARGS(4211))
         .def("getBlockProperties", &PyDbDynBlockReference::getBlockProperties, DS.ARGS(4215))
@@ -341,21 +392,21 @@ void makePyDbMInsertBlockeWrapper()
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
 
-    PyDocString DS("PyDb.MInsertBlock");
+    PyDocString DS("MInsertBlock");
     class_<PyDbMInsertBlock, bases<PyDbBlockReference>>("MInsertBlock")
         .def(init<>())
         .def(init<AcGePoint3d&, const PyDbObjectId&, Adesk::UInt16, Adesk::UInt16, double, double>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 6409)))
         .def("columns", &PyDbMInsertBlock::columns, DS.ARGS(6411))
-        .def("setColumns", &PyDbMInsertBlock::setColumns, DS.ARGS({ "val : int" }, 6415))
+        .def("setColumns", &PyDbMInsertBlock::setColumns, DS.ARGS({ "columnCount : int" }, 6415))
         .def("rows", &PyDbMInsertBlock::rows, DS.ARGS(6413))
-        .def("setRows", &PyDbMInsertBlock::setRows, DS.ARGS({ "val : int" }, 6417))
+        .def("setRows", &PyDbMInsertBlock::setRows, DS.ARGS({ "rowCount : int" }, 6417))
         .def("columnSpacing", &PyDbMInsertBlock::columnSpacing, DS.ARGS(6412))
-        .def("setColumnSpacing", &PyDbMInsertBlock::setColumnSpacing, DS.ARGS({ "val : float" }, 6416))
+        .def("setColumnSpacing", &PyDbMInsertBlock::setColumnSpacing, DS.ARGS({ "spacing : float" }, 6416))
         .def("rowSpacing", &PyDbMInsertBlock::rowSpacing, DS.ARGS(6414))
-        .def("setRowSpacing", &PyDbMInsertBlock::setRowSpacing, DS.ARGS({ "val : float" }, 6418))
+        .def("setRowSpacing", &PyDbMInsertBlock::setRowSpacing, DS.ARGS({ "spacing : float" }, 6418))
         .def("className", &PyDbMInsertBlock::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbMInsertBlock::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbMInsertBlock::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -471,12 +522,12 @@ void makePyDbVertexWrapper()
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
 
-    PyDocString DS("PyDb.Vertex");
+    PyDocString DS("Vertex");
     class_<PyDbVertex, bases<PyDbEntity>>("Vertex")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 9921)))
         .def("className", &PyDbVertex::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbVertex::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbVertex::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -548,32 +599,32 @@ void makePyDb2dVertexWrapper()
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
 
-    PyDocString DS("PyDb.Vertex2d");
+    PyDocString DS("Vertex2d");
     class_<PyDb2dVertex, bases<PyDbVertex>>("Vertex2d")
         .def(init<>())
         .def(init<const AcGePoint3d&>())
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
         .def(init<const AcGePoint3d&, double, double, double, double, Adesk::Int32>())
 #endif
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 1196)))
         .def("vertexType", &PyDb2dVertex::vertexType, DS.ARGS(1212))
         .def("position", &PyDb2dVertex::position, DS.ARGS(1202))
-        .def("setPosition", &PyDb2dVertex::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 1205))
+        .def("setPosition", &PyDb2dVertex::setPosition, DS.ARGS({ "point : PyGe.Point3d" }, 1205))
         .def("startWidth", &PyDb2dVertex::startWidth, DS.ARGS(1209))
-        .def("setStartWidth", &PyDb2dVertex::setStartWidth, DS.ARGS({ "val : float" }, 1206))
+        .def("setStartWidth", &PyDb2dVertex::setStartWidth, DS.ARGS({ "width : float" }, 1206))
         .def("endWidth", &PyDb2dVertex::endWidth, DS.ARGS(1199))
-        .def("setEndWidth", &PyDb2dVertex::setEndWidth, DS.ARGS({ "val : float" }, 1204))
+        .def("setEndWidth", &PyDb2dVertex::setEndWidth, DS.ARGS({ "width : float" }, 1204))
         .def("bulge", &PyDb2dVertex::bulge, DS.ARGS(1198))
-        .def("setBulge", &PyDb2dVertex::setBulge, DS.ARGS({ "val : float" }, 1203))
+        .def("setBulge", &PyDb2dVertex::setBulge, DS.ARGS({ "bulge : float" }, 1203))
         .def("isTangentUsed", &PyDb2dVertex::isTangentUsed, DS.ARGS(1201))
         .def("useTangent", &PyDb2dVertex::useTangent, DS.ARGS(1211))
         .def("ignoreTangent", &PyDb2dVertex::ignoreTangent, DS.ARGS(1200))
-        .def("setTangentUsed", &PyDb2dVertex::setTangentUsed, DS.ARGS({ "val : bool" }, 1208))
+        .def("setTangentUsed", &PyDb2dVertex::setTangentUsed, DS.ARGS({ "use : bool" }, 1208))
         .def("tangent", &PyDb2dVertex::tangent, DS.ARGS(1210))
-        .def("setTangent", &PyDb2dVertex::setTangent, DS.ARGS({ "val : float" }, 1207))
-        .def("setVertexIdentifier", &PyDb2dVertex::setVertexIdentifier, DS.ARGS({ "val : int" }))
+        .def("setTangent", &PyDb2dVertex::setTangent, DS.ARGS({ "angle : float" }, 1207))
+        .def("setVertexIdentifier", &PyDb2dVertex::setVertexIdentifier, DS.ARGS({ "identifier : int" }))
         .def("vertexIdentifier", &PyDb2dVertex::vertexIdentifier, DS.ARGS())
         .def("className", &PyDb2dVertex::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDb2dVertex::desc, DS.SARGS(15560)).staticmethod("desc")
@@ -592,7 +643,7 @@ PyDb2dVertex::PyDb2dVertex(const AcGePoint3d& pos)
 {
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyDb2dVertex::PyDb2dVertex(const AcGePoint3d& pos, double bulge, double startWidth, double endWidth, double tangent, Adesk::Int32 vertexIdentifier)
     : PyDb2dVertex(new AcDb2dVertex(pos, bulge, startWidth, endWidth, tangent, vertexIdentifier), true)
 {
@@ -681,7 +732,7 @@ void PyDb2dVertex::ignoreTangent() const
 
 void PyDb2dVertex::setTangentUsed(Adesk::Boolean val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setTangentUsed(val));
@@ -700,7 +751,7 @@ void PyDb2dVertex::setTangent(double newVal) const
 
 void PyDb2dVertex::setVertexIdentifier(Adesk::Int32 suggestedValue) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setVertexIdentifier(suggestedValue));
@@ -709,7 +760,7 @@ void PyDb2dVertex::setVertexIdentifier(Adesk::Int32 suggestedValue) const
 
 int PyDb2dVertex::vertexIdentifier() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->vertexIdentifier();
@@ -755,16 +806,16 @@ void makePyDb3dPolylineVertexWrapper()
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
 
-    PyDocString DS("PyDb.Polyline3dVertex");
+    PyDocString DS("Polyline3dVertex");
     class_<PyDb3dPolylineVertex, bases<PyDbVertex>>("Polyline3dVertex")
         .def(init<>())
         .def(init<const AcGePoint3d&>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 1231)))
         .def("vertexType", &PyDb3dPolylineVertex::vertexType, DS.ARGS(1235))
         .def("position", &PyDb3dPolylineVertex::position, DS.ARGS(1233))
-        .def("setPosition", &PyDb3dPolylineVertex::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 1234))
+        .def("setPosition", &PyDb3dPolylineVertex::setPosition, DS.ARGS({ "point: PyGe.Point3d" }, 1234))
         .def("className", &PyDb3dPolylineVertex::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDb3dPolylineVertex::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDb3dPolylineVertex::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -862,10 +913,10 @@ void makePyDbPolygonMeshVertexWrapper()
         .def(init<const AcGePoint3d&>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 7791)))
         .def("vertexType", &PyDbPolygonMeshVertex::vertexType, DS.ARGS(7795))
         .def("position", &PyDbPolygonMeshVertex::position, DS.ARGS(7793))
-        .def("setPosition", &PyDbPolygonMeshVertex::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 7794))
+        .def("setPosition", &PyDbPolygonMeshVertex::setPosition, DS.ARGS({ "point : PyGe.Point3d" }, 7794))
         .def("className", &PyDbPolygonMeshVertex::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbPolygonMeshVertex::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbPolygonMeshVertex::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -963,9 +1014,9 @@ void makePyDbPolyFaceMeshVertexWrapper()
         .def(init<const AcGePoint3d&>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 7775)))
         .def("position", &PyDbPolyFaceMeshVertex::position, DS.ARGS(7777))
-        .def("setPosition", &PyDbPolyFaceMeshVertex::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 7778))
+        .def("setPosition", &PyDbPolyFaceMeshVertex::setPosition, DS.ARGS({ "point: PyGe.Point3d" }, 7778))
         .def("className", &PyDbPolyFaceMeshVertex::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbPolyFaceMeshVertex::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbPolyFaceMeshVertex::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -1058,12 +1109,12 @@ void makePyDbFaceRecordWrapper()
         .def(init<Adesk::Int16, Adesk::Int16, Adesk::Int16, Adesk::Int16>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
-        .def("getVertexAt", &PyDbFaceRecord::getVertexAt, DS.ARGS({ "val : int" }, 4558))
-        .def("setVertexAt", &PyDbFaceRecord::setVertexAt, DS.ARGS({ "val : int",  "idx : int" }, 4562))
-        .def("isEdgeVisibleAt", &PyDbFaceRecord::isEdgeVisibleAt, DS.ARGS({ "val : int" }, 4559))
-        .def("makeEdgeVisibleAt", &PyDbFaceRecord::makeEdgeVisibleAt, DS.ARGS({ "val : int" }, 4561))
-        .def("makeEdgeInvisibleAt", &PyDbFaceRecord::makeEdgeInvisibleAt, DS.ARGS({ "val : int" }, 4560))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 4556)))
+        .def("getVertexAt", &PyDbFaceRecord::getVertexAt, DS.ARGS({ "index : int" }, 4558))
+        .def("setVertexAt", &PyDbFaceRecord::setVertexAt, DS.ARGS({ "vertexId : int",  "index : int" }, 4562))
+        .def("isEdgeVisibleAt", &PyDbFaceRecord::isEdgeVisibleAt, DS.ARGS({ "edgeIndex : int" }, 4559))
+        .def("makeEdgeVisibleAt", &PyDbFaceRecord::makeEdgeVisibleAt, DS.ARGS({ "edgeIndex : int" }, 4561))
+        .def("makeEdgeInvisibleAt", &PyDbFaceRecord::makeEdgeInvisibleAt, DS.ARGS({ "edgeIndex : int" }, 4560))
         .def("className", &PyDbFaceRecord::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbFaceRecord::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbFaceRecord::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -1175,15 +1226,15 @@ void makePyDbPointWrapper()
         .def(init<AcGePoint3d&>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 7493)))
         .def("position", &PyDbPoint::position, DS.ARGS(7766))
-        .def("setPosition", &PyDbPoint::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 7769))
+        .def("setPosition", &PyDbPoint::setPosition, DS.ARGS({ "point : PyGe.Point3d" }, 7769))
         .def("thickness", &PyDbPoint::thickness, DS.ARGS(7772))
-        .def("setThickness", &PyDbPoint::setThickness, DS.ARGS({ "val : float" }, 7770))
+        .def("setThickness", &PyDbPoint::setThickness, DS.ARGS({ "thickness : float" }, 7770))
         .def("normal", &PyDbPoint::normal, DS.ARGS(7765))
-        .def("setNormal", &PyDbPoint::setNormal, DS.ARGS({ "val : PyGe.Vector3d" }, 7768))
+        .def("setNormal", &PyDbPoint::setNormal, DS.ARGS({ "vector : PyGe.Vector3d" }, 7768))
         .def("ecsRotation", &PyDbPoint::ecsRotation, DS.ARGS(7762))
-        .def("setEcsRotation", &PyDbPoint::setEcsRotation, DS.ARGS({ "val : float" }, 7767))
+        .def("setEcsRotation", &PyDbPoint::setEcsRotation, DS.ARGS({ "angle : float" }, 7767))
         .def("className", &PyDbPoint::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbPoint::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbPoint::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -1298,8 +1349,19 @@ static AcGePoint3dArray& listToAcGePoint3dArrayRef(const boost::python::list& li
     auto vec = py_list_to_std_vector<AcGePoint3d>(list);
     static AcGePoint3dArray arr;
     arr.removeAll();
-    for (const AcGePoint3d& pnt : vec)
-        arr.append(pnt);
+    arr.setPhysicalLength(vec.size());
+    for (const auto& item : vec)
+        arr.append(item);
+    return arr;
+}
+
+static AcGePoint3dArray& PyGePoint3dArrayToAcGePoint3dArrayRef(const PyGePoint3dArray& list)
+{
+    static AcGePoint3dArray arr;
+    arr.removeAll();
+    arr.setPhysicalLength(list.size());
+    for (const auto& item : list)
+        arr.append(item);
     return arr;
 }
 
@@ -1308,6 +1370,7 @@ void makePyDb2dPolylineWrapper()
     constexpr const std::string_view ctords = "Overloads:\n"
         "- None: Any\n"
         "- ptype: PyDb.Poly2dType, points: list[PyGe.Point3d], closed: bool\n"
+        "- ptype: PyDb.Poly2dType, points: PyGe.Point3dArray, closed: bool\n"
         "- id: PyDb.ObjectId\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
@@ -1330,26 +1393,27 @@ void makePyDb2dPolylineWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<AcDb::Poly2dType, const boost::python::list&, Adesk::Boolean>(DS.CTOR(ctords)))
+        .def(init<AcDb::Poly2dType, PyGePoint3dArray&, Adesk::Boolean>())
+        .def(init<AcDb::Poly2dType, const boost::python::list&, Adesk::Boolean>(DS.CTOR(ctords, 1160)))
         .def("polyType", &PyDb2dPolyline::polyType, DS.ARGS(1178))
-        .def("setPolyType", &PyDb2dPolyline::setPolyType, DS.ARGS({ "val: PyDb.Poly2dType" }, 1187))
-        .def("convertToPolyType", &PyDb2dPolyline::convertToPolyType, DS.ARGS({ "val: PyDb.Poly2dType" }, 1164))
+        .def("setPolyType", &PyDb2dPolyline::setPolyType, DS.ARGS({ "polyType: PyDb.Poly2dType" }, 1187))
+        .def("convertToPolyType", &PyDb2dPolyline::convertToPolyType, DS.ARGS({ "polyType: PyDb.Poly2dType" }, 1164))
         .def("makeClosed", &PyDb2dPolyline::makeClosed, DS.ARGS(1172))
         .def("makeOpen", &PyDb2dPolyline::makeOpen, DS.ARGS(1174))
-        .def("setClosed", &PyDb2dPolyline::setClosed, DS.ARGS({ "val : bool" }, 1179))
+        .def("setClosed", &PyDb2dPolyline::setClosed, DS.ARGS({ "closed : bool" }, 1179))
         .def("constantWidth", &PyDb2dPolyline::constantWidth, DS.ARGS(1163))
-        .def("setConstantWidth", &PyDb2dPolyline::setConstantWidth, DS.ARGS({ "val : float" }, 1180))
+        .def("setConstantWidth", &PyDb2dPolyline::setConstantWidth, DS.ARGS({ "width : float" }, 1180))
         .def("length", &PyDb2dPolyline::length, DS.ARGS(1171))
         .def("defaultStartWidth", &PyDb2dPolyline::defaultStartWidth, DS.ARGS(1167))
-        .def("setDefaultStartWidth", &PyDb2dPolyline::setDefaultStartWidth, DS.ARGS({ "val : float" }, 1182))
+        .def("setDefaultStartWidth", &PyDb2dPolyline::setDefaultStartWidth, DS.ARGS({ "width : float" }, 1182))
         .def("defaultEndWidth", &PyDb2dPolyline::defaultEndWidth, DS.ARGS(1166))
-        .def("setDefaultEndWidth", &PyDb2dPolyline::setDefaultEndWidth, DS.ARGS({ "val : float" }, 1181))
+        .def("setDefaultEndWidth", &PyDb2dPolyline::setDefaultEndWidth, DS.ARGS({ "width : float" }, 1181))
         .def("thickness", &PyDb2dPolyline::thickness, DS.ARGS(1192))
-        .def("setThickness", &PyDb2dPolyline::setThickness, DS.ARGS({ "val : float" }, 1188))
+        .def("setThickness", &PyDb2dPolyline::setThickness, DS.ARGS({ "thickness : float" }, 1188))
         .def("normal", &PyDb2dPolyline::normal, DS.ARGS(1175))
-        .def("setNormal", &PyDb2dPolyline::setNormal, DS.ARGS({ "normal : PyGe.Vector3d" }, 1186))
+        .def("setNormal", &PyDb2dPolyline::setNormal, DS.ARGS({ "vector : PyGe.Vector3d" }, 1186))
         .def("elevation", &PyDb2dPolyline::elevation, DS.ARGS(1168))
-        .def("setElevation", &PyDb2dPolyline::setElevation, DS.ARGS({ "val : float" }, 1183))
+        .def("setElevation", &PyDb2dPolyline::setElevation, DS.ARGS({ "elev : float" }, 1183))
         .def("isLinetypeGenerationOn", &PyDb2dPolyline::isLinetypeGenerationOn, DS.ARGS(1170))
         .def("setLinetypeGenerationOn", &PyDb2dPolyline::setLinetypeGenerationOn, DS.ARGS(1185))
         .def("setLinetypeGenerationOff", &PyDb2dPolyline::setLinetypeGenerationOff, DS.ARGS(1184))
@@ -1364,7 +1428,7 @@ void makePyDb2dPolylineWrapper()
         .def("openSequenceEnd", &PyDb2dPolyline::openSequenceEnd, DS.ARGS({ "mode: PyDb.OpenMode" }, 1176))
         .def("vertexIds", &PyDb2dPolyline::vertexIds, DS.ARGS())
         .def("vertexPosition", &PyDb2dPolyline::vertexPosition, DS.ARGS({ "vt : PyDb.Vertex2d" }, 1194))
-        .def("makeClosedIfStartAndEndVertexCoincide", &PyDb2dPolyline::makeClosedIfStartAndEndVertexCoincide, DS.ARGS({ "val : float" }, 1173))
+        .def("makeClosedIfStartAndEndVertexCoincide", &PyDb2dPolyline::makeClosedIfStartAndEndVertexCoincide, DS.ARGS({ "tolerance : float" }, 1173))
         .def("className", &PyDb2dPolyline::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDb2dPolyline::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDb2dPolyline::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -1394,6 +1458,11 @@ PyDb2dPolyline::PyDb2dPolyline(const PyDbObjectId& id, AcDb::OpenMode mode, bool
 
 PyDb2dPolyline::PyDb2dPolyline(AcDb::Poly2dType type, const boost::python::list& vertices, Adesk::Boolean closed)
     : PyDbCurve(new AcDb2dPolyline(type, listToAcGePoint3dArrayRef(vertices), 0.0, closed), true)
+{
+}
+
+PyDb2dPolyline::PyDb2dPolyline(AcDb::Poly2dType type, const PyGePoint3dArray& vertices, Adesk::Boolean closed)
+    : PyDbCurve(new AcDb2dPolyline(type, PyGePoint3dArrayToAcGePoint3dArrayRef(vertices), 0.0, closed), true)
 {
 }
 
@@ -1579,7 +1648,7 @@ AcGePoint3d PyDb2dPolyline::vertexPosition(const AcDb2dVertex& vert) const
 
 void PyDb2dPolyline::makeClosedIfStartAndEndVertexCoincide(double distTol) const
 {
-#if defined(_GRXTARGET240) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET260) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->makeClosedIfStartAndEndVertexCoincide(distTol));
@@ -1621,6 +1690,7 @@ void makePyDb3dPolylineWrapper()
     constexpr const std::string_view ctords = "Overloads:\n"
         "- None: Any\n"
         "- ptype: PyDb.Poly3dType, points: list[PyGe.Point3d], closed: bool\n"
+        "- ptype: PyDb.Poly3dType, points: PyGe.Point3dArray, closed: bool\n"
         "- id: PyDb.ObjectId\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
@@ -1643,14 +1713,15 @@ void makePyDb3dPolylineWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<AcDb::Poly3dType, const boost::python::list&, Adesk::Boolean>(DS.CTOR(ctords)))
+        .def(init<AcDb::Poly3dType, PyGePoint3dArray&, Adesk::Boolean>())
+        .def(init<AcDb::Poly3dType, const boost::python::list&, Adesk::Boolean>(DS.CTOR(ctords, 1230)))
         .def("length", &PyDb3dPolyline::length, DS.ARGS(1241))
-        .def("setClosed", &PyDb3dPolyline::setClosed, DS.ARGS({ "val : bool" }, 1247))
+        .def("setClosed", &PyDb3dPolyline::setClosed, DS.ARGS({ "isClosed : bool" }, 1247))
         .def("makeClosed", &PyDb3dPolyline::makeClosed, DS.ARGS(1242))
         .def("makeOpen", &PyDb3dPolyline::makeOpen, DS.ARGS(1243))
         .def("polyType", &PyDb3dPolyline::polyType, DS.ARGS(1246))
-        .def("setPolyType", &PyDb3dPolyline::setPolyType, DS.ARGS({ "val : PyDb.Poly3dType" }, 1248))
-        .def("convertToPolyType", &PyDb3dPolyline::convertToPolyType, DS.ARGS({ "val : PyDb.Poly3dType" }, 1239))
+        .def("setPolyType", &PyDb3dPolyline::setPolyType, DS.ARGS({ "polyType : PyDb.Poly3dType" }, 1248))
+        .def("convertToPolyType", &PyDb3dPolyline::convertToPolyType, DS.ARGS({ "polyType : PyDb.Poly3dType" }, 1239))
         .def("straighten", &PyDb3dPolyline::straighten, DS.ARGS(1250))
         .def("splineFit", &PyDb3dPolyline::splineFit1)
         .def("splineFit", &PyDb3dPolyline::splineFit2, DS.OVRL(splineFitverOverload, 1249))
@@ -1662,7 +1733,7 @@ void makePyDb3dPolylineWrapper()
         .def("openSequenceEnd", &PyDb3dPolyline::openSequenceEnd, DS.ARGS({ "mode: PyDb.OpenMode" }, 1244))
         .def("vertexIds", &PyDb3dPolyline::vertexIds, DS.ARGS())
         .def("getAcGeCurve", &PyDb3dPolyline::getAcGeCurve1)
-        .def("getAcGeCurve", &PyDb3dPolyline::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = 'default'" }, 2775))
+        .def("getAcGeCurve", &PyDb3dPolyline::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = ..." }, 2775))
         .def("className", &PyDb3dPolyline::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDb3dPolyline::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDb3dPolyline::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -1687,6 +1758,11 @@ PyDb3dPolyline::PyDb3dPolyline(const PyDbObjectId& id, AcDb::OpenMode mode)
 
 PyDb3dPolyline::PyDb3dPolyline(AcDb::Poly3dType pt, const boost::python::list& vertices, Adesk::Boolean closed)
     : PyDbCurve(new AcDb3dPolyline(pt, listToAcGePoint3dArrayRef(vertices), closed), true)
+{
+}
+
+PyDb3dPolyline::PyDb3dPolyline(AcDb::Poly3dType pt, const PyGePoint3dArray& vertices, Adesk::Boolean closed)
+    : PyDbCurve(new AcDb3dPolyline(pt, PyGePoint3dArrayToAcGePoint3dArrayRef(vertices), closed), true)
 {
 }
 
@@ -1841,8 +1917,9 @@ void makePyDbArcWrapper()
 {
     constexpr const std::string_view ctords = "Overloads:\n"
         "- None: Any\n"
+        "- p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d\n"
         "- center: PyGe.Point3d, radius: float, startAngle: float, endAngle: float\n"
-        "- center: PyGe.Point3d,normal: PyGe.Vector2d, radius: float, startAngle: float, endAngle: float\n"
+        "- center: PyGe.Point3d, normal: PyGe.Vector3d, radius: float, startAngle: float, endAngle: float\n"
         "- id: PyDb.ObjectId\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
@@ -1853,22 +1930,23 @@ void makePyDbArcWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
+        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>())
         .def(init<const AcGePoint3d&, double, double, double>())
-        .def(init<const AcGePoint3d&, const AcGeVector3d&, double, double, double>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, const AcGeVector3d&, double, double, double>(DS.CTOR(ctords, 1491)))
         .def("center", &PyDbArc::center, DS.ARGS(1519))
-        .def("setCenter", &PyDbArc::setCenter, DS.ARGS({ "val:PyGe.Point3d" }, 1524))
+        .def("setCenter", &PyDbArc::setCenter, DS.ARGS({ "newCenter:PyGe.Point3d" }, 1524))
         .def("radius", &PyDbArc::radius, DS.ARGS(1523))
-        .def("setRadius", &PyDbArc::setRadius, DS.ARGS({ "val:float" }, 1527))
+        .def("setRadius", &PyDbArc::setRadius, DS.ARGS({ "newRadius:float" }, 1527))
         .def("startAngle", &PyDbArc::startAngle, DS.ARGS(1530))
-        .def("setStartAngle", &PyDbArc::setStartAngle, DS.ARGS({ "val:float" }, 1528))
+        .def("setStartAngle", &PyDbArc::setStartAngle, DS.ARGS({ "newStartAngle:float" }, 1528))
         .def("endAngle", &PyDbArc::endAngle, DS.ARGS(1520))
-        .def("setEndAngle", &PyDbArc::setEndAngle, DS.ARGS({ "val:float" }, 1525))
+        .def("setEndAngle", &PyDbArc::setEndAngle, DS.ARGS({ "newEndAngle:float" }, 1525))
         .def("totalAngle", &PyDbArc::totalAngle, DS.ARGS(1533))
         .def("length", &PyDbArc::length, DS.ARGS(1521))
         .def("thickness", &PyDbArc::thickness, DS.ARGS(1532))
-        .def("setThickness", &PyDbArc::setThickness, DS.ARGS({ "val:float" }, 1529))
+        .def("setThickness", &PyDbArc::setThickness, DS.ARGS({ "newThickness:float" }, 1529))
         .def("normal", &PyDbArc::normal, DS.ARGS(1522))
-        .def("setNormal", &PyDbArc::setNormal, DS.ARGS({ "val:PyGe.Vector3d" }, 1526))
+        .def("setNormal", &PyDbArc::setNormal, DS.ARGS({ "newNormal:PyGe.Vector3d" }, 1526))
         .def("getAcGeCurve", &PyDbArc::getAcGeCurve1)
         .def("getAcGeCurve", &PyDbArc::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = 'default'" }, 2775))
         .def("className", &PyDbArc::className, DS.SARGS()).staticmethod("className")
@@ -1891,6 +1969,16 @@ PyDbArc::PyDbArc(AcDbArc* ptr, bool autoDelete)
 PyDbArc::PyDbArc(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbCurve(openAcDbObject<AcDbArc>(id, mode), false)
 {
+}
+
+PyDbArc::PyDbArc(const AcGePoint3d& p1, const AcGePoint3d& p2, const AcGePoint3d& p3)
+    : PyDbCurve(new AcDbArc(), true)
+{
+    AcGeCircArc3d tmp(p1, p2, p3);
+    impObj()->setCenter(tmp.center());
+    impObj()->setRadius(tmp.radius());
+    impObj()->setStartAngle(tmp.startAng());
+    impObj()->setEndAngle(tmp.endAng());
 }
 
 PyDbArc::PyDbArc(const AcGePoint3d& center, double radius, double startAngle, double endAngle)
@@ -2042,21 +2130,21 @@ void makePyDbCircleWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<const AcGePoint3d&, const AcGeVector3d&, double>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, const AcGeVector3d&, double>(DS.CTOR(ctords, 2683)))
         .def("center", &PyDbCircle::center, DS.ARGS(2685))
-        .def("setCenter", &PyDbCircle::setCenter, DS.ARGS({ "val:PyGe.Point3d" }, 2690))
+        .def("setCenter", &PyDbCircle::setCenter, DS.ARGS({ "newCenter:PyGe.Point3d" }, 2690))
         .def("radius", &PyDbCircle::radius, DS.ARGS(2689))
-        .def("setRadius", &PyDbCircle::setRadius, DS.ARGS({ "val:float" }, 2694))
+        .def("setRadius", &PyDbCircle::setRadius, DS.ARGS({ "newRadius:float" }, 2694))
         .def("thickness", &PyDbCircle::thickness, DS.ARGS(2697))
-        .def("setThickness", &PyDbCircle::setThickness, DS.ARGS({ "val:float" }, 2695))
+        .def("setThickness", &PyDbCircle::setThickness, DS.ARGS({ "newThickness:float" }, 2695))
         .def("normal", &PyDbCircle::normal, DS.ARGS(2688))
-        .def("setNormal", &PyDbCircle::setNormal, DS.ARGS({ "val:PyGe.Vector3d" }, 2693))
+        .def("setNormal", &PyDbCircle::setNormal, DS.ARGS({ "newNormal:PyGe.Vector3d" }, 2693))
         .def("circumference", &PyDbCircle::circumference, DS.ARGS(2686))
-        .def("setCircumference", &PyDbCircle::setCircumference, DS.ARGS({ "val:float" }, 2691))
+        .def("setCircumference", &PyDbCircle::setCircumference, DS.ARGS({ "newCircumference:float" }, 2691))
         .def("diameter", &PyDbCircle::diameter, DS.ARGS(2687))
-        .def("setDiameter", &PyDbCircle::setDiameter, DS.ARGS({ "val:float" }, 2692))
+        .def("setDiameter", &PyDbCircle::setDiameter, DS.ARGS({ "newDiameter:float" }, 2692))
         .def("getAcGeCurve", &PyDbCircle::getAcGeCurve1)
-        .def("getAcGeCurve", &PyDbCircle::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = 'default'" }, 2775))
+        .def("getAcGeCurve", &PyDbCircle::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = ..." }, 2775))
         .def("className", &PyDbCircle::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbCircle::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbCircle::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -2136,8 +2224,10 @@ void PyDbCircle::setNormal(const AcGeVector3d& val) const
 
 double PyDbCircle::circumference() const
 {
-#if defined(_BRXTARGET250)
-    throw PyNotimplementedByHost();
+#if defined(_BRXTARGET260)
+    constexpr const double PI = 3.14159265358979323846;
+    double circumference = 2 * PI * impObj()->radius();
+    return circumference;
 #else
     return impObj()->circumference();
 #endif
@@ -2145,8 +2235,10 @@ double PyDbCircle::circumference() const
 
 void PyDbCircle::setCircumference(double val) const
 {
-#if defined(_BRXTARGET250)
-    throw PyNotimplementedByHost();
+#if defined(_BRXTARGET260)
+    constexpr const double PI = 3.14159265358979323846;
+    double radius = val / (2 * PI);
+    return PyThrowBadEs(impObj()->setRadius(radius));
 #else
     return PyThrowBadEs(impObj()->setCircumference(val));
 #endif
@@ -2154,8 +2246,8 @@ void PyDbCircle::setCircumference(double val) const
 
 double PyDbCircle::diameter() const
 {
-#if defined(_BRXTARGET250)
-    throw PyNotimplementedByHost();
+#if defined(_BRXTARGET260)
+    return impObj()->radius() * 2;
 #else
     return impObj()->diameter();
 #endif
@@ -2163,8 +2255,8 @@ double PyDbCircle::diameter() const
 
 void PyDbCircle::setDiameter(double val) const
 {
-#if defined(_BRXTARGET250)
-    throw PyNotimplementedByHost();
+#if defined(_BRXTARGET260)
+    return PyThrowBadEs(impObj()->setRadius(val / 2.0));
 #else
     return PyThrowBadEs(impObj()->setDiameter(val));
 #endif
@@ -2229,20 +2321,21 @@ void makePyDbLineWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctords, 6027)))
         .def("startPoint", &PyDbLine::startPoint, DS.ARGS(6081))
-        .def("setStartPoint", &PyDbLine::setStartPoint, DS.ARGS({ "val:PyGe.Point3d" }, 6079))
+        .def("setStartPoint", &PyDbLine::setStartPoint, DS.ARGS({ "newStart:PyGe.Point3d" }, 6079))
         .def("endPoint", &PyDbLine::endPoint, DS.ARGS(6074))
-        .def("setEndPoint", &PyDbLine::setEndPoint, DS.ARGS({ "val:PyGe.Point3d" }, 6077))
+        .def("setEndPoint", &PyDbLine::setEndPoint, DS.ARGS({ "newEnd:PyGe.Point3d" }, 6077))
         .def("thickness", &PyDbLine::thickness, DS.ARGS(6083))
-        .def("setThickness", &PyDbLine::setThickness, DS.ARGS({ "val:float" }, 6080))
+        .def("setThickness", &PyDbLine::setThickness, DS.ARGS({ "newThickness:float" }, 6080))
         .def("normal", &PyDbLine::normal, DS.ARGS(6076))
-        .def("setNormal", &PyDbLine::setNormal, DS.ARGS({ "val:PyGe.Vector3d" }, 6078))
-        .def("getOffsetCurvesGivenPlaneNormal", &PyDbLine::getOffsetCurvesGivenPlaneNormal, DS.ARGS({ "val:PyGe.Vector3d","offset:float" }, 6075))
+        .def("setNormal", &PyDbLine::setNormal, DS.ARGS({ "newNormal:PyGe.Vector3d" }, 6078))
+        .def("getOffsetCurvesGivenPlaneNormal", &PyDbLine::getOffsetCurvesGivenPlaneNormal, DS.ARGS({ "planeNormal:PyGe.Vector3d","offset:float" }, 6075))
         .def("getAcGeCurve", &PyDbLine::getAcGeCurve1)
-        .def("getAcGeCurve", &PyDbLine::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = 'default'" }, 2775))
+        .def("getAcGeCurve", &PyDbLine::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = ..." }, 2775))
         .def("midPoint", &PyDbLine::midPoint, DS.ARGS())
         .def("direction", &PyDbLine::direction, DS.ARGS())
+        .def("length", &PyDbLine::length, DS.ARGS())
         .def("className", &PyDbLine::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbLine::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbLine::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -2345,6 +2438,12 @@ AcGeVector3d PyDbLine::direction() const
     return impObj()->endPoint() - impObj()->startPoint();
 }
 
+double PyDbLine::length() const
+{
+    AcGeLineSeg3d seg(impObj()->startPoint(), impObj()->endPoint());
+    return seg.length();
+}
+
 std::string PyDbLine::className()
 {
     return "AcDbLine";
@@ -2375,12 +2474,138 @@ AcDbLine* PyDbLine::impObj(const std::source_location& src /*= std::source_locat
 
 //-----------------------------------------------------------------------------------
 //PyDbPolyline
+static auto shallowClone(const AcDbPolyline& pline) -> AcDbAcDbPolylineUPtr
+{
+    return AcDbAcDbPolylineUPtr{ static_cast<AcDbPolyline*>(pline.clone()) };
+}
+
+static auto getCompositCurve(const AcDbPolyline& pline) -> std::unique_ptr<AcGeCompositeCurve3d>
+{
+    AcGeCurve3d* pcurve = nullptr;
+    PyThrowBadEs(pline.getAcGeCurve(pcurve));
+    return std::unique_ptr<AcGeCompositeCurve3d>(static_cast<AcGeCompositeCurve3d*>(pcurve));
+}
+
+static void tessellateArc(const AcGeCircArc3d& arc, AcGePoint3dArray& outPts, double tol = 0.0001)
+{
+    const double R = arc.radius();
+    double start = arc.startAng();
+    double end = arc.endAng();
+    if (end < start)
+        end += 6.283185307179586; // 2 * PI
+
+    double sweep = end - start;
+    if (sweep < 1e-9)
+        return;
+
+    if (R <= tol)
+    {
+        outPts.append(arc.startPoint());
+        return;
+    }
+
+    // Maximum angular step from sagitta: tol = R(1 - cos(theta/2))
+    double thetaMax = 2.0 * acos(std::max(-1.0, std::min(1.0, 1.0 - tol / R)));
+
+    if (thetaMax <= 1e-9)
+        thetaMax = sweep;
+
+    const int nSegs = std::max(static_cast<int>(ceil(sweep / thetaMax)), 1);
+    const double dAng = sweep / nSegs;
+
+    for (int i = 0; i < nSegs; ++i)
+    {
+        double a = start + (dAng * i);
+        outPts.append(arc.evalPoint(a));
+    }
+}
+
+static auto getPolyPoints(const AcGeCompositeCurve3d& cc) -> AcGePoint3dArray
+{
+    AcGePoint3dArray polypoints;
+    AcGeVoidPointerArray curveList;
+    cc.getCurveList(curveList);
+    for (const auto* pvoid : curveList)
+    {
+        if (pvoid != nullptr)
+        {
+            const auto* pItem = static_cast<const AcGeEntity3d*>(pvoid);
+            if (pItem->type() == AcGe::kLineSeg3d)
+            {
+                const auto* tmp = static_cast<const AcGeLineSeg3d*>(pItem);
+                polypoints.append(tmp->startPoint());
+            }
+            else if (pItem->type() == AcGe::kCircArc3d)
+            {
+                const auto* tmp = static_cast<const AcGeCircArc3d*>(pItem);
+                tessellateArc(*tmp, polypoints);
+            }
+        }
+    }
+    AcGePoint3d lastPt;
+    if (cc.hasEndPoint(lastPt))
+        polypoints.append(lastPt);
+    return std::move(polypoints);
+}
+
+static bool isPointInPolygon(const AcGePoint3dArray& polygon, const AcGePoint3d& testPoint)
+{
+    const int n = polygon.length();
+    if (n < 3)
+        return false;
+
+    bool inside = false;
+    const double x = testPoint.x;
+    const double y = testPoint.y;
+
+    for (int i = 0, j = n - 1; i < n; j = i++)
+    {
+        const double xi = polygon[i].x, yi = polygon[i].y;
+        const double xj = polygon[j].x, yj = polygon[j].y;
+        if (((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi))
+        {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+static bool isPolygonCCW(const AcGePoint3dArray& polygon, const AcGeVector3d& normal)
+{
+    const size_t n = polygon.length();
+    if (n < 3)
+        return false;
+
+    AcGeMatrix3d worldToPlane = AcGeMatrix3d::worldToPlane(normal);
+
+    // Project all points to 2D
+    std::vector<AcGePoint3d> projPts(n);
+    for (size_t i = 0; i < n; ++i)
+    {
+        projPts[i] = polygon[i];
+        projPts[i].transformBy(worldToPlane);
+    }
+
+    // Shoelace formula for signed area
+    double area = 0.0;
+    for (size_t i = 0; i < n; ++i)
+    {
+        const auto& p0 = projPts[i];
+        const auto& p1 = projPts[(i + 1) % n];
+        area += (p1.x - p0.x) * (p1.y + p0.y);
+    }
+    // If area is negative, polygon is CCW in the plane of 'normal'
+    return area < 0.0;
+}
+
 void makePyDbPolylineWrapper()
 {
     constexpr const std::string_view ctords = "Overloads:\n"
         "- None: Any\n"
         "- num_verts: int\n"
         "- pnts: list[PyGe.Point3d]\n"
+        "- pnts: PyGe.Point2dArray\n"
+        "- pnts: PyGe.Point3dArray\n"
         "- id: PyDb.ObjectId\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
@@ -2389,24 +2614,26 @@ void makePyDbPolylineWrapper()
     class_<PyDbPolyline, bases<PyDbCurve>>("Polyline")
         .def(init<>())
         .def(init<unsigned int>())
+        .def(init<const PyGePoint2dArray&>())
+        .def(init<const PyGePoint3dArray&>())
         .def(init<const boost::python::list&>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
-        .def("getPoint3dAt", &PyDbPolyline::getPoint3dAt, DS.ARGS({ "idx:int" }, 7839))
-        .def("getPoint2dAt", &PyDbPolyline::getPoint2dAt, DS.ARGS({ "idx:int" }, 7839))
-        .def("segType", &PyDbPolyline::segType, DS.ARGS({ "idx:int" }, 7854))
-        .def("onSegAt", &PyDbPolyline::onSegAt, DS.ARGS({ "idx:int","pt2d:PyGe.Point2d","param:float" }, 7850))
-        .def("getLineSeg2dAt", &PyDbPolyline::getLineSeg2dAt, DS.ARGS({ "idx:int" }, 7838))
-        .def("getLineSeg3dAt", &PyDbPolyline::getLineSeg3dAt, DS.ARGS({ "idx:int" }, 7838))
-        .def("getArcSeg2dAt", &PyDbPolyline::getArcSeg2dAt, DS.ARGS({ "idx:int" }, 7834))
-        .def("getArcSeg3dAt", &PyDbPolyline::getArcSeg3dAt, DS.ARGS({ "idx:int" }, 7834))
-        .def("setClosed", &PyDbPolyline::setClosed, DS.ARGS({ "val:bool" }, 7856))
-        .def("setPlinegen", &PyDbPolyline::setPlinegen, DS.ARGS({ "val:bool" }, 7860))
-        .def("setElevation", &PyDbPolyline::setElevation, DS.ARGS({ "elev:float" }, 7858))
-        .def("setThickness", &PyDbPolyline::setThickness, DS.ARGS({ "val:float" }, 7862))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 7823)))
+        .def("getPoint3dAt", &PyDbPolyline::getPoint3dAt, DS.ARGS({ "index:int" }, 7839))
+        .def("getPoint2dAt", &PyDbPolyline::getPoint2dAt, DS.ARGS({ "index:int" }, 7839))
+        .def("segType", &PyDbPolyline::segType, DS.ARGS({ "index:int" }, 7854))
+        .def("onSegAt", &PyDbPolyline::onSegAt, DS.ARGS({ "index:int","point2d:PyGe.Point2d","parameter:float" }, 7850))
+        .def("getLineSeg2dAt", &PyDbPolyline::getLineSeg2dAt, DS.ARGS({ "index:int" }, 7838))
+        .def("getLineSeg3dAt", &PyDbPolyline::getLineSeg3dAt, DS.ARGS({ "index:int" }, 7838))
+        .def("getArcSeg2dAt", &PyDbPolyline::getArcSeg2dAt, DS.ARGS({ "index:int" }, 7834))
+        .def("getArcSeg3dAt", &PyDbPolyline::getArcSeg3dAt, DS.ARGS({ "index:int" }, 7834))
+        .def("setClosed", &PyDbPolyline::setClosed, DS.ARGS({ "isClosed:bool" }, 7856))
+        .def("setPlinegen", &PyDbPolyline::setPlinegen, DS.ARGS({ "usePlinegen:bool" }, 7860))
+        .def("setElevation", &PyDbPolyline::setElevation, DS.ARGS({ "elevation:float" }, 7858))
+        .def("setThickness", &PyDbPolyline::setThickness, DS.ARGS({ "newThickness:float" }, 7862))
         .def("setConstantWidth", &PyDbPolyline::setConstantWidth, DS.ARGS({ "width:float" }, 7857))
-        .def("setNormal", &PyDbPolyline::setNormal, DS.ARGS({ "val:PyGe.Vector3d" }, 7859))
+        .def("setNormal", &PyDbPolyline::setNormal, DS.ARGS({ "newNormal:PyGe.Vector3d" }, 7859))
         .def("isOnlyLines", &PyDbPolyline::isOnlyLines, DS.ARGS(7844))
         .def("hasPlinegen", &PyDbPolyline::hasPlinegen, DS.ARGS(7842))
         .def("elevation", &PyDbPolyline::elevation, DS.ARGS(7833))
@@ -2414,29 +2641,33 @@ void makePyDbPolylineWrapper()
         .def("getConstantWidth", &PyDbPolyline::getConstantWidth, DS.ARGS(7836))
         .def("normal", &PyDbPolyline::normal, DS.ARGS(7848))
         .def("addVertexAt", &PyDbPolyline::addVertexAt1)
-        .def("addVertexAt", &PyDbPolyline::addVertexAt2, DS.ARGS({ "idx:int","pt2d:PyGe.Point2d","bulge:float=0.0","startWidth:float=-1.0","endWidth:float=-1.0" }, 7825))
-        .def("removeVertexAt", &PyDbPolyline::removeVertexAt, DS.ARGS({ "idx:int" }, 7851))
+        .def("addVertexAt", &PyDbPolyline::addVertexAt2, DS.ARGS({ "index:int","point2d:PyGe.Point2d","bulge:float=0.0","startWidth:float=-1.0","endWidth:float=-1.0" }, 7825))
+        .def("removeVertexAt", &PyDbPolyline::removeVertexAt, DS.ARGS({ "index:int" }, 7851))
         .def("numVerts", &PyDbPolyline::numVerts, DS.ARGS(7849))
-        .def("getBulgeAt", &PyDbPolyline::getBulgeAt, DS.ARGS({ "idx:int" }, 7835))
-        .def("getStartWidthAt", &PyDbPolyline::getStartWidthAt, DS.ARGS({ "idx:int" }, 7840))
-        .def("getEndWidthAt", &PyDbPolyline::getEndWidthAt, DS.ARGS({ "idx:int" }, 7840))
-        .def("setPointAt", &PyDbPolyline::setPointAt, DS.ARGS({ "idx:int" ,"pt2d:PyGe.Point2d" }, 7861))
-        .def("setBulgeAt", &PyDbPolyline::setBulgeAt, DS.ARGS({ "idx:int" ,"bulge:float" }, 7855))
-        .def("setWidthsAt", &PyDbPolyline::setWidthsAt, DS.ARGS({ "idx:int" ,"startWidth:float","endWidth:float" }, 7863))
+        .def("getBulgeAt", &PyDbPolyline::getBulgeAt, DS.ARGS({ "index:int" }, 7835))
+        .def("getStartWidthAt", &PyDbPolyline::getStartWidthAt, DS.ARGS({ "index:int" }, 7840))
+        .def("getEndWidthAt", &PyDbPolyline::getEndWidthAt, DS.ARGS({ "index:int" }, 7840))
+        .def("setPointAt", &PyDbPolyline::setPointAt, DS.ARGS({ "index:int" ,"point2d:PyGe.Point2d" }, 7861))
+        .def("setBulgeAt", &PyDbPolyline::setBulgeAt, DS.ARGS({ "index:int" ,"bulge:float" }, 7855))
+        .def("setWidthsAt", &PyDbPolyline::setWidthsAt, DS.ARGS({ "index:int" ,"startWidth:float","endWidth:float" }, 7863))
         .def("minimizeMemory", &PyDbPolyline::minimizeMemory, DS.ARGS(7847))
         .def("maximizeMemory", &PyDbPolyline::maximizeMemory, DS.ARGS(7846))
-        .def("reset", &PyDbPolyline::reset, DS.ARGS({ "reuse:bool" ,"numVerts:int" }, 7852))
+        .def("reset", &PyDbPolyline::reset, DS.ARGS({ "reuse:bool" ,"numVertices:int" }, 7852))
         .def("hasBulges", &PyDbPolyline::hasBulges, DS.ARGS(7841))
         .def("hasVertexIdentifiers", &PyDbPolyline::hasVertexIdentifiers, DS.ARGS())
         .def("hasWidth", &PyDbPolyline::hasWidth, DS.ARGS(7843))
-        .def("makeClosedIfStartAndEndVertexCoincide", &PyDbPolyline::makeClosedIfStartAndEndVertexCoincide, DS.ARGS({ "distTol:float" }, 7845))
+        .def("makeClosedIfStartAndEndVertexCoincide", &PyDbPolyline::makeClosedIfStartAndEndVertexCoincide, DS.ARGS({ "distanceTolerance:float" }, 7845))
         .def("getEcs", &PyDbPolyline::getEcs, DS.ARGS(7837))
         .def("getAcGeCurve", &PyDbPolyline::getAcGeCurve1)
-        .def("getAcGeCurve", &PyDbPolyline::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = 'default'" }, 2775))
+        .def("getAcGeCurve", &PyDbPolyline::getAcGeCurve2, DS.ARGS({ "tol: PyGe.Tol = ..." }, 2775))
         .def("getAcGeCurve2d", &PyDbPolyline::getAcGeCurve2d, DS.ARGS())
         .def("toPoint2dList", &PyDbPolyline::toPoint2dList, DS.ARGS())
         .def("toPoint3dList", &PyDbPolyline::toPoint3dList, DS.ARGS())
         .def("toList", &PyDbPolyline::toList, DS.ARGS())
+        .def("isPointInside", &PyDbPolyline::isPointInside, DS.ARGS({ "pointWcs: PyGe.Point3d" }))
+        .def("isCCW", &PyDbPolyline::isCCW, DS.ARGS())
+        .def("simplify", &PyDbPolyline::simplify, DS.ARGS({ "distance: float" }))
+        .def("length", &PyDbPolyline::length, DS.ARGS())
         .def("className", &PyDbPolyline::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbPolyline::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbPolyline::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -2532,6 +2763,20 @@ PyDbPolyline::PyDbPolyline(const boost::python::list& pnts)
         }
         return;
     }
+}
+
+PyDbPolyline::PyDbPolyline(const PyGePoint3dArray& pnts)
+    : PyDbCurve(new AcDbPolyline(pnts.size()), true)
+{
+    for (int i = 0; i < pnts.size(); i++)
+        impObj()->addVertexAt(i, AcGePoint2d(pnts[i].x, pnts[i].y));
+}
+
+PyDbPolyline::PyDbPolyline(const PyGePoint2dArray& pnts)
+    : PyDbCurve(new AcDbPolyline(pnts.size()), true)
+{
+    for (int i = 0; i < pnts.size(); i++)
+        impObj()->addVertexAt(i, pnts[i]);
 }
 
 AcGePoint3d PyDbPolyline::getPoint3dAt(unsigned int idx) const
@@ -2746,7 +2991,7 @@ Adesk::Boolean PyDbPolyline::hasWidth() const
 
 void PyDbPolyline::makeClosedIfStartAndEndVertexCoincide(double distTol) const
 {
-#if defined(_GRXTARGET250) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET260) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->makeClosedIfStartAndEndVertexCoincide(distTol));
@@ -2833,6 +3078,98 @@ boost::python::list PyDbPolyline::toList() const
     return pyList;
 }
 
+bool PyDbPolyline::isPointInside(const AcGePoint3d& pnt) const
+{
+    auto cc = getCompositCurve(*impObj());
+    if (cc == nullptr)
+        PyThrowBadEs(eNullPtr);
+    auto pnts = getPolyPoints(*cc);
+    if (!impObj()->isClosed())
+    {
+        AcGePoint3d pnt;
+        impObj()->getStartPoint(pnt);
+        pnts.append(pnt);
+    }
+    return isPointInPolygon(pnts, pnt);
+}
+
+bool PyDbPolyline::isCCW() const
+{
+    const size_t count = impObj()->numVerts();
+    AcGePoint3dArray pnts;
+    pnts.setPhysicalLength(count);
+    for (int idx = 0; idx < count; idx++)
+    {
+        AcGePoint3d pnt;
+        PyThrowBadEs(impObj()->getPointAt(idx, pnt));
+        pnts.append(pnt);
+    }
+    return isPolygonCCW(pnts, impObj()->normal());
+}
+
+void PyDbPolyline::simplify(double dist) const
+{
+    try
+    {
+        if (!impObj()->isWriteEnabled())
+        {
+            PyThrowBadEs(eNotOpenForWrite);
+            return;
+        }
+        if (!impObj()->isOnlyLines())
+        {
+            PyThrowBadEs(eInvalidInput);
+            return;
+        }
+        const size_t count = impObj()->numVerts();
+        using xy = boost::geometry::model::d2::point_xy<double>;
+        boost::geometry::model::linestring<xy> line;
+        line.reserve(count);
+        for (int idx = 0; idx < count; idx++)
+        {
+            AcGePoint2d pnt;
+            PyThrowBadEs(impObj()->getPointAt(idx, pnt));
+            line.push_back(xy{ pnt.x, pnt.y });
+        }
+        boost::geometry::model::linestring<xy> simplified;
+        boost::geometry::simplify(line, simplified, dist);
+        if (simplified.size() < 2)
+        {
+            PyThrowBadEs(eInvalidInput);
+            return;
+        }
+        for (int idx = count - 1; idx >= simplified.size(); idx--)
+        {
+            PyThrowBadEs(impObj()->removeVertexAt(idx));
+        }
+        if (impObj()->numVerts() != simplified.size())
+        {
+            PyThrowBadEs(impObj()->cancel());
+            PyThrowBadEs(eInvalidInput);
+            return;
+        }
+        for (int idx = 0; idx < simplified.size(); idx++)
+        {
+            PyThrowBadEs(impObj()->setPointAt(idx, AcGePoint2d(simplified[idx].x(), simplified[idx].y())));
+        }
+        PyThrowBadEs(impObj()->minimizeMemory());
+    }
+    catch (...)
+    {
+        PyThrowBadEs(impObj()->cancel());
+        PyThrowBadEs(eInvalidInput);
+    }
+}
+
+double PyDbPolyline::length() const
+{
+    double pram = 0;
+    double dist = 0;
+    PyThrowBadEs(impObj()->getEndParam(pram));
+    PyThrowBadEs(impObj()->getDistAtParam(pram, dist));
+    return dist;
+}
+
 std::string PyDbPolyline::className()
 {
     return "AcDbPolyline";
@@ -2884,7 +3221,7 @@ void makePyDbFaceWrapper()
         .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>())
         .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>())
         .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, Adesk::Boolean, Adesk::Boolean, Adesk::Boolean, Adesk::Boolean>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, Adesk::Boolean, Adesk::Boolean, Adesk::Boolean, Adesk::Boolean>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, Adesk::Boolean, Adesk::Boolean, Adesk::Boolean, Adesk::Boolean>(DS.CTOR(ctords, 4555)))
         .def("getVertexAt", &PyDbFace::getVertexAt, DS.ARGS({ "vIndex:int" }, 4576))
         .def("setVertexAt", &PyDbFace::setVertexAt, DS.ARGS({ "vIndex:int","pnt:PyGe.Point3d" }, 4581))
         .def("isEdgeVisibleAt", &PyDbFace::isEdgeVisibleAt, DS.ARGS({ "vIndex:int" }, 4577))
@@ -3020,18 +3357,18 @@ void makePyDbFcfWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<const std::string&, const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&>(DS.CTOR(ctords)))
-        .def("setText", &PyDbFcf::setText, DS.ARGS({ "val:str" }, 4611))
-        .def("text", &PyDbFcf::text, DS.ARGS(4613))
+        .def(init<const std::string&, const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&>(DS.CTOR(ctords, 4585)))
+        .def("setText", &PyDbFcf::setText, DS.ARGS({ "newText:str" }, 4611))
+        .def("text", &PyDbFcf::text, DS.ARGS({"lineNo: int"},4613))
         .def("textAll", &PyDbFcf::textAll, DS.ARGS(4613))
-        .def("setLocation", &PyDbFcf::setLocation, DS.ARGS({ "val:PyGe.Point3d" }, 4609))
+        .def("setLocation", &PyDbFcf::setLocation, DS.ARGS({ "newLocation:PyGe.Point3d" }, 4609))
         .def("location", &PyDbFcf::location, DS.ARGS(4598))
         .def("setOrientation", &PyDbFcf::setOrientation, DS.ARGS({ "normal:PyGe.Vector3d","direction:PyGe.Vector3d" }, 4610))
         .def("normal", &PyDbFcf::normal, DS.ARGS(4599))
         .def("direction", &PyDbFcf::direction, DS.ARGS(4594))
         .def("getBoundingPoints", &PyDbFcf::getBoundingPoints, DS.ARGS(4596))
         .def("getBoundingPline", &PyDbFcf::getBoundingPline, DS.ARGS(4595))
-        .def("setDimensionStyle", &PyDbFcf::setDimensionStyle, DS.ARGS({ "val:PyDb.ObjectId" }, 4602))
+        .def("setDimensionStyle", &PyDbFcf::setDimensionStyle, DS.ARGS({ "newStyle:PyDb.ObjectId" }, 4602))
         .def("dimensionStyle", &PyDbFcf::dimensionStyle, DS.ARGS(4589))
         .def("getDimstyleData", &PyDbFcf::getDimstyleData, DS.ARGS(4597))
         .def("setDimstyleData", &PyDbFcf::setDimstyleData2)
@@ -3043,12 +3380,12 @@ void makePyDbFcfWrapper()
         .def("dimscale", &PyDbFcf::dimscale, DS.ARGS(4591))
         .def("dimtxsty", &PyDbFcf::dimtxsty, DS.ARGS(4592))
         .def("dimtxt", &PyDbFcf::dimtxt, DS.ARGS(4593))
-        .def("setDimclrd", &PyDbFcf::setDimclrd, DS.ARGS({ "val:Color" }, 4600))
-        .def("setDimclrt", &PyDbFcf::setDimclrt, DS.ARGS({ "val:Color" }, 4601))
-        .def("setDimgap", &PyDbFcf::setDimgap, DS.ARGS({ "val:float" }, 4603))
-        .def("setDimscale", &PyDbFcf::setDimscale, DS.ARGS({ "val:float" }, 4604))
+        .def("setDimclrd", &PyDbFcf::setDimclrd, DS.ARGS({ "newColor:Color" }, 4600))
+        .def("setDimclrt", &PyDbFcf::setDimclrt, DS.ARGS({ "newColor:Color" }, 4601))
+        .def("setDimgap", &PyDbFcf::setDimgap, DS.ARGS({ "newGap:float" }, 4603))
+        .def("setDimscale", &PyDbFcf::setDimscale, DS.ARGS({ "newScale:float" }, 4604))
         .def("setDimtxsty", &PyDbFcf::setDimtxsty, DS.ARGS({ "id: PyDb.ObjectId" }, 4606))
-        .def("setDimtxt", &PyDbFcf::setDimtxt, DS.ARGS({ "val:float" }, 4607))
+        .def("setDimtxt", &PyDbFcf::setDimtxt, DS.ARGS({ "newTextHeight:float" }, 4607))
         .def("className", &PyDbFcf::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbFcf::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbFcf::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -3148,14 +3485,15 @@ boost::python::list PyDbFcf::getBoundingPline() const
     return l;
 }
 
-void PyDbFcf::setDimensionStyle(const PyDbHardPointerId& id) const
+void PyDbFcf::setDimensionStyle(const PyDbObjectId& id) const
 {
-    impObj()->setDimensionStyle(id.m_id);
+    AcDbHardPointerId _id(id.m_id);
+    impObj()->setDimensionStyle(_id);
 }
 
-PyDbHardPointerId PyDbFcf::dimensionStyle() const
+PyDbObjectId PyDbFcf::dimensionStyle() const
 {
-    return PyDbHardPointerId(impObj()->dimensionStyle());
+    return PyDbObjectId(impObj()->dimensionStyle());
 }
 
 PyDbDimStyleTableRecord PyDbFcf::getDimstyleData() const
@@ -3287,13 +3625,13 @@ void makePyDbSolidWrapper()
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
         .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctords, 8653)))
         .def("getPointAt", &PyDbSolid::getPointAt, DS.ARGS({ "idx: int" }, 8668))
         .def("setPointAt", &PyDbSolid::setPointAt, DS.ARGS({ "idx: int","pt: PyGe.Point3d" }, 8672))
         .def("thickness", &PyDbSolid::thickness, DS.ARGS(8675))
-        .def("setThickness", &PyDbSolid::setThickness, DS.ARGS({ "val: float" }, 8673))
+        .def("setThickness", &PyDbSolid::setThickness, DS.ARGS({ "thickness: float" }, 8673))
         .def("normal", &PyDbSolid::normal, DS.ARGS(8669))
-        .def("setNormal", &PyDbSolid::setNormal, DS.ARGS({ "vec: PyGe.Vector3d" }, 8671))
+        .def("setNormal", &PyDbSolid::setNormal, DS.ARGS({ "normal: PyGe.Vector3d" }, 8671))
         .def("className", &PyDbSolid::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbSolid::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbSolid::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -3413,13 +3751,13 @@ void makePyDbTraceWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctords, 9769)))
         .def("getPointAt", &PyDbTrace::getPointAt, DS.ARGS({ "idx: int" }, 9773))
         .def("setPointAt", &PyDbTrace::setPointAt, DS.ARGS({ "idx: int","pt: PyGe.Point3d" }, 9778))
         .def("thickness", &PyDbTrace::thickness, DS.ARGS(9781))
-        .def("setThickness", &PyDbTrace::setThickness, DS.ARGS({ "val: float" }, 9779))
+        .def("setThickness", &PyDbTrace::setThickness, DS.ARGS({ "thickness: float" }, 9779))
         .def("normal", &PyDbTrace::normal, DS.ARGS(9775))
-        .def("setNormal", &PyDbTrace::setNormal, DS.ARGS({ "vec: PyGe.Vector3d" }, 9777))
+        .def("setNormal", &PyDbTrace::setNormal, DS.ARGS({ "normal: PyGe.Vector3d" }, 9777))
         .def("className", &PyDbTrace::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbTrace::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbTrace::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -3534,27 +3872,27 @@ void makePyDbShapeWrapper()
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
-        .def(init<const AcGePoint3d&, double, double, double>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&, double, double, double>(DS.CTOR(ctords, 8585)))
         .def("position", &PyDbShape::position, DS.ARGS(8592))
-        .def("setPosition", &PyDbShape::setPosition, DS.ARGS({ "pt: PyGe.Point3d" }, 8597))
+        .def("setPosition", &PyDbShape::setPosition, DS.ARGS({ "newPosition: PyGe.Point3d" }, 8597))
         .def("size", &PyDbShape::size, DS.ARGS(8607))
-        .def("setSize", &PyDbShape::setSize, DS.ARGS({ "val: float" }, 8601))
+        .def("setSize", &PyDbShape::setSize, DS.ARGS({ "newSize: float" }, 8601))
         .def("name", &PyDbShape::name, DS.ARGS(8589))
-        .def("setName", &PyDbShape::setName, DS.ARGS({ "val: str" }, 8594))
+        .def("setName", &PyDbShape::setName, DS.ARGS({ "newName: str" }, 8594))
         .def("rotation", &PyDbShape::rotation, DS.ARGS(8593))
-        .def("setRotation", &PyDbShape::setRotation, DS.ARGS({ "val: float" }, 8598))
+        .def("setRotation", &PyDbShape::setRotation, DS.ARGS({ "newRotation: float" }, 8598))
         .def("widthFactor", &PyDbShape::widthFactor, DS.ARGS(8611))
-        .def("setWidthFactor", &PyDbShape::setWidthFactor, DS.ARGS({ "val: float" }, 8604))
+        .def("setWidthFactor", &PyDbShape::setWidthFactor, DS.ARGS({ "newWidthFactor: float" }, 8604))
         .def("oblique", &PyDbShape::oblique, DS.ARGS(8591))
-        .def("setOblique", &PyDbShape::setOblique, DS.ARGS({ "val: float" }, 8596))
+        .def("setOblique", &PyDbShape::setOblique, DS.ARGS({ "newOblique: float" }, 8596))
         .def("thickness", &PyDbShape::thickness, DS.ARGS(8610))
-        .def("setThickness", &PyDbShape::setThickness, DS.ARGS({ "val: float" }, 8603))
+        .def("setThickness", &PyDbShape::setThickness, DS.ARGS({ "newThickness: float" }, 8603))
         .def("normal", &PyDbShape::normal, DS.ARGS(8590))
-        .def("setNormal", &PyDbShape::setNormal, DS.ARGS({ "vec: PyGe.Vector3d" }, 8595))
+        .def("setNormal", &PyDbShape::setNormal, DS.ARGS({ "newNormal: PyGe.Vector3d" }, 8595))
         .def("shapeNumber", &PyDbShape::shapeNumber, DS.ARGS(8606))
-        .def("setShapeNumber", &PyDbShape::setShapeNumber, DS.ARGS({ "idx: int" }, 8600))
+        .def("setShapeNumber", &PyDbShape::setShapeNumber, DS.ARGS({ "newShapeIndex: int" }, 8600))
         .def("styleId", &PyDbShape::styleId, DS.ARGS(8608))
-        .def("setStyleId", &PyDbShape::setStyleId, DS.ARGS({ "id: PyDb.ObjectId" }, 8602))
+        .def("setStyleId", &PyDbShape::setStyleId, DS.ARGS({ "newStyleId: PyDb.ObjectId" }, 8602))
         .def("className", &PyDbShape::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbShape::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbShape::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -3614,7 +3952,7 @@ void PyDbShape::setSize(double val) const
 
 std::string PyDbShape::name() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     return wstr_to_utf8(impObj()->name());
 #else
     AcString val;
@@ -3724,4 +4062,368 @@ AcDbShape* PyDbShape::impObj(const std::source_location& src /*= std::source_loc
         throw PyNullObject(src);
     }
     return static_cast<AcDbShape*>(m_pyImp.get());
+}
+
+//-------------------------------------------------------------------------------------------------------------
+//PyDbOverrulableEntity
+void makePyDbOverrulableEntity()
+{
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
+    PyDocString DS("OverrulableEntity");
+    class_<PyDbOverrulableEntity, bases<PyDbEntity>>("OverrulableEntity")
+        .def(init<>())
+        .def(init<const PyDbObjectId&>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>())
+        .def("position", &PyDbOverrulableEntity::position, DS.ARGS())
+        .def("setPosition", &PyDbOverrulableEntity::setPosition, DS.ARGS({ "newPosition: PyGe.Point3d" }))
+        .def("direction", &PyDbOverrulableEntity::direction, DS.ARGS())
+        .def("setDirection", &PyDbOverrulableEntity::setDirection, DS.ARGS({ "newDirection: PyGe.Vector3d" }))
+        .def("normal", &PyDbOverrulableEntity::normal, DS.ARGS())
+        .def("setNormal", &PyDbOverrulableEntity::setNormal, DS.ARGS({ "newNormal: PyGe.Vector3d" }))
+        .def("guid", &PyDbOverrulableEntity::guid, DS.ARGS())
+        .def("setGuid", &PyDbOverrulableEntity::setGuid, DS.ARGS({ "newGuid: str" }))
+        .def("name", &PyDbOverrulableEntity::name, DS.ARGS())
+        .def("setName", &PyDbOverrulableEntity::setName, DS.ARGS({ "newName: str" }))
+        .def("description", &PyDbOverrulableEntity::description, DS.ARGS())
+        .def("setdescription", &PyDbOverrulableEntity::setdescription, DS.ARGS({ "newDescription: str" }))
+        .def("typing", &PyDbOverrulableEntity::typing, DS.ARGS())
+        .def("setTyping", &PyDbOverrulableEntity::setTyping, DS.ARGS({ "newTyping: int" }))
+        .def("mask", &PyDbOverrulableEntity::mask, DS.ARGS())
+        .def("setMask", &PyDbOverrulableEntity::setMask, DS.ARGS({ "newMask: int" }))
+        .def("index", &PyDbOverrulableEntity::index, DS.ARGS())
+        .def("setIndex", &PyDbOverrulableEntity::setIndex, DS.ARGS({ " newIndex: int" }))
+        .def("flags", &PyDbOverrulableEntity::flags, DS.ARGS())
+        .def("setFlags", &PyDbOverrulableEntity::setFlags, DS.ARGS({ "newFlags: list[int]" }))
+        .def("ints", &PyDbOverrulableEntity::ints, DS.ARGS())
+        .def("setInts", &PyDbOverrulableEntity::setInts, DS.ARGS({ "newInts: list[int]" }))
+        .def("doubles", &PyDbOverrulableEntity::doubles, DS.ARGS())
+        .def("setDoubles", &PyDbOverrulableEntity::setDoubles, DS.ARGS({ "newDoubles: list[float]" }))
+        .def("strings", &PyDbOverrulableEntity::strings, DS.ARGS())
+        .def("setStrings", &PyDbOverrulableEntity::setStrings, DS.ARGS({ "newStrings: list[str]" }))
+        .def("points", &PyDbOverrulableEntity::points, DS.ARGS())
+        .def("setPoints", &PyDbOverrulableEntity::setPoints, DS.ARGS({ "newPoints: list[PyGe.Point3d]" }))
+        .def("version", &PyDbOverrulableEntity::version, DS.ARGS())
+        .def("className", &PyDbOverrulableEntity::className, DS.SARGS()).staticmethod("className")
+        .def("desc", &PyDbOverrulableEntity::desc, DS.SARGS(15560)).staticmethod("desc")
+        .def("cloneFrom", &PyDbOverrulableEntity::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
+        .def("cast", &PyDbOverrulableEntity::cast, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cast")
+        .def("registerOnDoubleClick", &PyDbOverrulableEntity::registerOnDoubleClick, DS.SARGS({ "func: Any" })).staticmethod("registerOnDoubleClick")
+        .def("removeOnDoubleClick", &PyDbOverrulableEntity::removeOnDoubleClick, DS.SARGS({ "func: Any" })).staticmethod("removeOnDoubleClick")
+        ;
+}
+
+class AcDbDoubleClickOverrulableEntity : public AcDbDoubleClickEdit
+{
+protected:
+    AcDbDoubleClickOverrulableEntity()
+    {
+        PyRxOverrulableEntity::desc()->addX(AcDbDoubleClickEdit::desc(), this);
+    }
+public:
+    virtual ~AcDbDoubleClickOverrulableEntity()
+    {
+        PyRxOverrulableEntity::desc()->delX(AcDbDoubleClickEdit::desc());
+    }
+    void finishEdit(void)
+    {
+    }
+    void startEdit(AcDbEntity* pEnt, AcGePoint3d pt)
+    {
+        PyDbOverrulableEntity::OnDblClkFn(pEnt, pt);
+    }
+    static AcDbDoubleClickOverrulableEntity& instance()
+    {
+        static AcDbDoubleClickOverrulableEntity mthis;
+        return mthis;
+    }
+};
+
+PyDbOverrulableEntity::PyDbOverrulableEntity()
+    : PyDbOverrulableEntity(new PyRxOverrulableEntity(), true)
+{
+}
+
+PyDbOverrulableEntity::PyDbOverrulableEntity(PyRxOverrulableEntity* ptr, bool autoDelete)
+    : PyDbEntity(ptr, autoDelete)
+{
+}
+
+PyDbOverrulableEntity::PyDbOverrulableEntity(const PyDbObjectId& id)
+    : PyDbOverrulableEntity(openAcDbObject<PyRxOverrulableEntity>(id), false)
+{
+}
+
+PyDbOverrulableEntity::PyDbOverrulableEntity(const PyDbObjectId& id, AcDb::OpenMode mode)
+    : PyDbOverrulableEntity(openAcDbObject<PyRxOverrulableEntity>(id, mode), false)
+{
+}
+
+PyDbOverrulableEntity::PyDbOverrulableEntity(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbOverrulableEntity(openAcDbObject<PyRxOverrulableEntity>(id, mode, erased), false)
+{
+}
+
+AcGePoint3d PyDbOverrulableEntity::position() const
+{
+    return impObj()->position();
+}
+
+void PyDbOverrulableEntity::setPosition(const AcGePoint3d& val) const
+{
+    impObj()->setPosition(val);
+}
+
+AcGeVector3d PyDbOverrulableEntity::direction() const
+{
+    return impObj()->direction();
+}
+
+void PyDbOverrulableEntity::setDirection(const AcGeVector3d& val) const
+{
+    impObj()->setDirection(val);
+}
+
+AcGeVector3d PyDbOverrulableEntity::normal() const
+{
+    return impObj()->normal();
+}
+
+void PyDbOverrulableEntity::setNormal(const AcGeVector3d& val) const
+{
+    impObj()->setNormal(val);
+}
+
+std::string PyDbOverrulableEntity::guid() const
+{
+    return wstr_to_utf8(impObj()->guid());
+}
+
+void PyDbOverrulableEntity::setGuid(const std::string& val) const
+{
+    impObj()->setGuid(utf8_to_wstr(val).c_str());
+}
+
+std::string PyDbOverrulableEntity::name() const
+{
+    return wstr_to_utf8(impObj()->name());
+}
+
+void PyDbOverrulableEntity::setName(const std::string& val) const
+{
+    impObj()->setName(utf8_to_wstr(val).c_str());
+}
+
+std::string PyDbOverrulableEntity::description() const
+{
+    return wstr_to_utf8(impObj()->description());
+}
+
+void PyDbOverrulableEntity::setdescription(const std::string& val) const
+{
+    impObj()->setdescription(utf8_to_wstr(val).c_str());
+}
+
+Adesk::Int64 PyDbOverrulableEntity::typing() const
+{
+    return impObj()->typing();
+}
+
+void PyDbOverrulableEntity::setTyping(Adesk::Int64 val) const
+{
+    impObj()->setTyping(val);
+}
+
+Adesk::Int64 PyDbOverrulableEntity::mask() const
+{
+    return impObj()->mask();
+}
+
+void PyDbOverrulableEntity::setMask(Adesk::Int64 val) const
+{
+    impObj()->setMask(val);
+}
+
+Adesk::Int64 PyDbOverrulableEntity::index() const
+{
+    return impObj()->index();
+}
+
+void PyDbOverrulableEntity::setIndex(Adesk::Int64 val) const
+{
+    impObj()->setIndex(val);
+}
+
+boost::python::list PyDbOverrulableEntity::flags() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pyPyList;
+    for (auto item : impObj()->flags())
+        pyPyList.append(item);
+    return pyPyList;
+}
+
+void PyDbOverrulableEntity::setFlags(const boost::python::list& vals) const
+{
+    PyAutoLockGIL lock;
+    impObj()->setFlags(std::vector<Adesk::Int32>(boost::python::stl_input_iterator<Adesk::Int32>(vals),
+        boost::python::stl_input_iterator<Adesk::Int32>()));
+}
+
+boost::python::list PyDbOverrulableEntity::ints() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pyPyList;
+    for (auto item : impObj()->ints())
+        pyPyList.append(item);
+    return pyPyList;
+}
+
+void PyDbOverrulableEntity::setInts(const boost::python::list& vals) const
+{
+    PyAutoLockGIL lock;
+    impObj()->setInts(std::vector<Adesk::Int32>(boost::python::stl_input_iterator<Adesk::Int32>(vals),
+        boost::python::stl_input_iterator<Adesk::Int32>()));
+}
+
+boost::python::list PyDbOverrulableEntity::doubles() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pyPyList;
+    for (auto item : impObj()->doubles())
+        pyPyList.append(item);
+    return pyPyList;
+}
+
+void PyDbOverrulableEntity::setDoubles(boost::python::list& vals) const
+{
+    PyAutoLockGIL lock;
+    impObj()->setDoubles(std::vector<double>(boost::python::stl_input_iterator<double>(vals),
+        boost::python::stl_input_iterator<double>()));
+}
+
+boost::python::list PyDbOverrulableEntity::strings() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pyPyList;
+    for (auto& item : impObj()->strings())
+        pyPyList.append(wstr_to_utf8(item));
+    return pyPyList;
+}
+
+void PyDbOverrulableEntity::setStrings(boost::python::list& vals) const
+{
+    PyAutoLockGIL lock;
+    std::vector<AcString> acstrings;
+    for (const auto& item : std::vector<std::string>(boost::python::stl_input_iterator<std::string>(vals), boost::python::stl_input_iterator<std::string>()))
+    {
+        acstrings.push_back(utf8_to_wstr(item).c_str());
+    }
+    impObj()->setStrings(acstrings);
+}
+
+boost::python::list PyDbOverrulableEntity::points() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pyPyList;
+    for (auto& item : impObj()->points())
+        pyPyList.append(item);
+    return pyPyList;
+}
+
+void PyDbOverrulableEntity::setPoints(const boost::python::list& vals) const
+{
+    PyAutoLockGIL lock;
+    impObj()->setPoints(std::vector<AcGePoint3d>(boost::python::stl_input_iterator<AcGePoint3d>(vals),
+        boost::python::stl_input_iterator<AcGePoint3d>()));
+}
+
+Adesk::UInt32 PyDbOverrulableEntity::version() const
+{
+    return impObj()->version();
+}
+
+std::string PyDbOverrulableEntity::className()
+{
+    return "PyRxOverrulableEntity";
+}
+
+PyRxClass PyDbOverrulableEntity::desc()
+{
+    return PyRxClass(PyRxOverrulableEntity::desc(), false);
+}
+
+PyDbOverrulableEntity PyDbOverrulableEntity::cloneFrom(const PyRxObject& src)
+{
+    return PyDbObjectCloneFrom<PyDbOverrulableEntity, PyRxOverrulableEntity>(src);
+}
+
+PyDbOverrulableEntity PyDbOverrulableEntity::cast(const PyRxObject& src)
+{
+    return PyDbObjectCast<PyDbOverrulableEntity>(src);
+}
+
+void PyDbOverrulableEntity::registerOnDoubleClick(const boost::python::object& obj)
+{
+    PyAutoLockGIL lock;
+    AcDbDoubleClickOverrulableEntity::instance();
+    if (PyCallable_Check(obj.ptr()))
+    {
+        onDblClkFuncs[obj.ptr()] = obj;
+        return;
+    }
+    acutPrintf(_T("parameter must be callable:"));
+}
+
+void PyDbOverrulableEntity::removeOnDoubleClick(const boost::python::object& obj)
+{
+    onDblClkFuncs.erase(obj.ptr());
+}
+
+PyRxOverrulableEntity* PyDbOverrulableEntity::impObj(const std::source_location& src /*= std::source_location::current()*/) const
+{
+    if (m_pyImp == nullptr) [[unlikely]] {
+        throw PyNullObject(src);
+    }
+    return static_cast<PyRxOverrulableEntity*>(m_pyImp.get());
+}
+
+static bool executeOnDblClkFunc(const boost::python::object& func, const PyDbOverrulableEntity& ent, AcGePoint3d pt)
+{
+    try
+    {
+        PyErr_Clear();
+        if (func.ptr() != nullptr)
+        {
+            boost::python::call<void>(func.ptr(), ent, pt);
+            return true;
+        }
+    }
+    catch (...)
+    {
+        acutPrintf(_T("\nException in %ls:"), __FUNCTIONW__);
+    }
+    return false;
+}
+
+void PyDbOverrulableEntity::OnDblClkFn(AcDbEntity* pEnt, AcGePoint3d pt)
+{
+    if (onDblClkFuncs.size() != 0)
+    {
+        PyAutoLockGIL lock;
+        PyDbOverrulableEntity pyent(static_cast<PyRxOverrulableEntity*>(pEnt), false);
+        for (const auto& func : onDblClkFuncs)
+        {
+            if (!executeOnDblClkFunc(func.second, pyent, pt))
+            {
+                onDblClkFuncs.erase(func.first);
+                return;
+            }
+        }
+    }
 }

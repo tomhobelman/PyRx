@@ -49,7 +49,7 @@ struct AcGsViewDeleter
         if (ptr == nullptr)
             return;
         ptr->eraseAll();
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         acgsGetGsManager()->destroyView(ptr);
 #endif
     }
@@ -81,7 +81,7 @@ static void setBackgroundColorFromPy(AcGsDevice* pDevice, boost::python::object&
         auto _rgb = PyListToInt32Array(rgb);
         if (_rgb.length() == 3)
         {
-            AcGsColor bkclr;
+            AcGsColor bkclr{};
             bkclr.m_red = _rgb[0];
             bkclr.m_green = _rgb[1];
             bkclr.m_blue = _rgb[2];
@@ -106,8 +106,11 @@ static AcDbExtents calcBlockExtents(AcDbBlockTableRecord& rec)
         {
             AcDbExtents subex;
             AcDbEntityPointer pEnt(id);
-            if (pEnt->getGeomExtents(subex) == eOk)
-                ex.addExt(subex);
+            if (pEnt->visibility() == AcDb::kVisible)
+            {
+                if (pEnt->getGeomExtents(subex) == eOk)
+                    ex.addExt(subex);
+            }
         }
     }
     return ex;
@@ -128,7 +131,7 @@ void makeGsCoreWrapper()
             DS.SARGS({ "vpNum : int", "view : PyGs.View", "bRegen: bool","bRescale: bool","bSync: bool=False" })).staticmethod("setViewParameters")
 
         .def("getBlockImage", &GsCore::getBlockImage,
-            DS.SARGS({ "blkid: PyDb.ObjectId" , "sx: int", "sy: int", "zoomFactor: float", "bkrgb: list[int]=None" }), arg("bkrgb") = boost::python::object()).staticmethod("getBlockImage")
+            DS.SARGS({ "blkid: PyDb.ObjectId" , "sx: int", "sy: int", "zoomFactor: float", "bkrgb: list[int] = ..." }), arg("bkrgb") = boost::python::object()).staticmethod("getBlockImage")
         ;
 }
 
@@ -139,7 +142,7 @@ PyGsView GsCore::getCurrentAcGsView(int vpNum)
 
 PyGsView GsCore::getCurrent3DAcGsView(int vpNum)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyGsView(acgsGetCurrent3dAcGsView(vpNum), false);
@@ -163,7 +166,7 @@ bool GsCore::setViewParameters2(int viewportNumber, const PyGsView& obj, bool bR
 
 PyObject* GsCore::getBlockImage(const PyDbObjectId& blkid, int width, int height, double zf, boost::python::object& pyrgb)
 {
-#if defined(_GRXTARGET) && _GRXTARGET <= 250
+#if defined(_GRXTARGET260) || defined(_IRXTARGET140)
     throw PyNotimplementedByHost();
     return nullptr;
 #endif
@@ -192,16 +195,18 @@ PyObject* GsCore::getBlockImage(const PyDbObjectId& blkid, int width, int height
     pOffDevice->onSize(width, height);
     if (!pOffDevice->add(pView.get()))
         return nullptr;
-    if (bool flag = acgsGetViewParameters(cvport(), pView.get()); flag == false)
+    if (acgsGetViewParameters(cvport(), pView.get()) == false)
         acutPrintf(_T("\nFailed to copy view parameters: "));
+#if defined(_BRXTARGET)
+    pView->setVisualStyle(acdbGetViewportVisualStyle());
+#endif// _BRXTARGET
     setBackgroundColorFromPy(pOffDevice.get(), pyrgb);
     AcDbBlockTableRecordPointer pBlock(blkid.m_id);
     PyThrowBadEs(pBlock.openStatus());
     if (!pView->add(pBlock, pModel.get()))
         PyThrowBadEs(eInvalidInput);
 #if !defined(_BRXTARGET)
-    auto v = pView->upVector();
-    pView->setView(pView->position(), pView->target(), v.negate(), width, height);
+    pView->setView(pView->position(), pView->target(), pView->upVector().negate(), width, height);
 #else
     pView->setView(pView->position(), pView->target(), pView->upVector(), width, height);
 #endif// _BRXTARGET
@@ -224,12 +229,18 @@ PyObject* GsCore::getBlockImage(const PyDbObjectId& blkid, int width, int height
         PyThrowBadEs(eInvalidInput);;
     //Slow, but works across all platforms ARX and BRX have different data, alpha channel.?
     wxImage* pWxImage = new wxImage(wxSize(imageSize.width, imageSize.height));
+#ifdef never
+    pWxImage->SetAlpha();//maybe add a param id, 64, 64, 1.0, [0, 0, 0, A]
+#endif
     for (Atil::Int32 x = 0; x < imageSize.width; ++x)
     {
         for (Atil::Int32 y = 0; y < imageSize.height; ++y)
         {
             const Atil::RgbColor pix(imgContext->get32(x, y));
             pWxImage->SetRGB(x, y, pix.rgba.red, pix.rgba.green, pix.rgba.blue);
+#ifdef never
+            pWxImage->SetAlpha(x, y, pix.rgba.alpha);
+#endif
         }
     }
     if (!pWxImage->IsOk())

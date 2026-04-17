@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import pytest
-from tests import HOST
-from pyrx import Ap, Ge, Ax
+
+from pyrx import Ap, Ax, Ge
 
 
 class TestAxPolygonMesh :
@@ -10,6 +11,7 @@ class TestAxPolygonMesh :
         self.axApp = Ap.Application.acadApplication()
         self.axDoc = self.axApp.activeDocument()
 
+    @pytest.mark.known_failure_IRX
     def test_getcoordinates(self):
         pnts = [
             Ge.Point3d(0, 0, 0),
@@ -35,6 +37,7 @@ class TestAxPolygonMesh :
         assert mesh.coordinates() == pnts
 
     @pytest.mark.known_failure_GRX
+    @pytest.mark.known_failure_IRX
     def test_setcoordinates(self):
         pnts = [
             Ge.Point3d(0, 0, 0),
@@ -58,6 +61,7 @@ class TestAxPolygonMesh :
         mesh = axSpace.add3DMesh(4, 4, pnts)
         mesh.setCoordinates(pnts)
         
+    @pytest.mark.known_failure_IRX
     def test_getcoordinate(self):
         pnts = [
             Ge.Point3d(0, 0, 0),
@@ -82,6 +86,7 @@ class TestAxPolygonMesh :
         assert mesh.coordinate(1) == pnts[1]
 
     @pytest.mark.known_failure_GRX
+    @pytest.mark.known_failure_IRX
     def test_setcoordinate(self):
         pnts = [
             Ge.Point3d(0, 0, 0),

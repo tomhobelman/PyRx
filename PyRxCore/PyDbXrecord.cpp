@@ -9,18 +9,24 @@ using namespace boost::python;
 //makePyDbXrecordWrapper
 void makePyDbXrecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("Xrecord");
     class_<PyDbXrecord, bases<PyDbObject>>("Xrecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 10347)))
         .def("rbChain", &PyDbXrecord::rbChain1)
-        .def("rbChain", &PyDbXrecord::rbChain2, DS.ARGS({ "auxDb : PyDb.Database = None " }, 10367))
+        .def("rbChain", &PyDbXrecord::rbChain2, DS.ARGS({ "auxDb : PyDb.Database = ... " }, 10367))
         .def("setFromRbChain", &PyDbXrecord::setFromRbChain1)
-        .def("setFromRbChain", &PyDbXrecord::setFromRbChain2, DS.ARGS({ "resbuf : list", "auxDb : PyDb.Database = None " }, 10368))
+        .def("setFromRbChain", &PyDbXrecord::setFromRbChain2, DS.ARGS({ "resbuf : list", "auxDb : PyDb.Database = ... " }, 10368))
         .def("isXlateReferences", &PyDbXrecord::isXlateReferences, DS.ARGS(10365))
-        .def("setXlateReferences", &PyDbXrecord::setXlateReferences, DS.ARGS({ "val : bool" }, 10370))
+        .def("setXlateReferences", &PyDbXrecord::setXlateReferences, DS.ARGS({ "translate : bool" }, 10370))
         .def("mergeStyle", &PyDbXrecord::mergeStyle, DS.ARGS(10366))
         .def("setMergeStyle", &PyDbXrecord::setMergeStyle, DS.ARGS({ "style: PyDb.DuplicateRecordCloning" }, 10369))
         .def("className", &PyDbXrecord::className, DS.SARGS()).staticmethod("className")
@@ -72,7 +78,7 @@ boost::python::list PyDbXrecord::rbChain2(PyDbDatabase& auxDb) const
     return resbufToList(pRb);
 }
 
-void PyDbXrecord::setFromRbChain1(const boost::python::list& pRb)
+void PyDbXrecord::setFromRbChain1(const boost::python::list& pRb) const
 {
     AcResBufPtr ptr(listToResbuf(pRb));
     if (ptr == nullptr)
@@ -80,7 +86,7 @@ void PyDbXrecord::setFromRbChain1(const boost::python::list& pRb)
     return PyThrowBadEs(impObj()->setFromRbChain(*ptr.get()));
 }
 
-void PyDbXrecord::setFromRbChain2(const boost::python::list& pRb, PyDbDatabase& auxDb)
+void PyDbXrecord::setFromRbChain2(const boost::python::list& pRb, PyDbDatabase& auxDb) const
 {
     AcResBufPtr ptr(listToResbuf(pRb));
     if (ptr == nullptr)
@@ -90,16 +96,16 @@ void PyDbXrecord::setFromRbChain2(const boost::python::list& pRb, PyDbDatabase& 
 
 bool PyDbXrecord::isXlateReferences() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isXlateReferences();
 #endif
 }
 
-void PyDbXrecord::setXlateReferences(bool translate)
+void PyDbXrecord::setXlateReferences(bool translate) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setXlateReferences(translate);
@@ -111,7 +117,7 @@ AcDb::DuplicateRecordCloning PyDbXrecord::mergeStyle() const
     return impObj()->mergeStyle();
 }
 
-void PyDbXrecord::setMergeStyle(AcDb::DuplicateRecordCloning style)
+void PyDbXrecord::setMergeStyle(AcDb::DuplicateRecordCloning style) const
 {
     impObj()->setMergeStyle(style);
 }

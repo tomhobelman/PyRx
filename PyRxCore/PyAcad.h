@@ -9,30 +9,40 @@
 
 #pragma comment( lib , "propsys.lib" )
 
-#if defined(_BRXTARGET) && (_BRXTARGET <= 250)
-#import "axbricscaddb1.tlb" raw_interfaces_only, raw_native_types, no_namespace, named_guids
-#import "axbricscadapp1.tlb" raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#if defined(_BRXTARGET) && (_BRXTARGET <= 260)
+#import "axbricscaddb1.tlb" no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#import "axbricscadapp1.tlb" no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
 #endif
 
 #if defined(_ARXTARGET) && (_ARXTARGET <= 243)
-#import "acax24ENU.tlb"  raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#import "acax24ENU.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
 #endif
 
 #if defined(_ARXTARGET) && (_ARXTARGET >= 250) && (_ARXTARGET <= 251)
-#import "acax25ENU.tlb"  raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#import "acax25ENU.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#endif
+
+#if defined(_ARXTARGET) && (_ARXTARGET >= 260) && (_ARXTARGET <= 261)
+#import "acax26ENU.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
 #endif
 
 #if defined(_ZRXTARGET) && (_ZRXTARGET == 240)
-#import "zwcad21.tlb"  raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#import "zwcad21.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
 #endif
 
-#if defined(_ZRXTARGET) && (_ZRXTARGET >= 250)&& (_ZRXTARGET <= 260)
-#import "zwcad25.tlb"  raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#if defined(_ZRXTARGET) && (_ZRXTARGET >= 250) && (_ZRXTARGET <= 260)
+#import "zwcad25.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
 #endif
 
-#if defined(_GRXTARGET) && (_GRXTARGET == 240) || (_GRXTARGET == 250)
-#import "acax.tlb"  raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#if defined(_GRXTARGET) && (_GRXTARGET >= 240) && (_GRXTARGET <= 260)
+#import "acax.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
 #endif
+
+#if defined(_IRXTARGET) && (_IRXTARGET <= 140)
+#import "acax24ENU.tlb"  no_implementation, raw_interfaces_only, raw_native_types, no_namespace, named_guids
+#endif
+
+
 
 #if defined(_ZRXTARGET)
 //enums
@@ -902,11 +912,11 @@ inline bool CHECKHR(HRESULT hr, const std::source_location& src = std::source_lo
 //helpers impl in PyAcadObjectImpl.cpp
 [[nodiscard]] HRESULT VariantToAcDbObjectIdArray(VARIANT& var, AcDbObjectIdArray& ids);
 [[nodiscard]] HRESULT AcDbObjectIdArrayToVariant(VARIANT& var, const AcDbObjectIdArray& ids);
-[[nodiscard]] HRESULT VariantToDoubleArray(VARIANT& var, std::vector<double>& ids);
-[[nodiscard]] HRESULT DoubleArrayToVariant(VARIANT& var, const std::vector<double>& ids);
-[[nodiscard]] HRESULT VariantToLongArray(VARIANT& var, std::vector<long>& ids);
-[[nodiscard]] HRESULT VariantToInt32Array(VARIANT& var, std::vector<int>& ids);
-[[nodiscard]] HRESULT VariantToInt16Array(VARIANT& var, std::vector<int>& ids);
+[[nodiscard]] HRESULT VariantToDoubleArray(VARIANT& var, std::vector<double>& vec);
+[[nodiscard]] HRESULT DoubleArrayToVariant(VARIANT& var, const std::vector<double>& vec);
+[[nodiscard]] HRESULT VariantToLongArray(VARIANT& var, std::vector<long>& vec);
+[[nodiscard]] HRESULT VariantToInt32Array(VARIANT& var, std::vector<int>& vec);
+[[nodiscard]] HRESULT VariantToInt16Array(VARIANT& var, std::vector<int>& vec);
 [[nodiscard]] HRESULT VariantToAcGePoint2d(VARIANT& var, AcGePoint2d& val);
 [[nodiscard]] HRESULT AcGePoint2dToVariant(VARIANT& var, const AcGePoint2d& pnt);
 [[nodiscard]] HRESULT VariantToAcGePoint3d(VARIANT& var, AcGePoint3d& val);

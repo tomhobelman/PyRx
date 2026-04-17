@@ -11,6 +11,7 @@ class PyDbViewport;
 class PySysVar;
 class PyDbHatch;
 class PyDbEntity;
+class PyDbXrefGraph;
 
 // TODO:
 // acedGetAcadFrame
@@ -53,7 +54,6 @@ public:
     static int                  cmdUndefine(const std::string& name, int undefIt);
     static boost::python::dict  getCommands();
     static boost::python::tuple calcTextExtents(const std::string& strval, const PyDbObjectId& textStyle);
-    static void                 convertEntityToHatch(const PyDbHatch& hatch, const PyDbEntity& entity, bool transferId);
     static AcGePoint3d          coordFromPixelToWorld1(const boost::python::tuple& tin);
     static AcGePoint3d          coordFromPixelToWorld2(int windnum, const boost::python::tuple& tin);
     static boost::python::tuple coordFromWorldToPixel(int windnum, const AcGePoint3d& pnt);
@@ -125,6 +125,9 @@ public:
     static void                 loadJSScript(const std::string& pUriOfJSFile);
     static bool                 loadPartialMenu(const std::string& mnu);
     static bool                 loadMainMenu(const std::string& mnu);
+    static boost::python::tuple linetypeDialog1(const PyDbObjectId& id, bool IncludeByBlockByLayer);
+    static boost::python::tuple linetypeDialog2(const PyDbDatabase& db, const PyDbObjectId& id, bool IncludeByBlockByLayer);
+    static boost::python::tuple lineWeightDialog(AcDb::LineWeight, bool);
     static void                 markForDelayXRefRelativePathResolve(const PyDbObjectId& id);
     static int                  menuCmd(const std::string& mnu);
     static void                 mSpace();
@@ -147,6 +150,7 @@ public:
 
     static AcCmColor            setColorPrompt(const std::string& prompt, bool bAllowMetaColor);
     static void                 setUndoMark(bool flag);
+    static PyDbViewTableRecord  getCurrentView();
     static void                 setCurrentView1(const PyDbViewTableRecord& vrec);
     static void                 setCurrentView2(const PyDbViewTableRecord& vrec, const PyDbViewport& vp);
     static void                 setCurrentVPort(const PyDbViewport& vp);
@@ -202,7 +206,7 @@ public:
     static void                 xrefBind2(const std::string& XrefBlockname, bool bInsertBind, bool bQuiet, PyDbDatabase& pHostDb);
     static void                 xrefXBind1(const boost::python::list& symbolIds);
     static void                 xrefXBind2(const boost::python::list& symbolIds, bool bQuiet, PyDbDatabase& pHostDb);
-
+    static PyDbXrefGraph        curDwgXrefGraph();
     static std::string          exceptionTest();
 };
 #pragma pack (pop)

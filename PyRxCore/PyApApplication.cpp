@@ -4,6 +4,7 @@
 #include "PyRxModule.h"
 #include "PyRxModuleLoader.h"
 #include "PyAcadApplication.h"
+#include "PyApDocument.h"
 
 #include "PyRxApp.h"
 #include "dwmapi.h"
@@ -25,14 +26,22 @@ static const TCHAR* getComAPIVer()
     return L"ARX25";
 #elif defined(_ARXTARGET) && _ARXTARGET == 251
     return L"ARX25";
+#elif defined(_ARXTARGET) && _ARXTARGET == 260
+    return L"ARX26";
 #elif defined(_BRXTARGET) && _BRXTARGET == 240
     return L"BRX24";
 #elif defined(_BRXTARGET) && _BRXTARGET == 250
     return L"BRX25";
+#elif defined(_BRXTARGET) && _BRXTARGET == 260
+    return L"BRX26";
 #elif defined(_GRXTARGET) && _GRXTARGET == 240
     return L"GRX24";
 #elif defined(_GRXTARGET) && _GRXTARGET == 250
     return L"GRX25";
+#elif defined(_GRXTARGET) && _GRXTARGET == 260
+    return L"GRX26";
+#elif defined(_IRXTARGET) && _IRXTARGET == 140
+    return L"IRX14";
 #elif defined(_ZRXTARGET) && _ZRXTARGET == 240
     return L"ZRX24";
 #elif defined(_ZRXTARGET) && _ZRXTARGET == 250
@@ -44,13 +53,43 @@ static const TCHAR* getComAPIVer()
 }
 
 //-----------------------------------------------------------------------------------------
+//Document_Iterator
+struct Document_Iterator
+{
+    std::shared_ptr<AcApDocumentIterator> pbtriter;
+
+    Document_Iterator(const PyApApplication& app [[maybe_unused]] )
+    {
+        pbtriter.reset(acDocManagerPtr()->newAcApDocumentIterator());
+    }
+
+    PyApDocument next() const
+    {
+        if (!pbtriter || pbtriter->done())
+        {
+            PyErr_SetString(PyExc_StopIteration, "End of Iterator");
+            boost::python::throw_error_already_set();
+        }
+        PyApDocument doc(pbtriter->document());
+        pbtriter->step();
+        return doc;
+    }
+
+    Document_Iterator& iter() { return *this; }
+};
+
+//-----------------------------------------------------------------------------------------
 //PyApApplication  Wrapper
 void makePyApApplictionWrapper()
 {
+    class_<Document_Iterator>("DocumentIterator", no_init)
+        .def("__iter__", &Document_Iterator::iter, return_internal_reference<>())
+        .def("__next__", &Document_Iterator::next);
+
     PyDocString DS("Application");
     class_<PyApApplication>("Application")
-        .def("docManager", &PyApApplication::docManager, DS.SARGS()).staticmethod("docManager")
-        .def("acadApplication", &PyApApplication::acadApplication, DS.SARGS()).staticmethod("acadApplication")
+        .def("docManager", &PyApApplication::docManager, DS.SARGS(77)).staticmethod("docManager")
+        .def("acadApplication", &PyApApplication::acadApplication, DS.SARGS(19139)).staticmethod("acadApplication")
         .def("mainWnd", &PyApApplication::mainWnd, DS.SARGS()).staticmethod("mainWnd")
         .def("setTitleThemeDark", &PyApApplication::setTitleThemeDark, DS.SARGS({ "wnd : int" })).staticmethod("setTitleThemeDark")
         .def("applyHostIcon", &PyApApplication::applyHostIcon, DS.SARGS({ "wnd : int" })).staticmethod("applyHostIcon")
@@ -61,20 +100,27 @@ void makePyApApplictionWrapper()
         .def("getLoadedModuleNames", &PyApApplication::getLoadedModuleNames, DS.SARGS()).staticmethod("getLoadedModuleNames")
         .def("getPyRxModulePath", &PyApApplication::getPyRxModulePath, DS.SARGS()).staticmethod("getPyRxModulePath")
         .def("getPyRxModuleName", &PyApApplication::getPyRxModuleName, DS.SARGS()).staticmethod("getPyRxModuleName")
+        .def("getLocalAppDataPath", &PyApApplication::getLocalAppDataPath1)
+        .def("getLocalAppDataPath", &PyApApplication::getLocalAppDataPath2, DS.SARGS({ "createIfNotFound:bool=True" })).staticmethod("getLocalAppDataPath")
+        .def("getAppDataPath", &PyApApplication::getAppDataPath1)
+        .def("getAppDataPath", &PyApApplication::getAppDataPath2, DS.SARGS({ "createIfNotFound:bool=True" })).staticmethod("getAppDataPath")
         .def("wxApp", &PyApApplication::getwxApp, DS.SARGS()).staticmethod("wxApp")
         .def("hostAPI", &PyApApplication::hostAPI, DS.SARGS()).staticmethod("hostAPI")
         .def("hostAPIVER", &PyApApplication::hostAPIVER, DS.SARGS()).staticmethod("hostAPIVER")
         .def("hostFileInfo", &PyApApplication::hostFileInfo, DS.SARGS()).staticmethod("hostFileInfo")
         .def("pyrxVersion", &PyApApplication::pyrxVersion, DS.SARGS()).staticmethod("pyrxVersion")
-        .def("regCommand", &PyApApplication::apregcommand, DS.SARGS({ "fullpath: str", "modulename: str", "name: str", "defFunc: Any","flags: PyAp.CmdFlags" })).staticmethod("regCommand")
+        .def("regCommand", &PyApApplication::appregcommand, DS.SARGS({ "fullpath: str", "modulename: str", "name: str", "defFunc: Any","flags: PyAp.CmdFlags" })).staticmethod("regCommand")
         .def("removeCommand", &PyApApplication::apremovecommand, DS.SARGS({ "modulename: str", "name: str" })).staticmethod("removeCommand")
         .def("registerOnIdleWinMsg", &PyApApplication::registerOnIdleWinMsg, DS.SARGS({ "func: Any" })).staticmethod("registerOnIdleWinMsg")
         .def("removeOnIdleWinMsg", &PyApApplication::removeOnIdleWinMsg, DS.SARGS({ "func: Any" })).staticmethod("removeOnIdleWinMsg")
         .def("registerWatchWinMsg", &PyApApplication::registerWatchWinMsg, DS.SARGS({ "func: Any" })).staticmethod("registerWatchWinMsg")
         .def("removeWatchWinMsg", &PyApApplication::removeWatchWinMsg, DS.SARGS({ "func: Any" })).staticmethod("removeWatchWinMsg")
         .def("showModalDialog", &PyApApplication::showModalDialog1, DS.SARGS({ "window: wx.Dialog" })).staticmethod("showModalDialog")
+        .def("listFilesInPath", &PyApApplication::listFilesInPath, DS.SARGS({ "path: str", "ext: str"})).staticmethod("listFilesInPath")
+        .def("listFilesInPathRecursive", &PyApApplication::listFilesInPathRecursive, DS.SARGS({ "path: str", "ext: str" })).staticmethod("listFilesInPathRecursive")
         .def("testFlags", &PyApApplication::testFlags, DS.SARGS({ "flags: PyAp.PyRxTestFlags" })).staticmethod("testFlags")
         .def("className", &PyApApplication::className, DS.SARGS()).staticmethod("className")
+        .def("__iter__", +[](const PyApApplication& self) {return Document_Iterator(self); })
         ;
 }
 
@@ -86,12 +132,14 @@ PyApDocManager PyApApplication::docManager()
 void PyApApplication::applyHostIcon(UINT_PTR _hwnd)
 {
     HICON hIcon = 0;
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(31233));
 #elif defined(_ZRXTARGET260)
     hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(20001));
-#elif defined(_GRXTARGET250)
+#elif defined(_GRXTARGET260)
     hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(1017));
+#elif defined(_IRXTARGET140)
+    hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(31233));
 #elif defined(_ARXTARGET)
     auto main = CWnd::FromHandle(adsw_acadMainWnd());
     if (main == nullptr)
@@ -137,7 +185,7 @@ UINT_PTR PyApApplication::acadGetIDispatch()
 
 PyObject* PyApApplication::getwxApp()
 {
-    WxPyAutoLock lock;
+    PyAutoLockGIL lock;
     if (!wxPyCheckForApp(false))
         throw PyNullObject();
     wxApp* pApp = wxTheApp;
@@ -319,14 +367,13 @@ boost::python::object PyApApplication::loadPythonModule(const std::string& fullp
         std::filesystem::path path = fullpath;
         path = path.replace_extension();
         AcString acpath = path.filename().wstring().c_str();
-        acpath.makeUpper();
+        towupper(acpath);
         if (rxApp.funcNameMap.contains(acpath))
         {
             boost::python::handle<> handle(rxApp.funcNameMap.at(acpath).mdict);
             return boost::python::object(handle);
         }
     }
-    PyThrowBadEs(eInvalidInput);
     return boost::python::object{};
 }
 
@@ -340,14 +387,13 @@ boost::python::object PyApApplication::reloadPythonModule(const std::string& ful
         std::filesystem::path path = fullpath;
         path = path.replace_extension();
         AcString acpath = path.filename().wstring().c_str();
-        acpath.makeUpper();
+        towupper(acpath);
         if (rxApp.funcNameMap.contains(acpath))
         {
             boost::python::handle<> handle(rxApp.funcNameMap.at(acpath).mdict);
             return boost::python::object(handle);
         }
     }
-    PyThrowBadEs(eInvalidInput);
     return boost::python::object{};
 }
 
@@ -359,6 +405,26 @@ std::string PyApApplication::getPyRxModulePath()
 std::string PyApApplication::getPyRxModuleName()
 {
     return wstr_to_utf8(PyRxApp::moduleName());
+}
+
+std::string PyApApplication::getLocalAppDataPath1()
+{
+    return wstr_to_utf8(PyRxApp::getLocalAppDataPath(true));
+}
+
+std::string PyApApplication::getLocalAppDataPath2(bool createIfNotFound)
+{
+    return wstr_to_utf8(PyRxApp::getLocalAppDataPath(createIfNotFound));
+}
+
+std::string PyApApplication::getAppDataPath1()
+{
+    return wstr_to_utf8(PyRxApp::getAppDataPath(true));
+}
+
+std::string PyApApplication::getAppDataPath2(bool createIfNotFound)
+{
+    return wstr_to_utf8(PyRxApp::getAppDataPath(createIfNotFound));
 }
 
 boost::python::list PyApApplication::getLoadedModules()
@@ -396,7 +462,7 @@ int PyApApplication::showModalDialog1(const boost::python::object& window)
     return pDlg->ShowModal();
 }
 
-void PyApApplication::apregcommand(const std::string& fullpath, const std::string& modulename, const std::string& name, const boost::python::object& func, int flags)
+void PyApApplication::appregcommand(const std::string& fullpath, const std::string& modulename, const std::string& name, const boost::python::object& func, int flags)
 {
     ::regcommand(fullpath, modulename, name, func, flags);
 }
@@ -404,6 +470,42 @@ void PyApApplication::apregcommand(const std::string& fullpath, const std::strin
 void PyApApplication::apremovecommand(const std::string& modulename, const std::string& name)
 {
     ::removecommand(modulename, name);
+}
+
+boost::python::list PyApApplication::listFilesInPath(const std::string& spath, const std::string& ext)
+{
+    std::error_code ec;
+    boost::python::list result;
+    for (const auto& entry : std::filesystem::directory_iterator(spath, std::filesystem::directory_options::skip_permission_denied, ec))
+    {
+        if (!ec)
+        {
+            const auto& epath = entry.path();
+            if (!epath.has_extension())
+                continue;
+            if (icompare(epath.extension().string(), ext))
+                result.append(epath.string());
+        }
+    }
+    return result;
+}
+
+boost::python::list PyApApplication::listFilesInPathRecursive(const std::string& spath, const std::string& ext)
+{
+    std::error_code ec;
+    boost::python::list result;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(spath, std::filesystem::directory_options::skip_permission_denied, ec))
+    {
+        if (!ec)
+        {
+            const auto& epath = entry.path();
+            if (!epath.has_extension())
+                continue;
+            if (icompare(epath.extension().string(), ext))
+                result.append(epath.string());
+        }
+    }
+    return result;
 }
 
 std::string PyApApplication::testFlags(PyRxTestFlags flags)

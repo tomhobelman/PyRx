@@ -18,13 +18,13 @@ void makePyDbPlotSettingsWrapper()
         "- val: PyDb.ShadePlotType, id: PyDb.ObjectId\n";
 
 
-    PyDocString DS("PyDb.PlotSettings");
+    PyDocString DS("PlotSettings");
     class_<PyDbPlotSettings, bases<PyDbObject>>("PlotSettings")
         .def(init<>())
         .def(init<bool>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords)))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 7416)))
         .def("addToPlotSettingsDict", &PyDbPlotSettings::addToPlotSettingsDict, DS.ARGS({ "db: PyDb.Database" }))
         .def("getPlotSettingsName", &PyDbPlotSettings::getPlotSettingsName, DS.ARGS())
         .def("setPlotSettingsName", &PyDbPlotSettings::setPlotSettingsName, DS.ARGS({ "val: str" }))
@@ -186,7 +186,7 @@ PyDbPlotSettings::PyDbPlotSettings(const PyDbObjectId& id, AcDb::OpenMode mode, 
 {
 }
 
-void PyDbPlotSettings::addToPlotSettingsDict(PyDbDatabase& towhichDb)
+void PyDbPlotSettings::addToPlotSettingsDict(PyDbDatabase& towhichDb) const
 {
     return PyThrowBadEs(impObj()->addToPlotSettingsDict(towhichDb.impObj()));
 }
@@ -198,7 +198,7 @@ std::string PyDbPlotSettings::getPlotSettingsName() const
     return wstr_to_utf8(plotSettingsName);
 }
 
-void PyDbPlotSettings::setPlotSettingsName(const std::string& plotSettingsName)
+void PyDbPlotSettings::setPlotSettingsName(const std::string& plotSettingsName) const
 {
     return PyThrowBadEs(impObj()->setPlotSettingsName(utf8_to_wstr(plotSettingsName).c_str()));
 }
@@ -256,23 +256,23 @@ Adesk::Boolean PyDbPlotSettings::plotViewportBorders() const
     return impObj()->plotViewportBorders();
 }
 
-void PyDbPlotSettings::setPlotViewportBorders(Adesk::Boolean plotViewportBorders)
+void PyDbPlotSettings::setPlotViewportBorders(Adesk::Boolean plotViewportBorders) const
 {
     impObj()->setPlotViewportBorders(plotViewportBorders);
 }
 
 Adesk::Boolean PyDbPlotSettings::plotTransparency() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->plotTransparency();
 #endif
 }
 
-void PyDbPlotSettings::setPlotTransparency(Adesk::Boolean plotTransparency)
+void PyDbPlotSettings::setPlotTransparency(Adesk::Boolean plotTransparency) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->setPlotTransparency(plotTransparency);
@@ -284,7 +284,7 @@ Adesk::Boolean PyDbPlotSettings::plotPlotStyles() const
     return impObj()->plotPlotStyles();
 }
 
-void PyDbPlotSettings::setPlotPlotStyles(Adesk::Boolean plotPlotStyles)
+void PyDbPlotSettings::setPlotPlotStyles(Adesk::Boolean plotPlotStyles) const
 {
     impObj()->setPlotPlotStyles(plotPlotStyles);
 }
@@ -294,7 +294,7 @@ Adesk::Boolean PyDbPlotSettings::showPlotStyles() const
     return impObj()->showPlotStyles();
 }
 
-void PyDbPlotSettings::setShowPlotStyles(Adesk::Boolean showPlotStyles)
+void PyDbPlotSettings::setShowPlotStyles(Adesk::Boolean showPlotStyles) const
 {
     impObj()->setShowPlotStyles(showPlotStyles);
 }
@@ -314,7 +314,7 @@ Adesk::Boolean PyDbPlotSettings::plotHidden() const
     return impObj()->plotHidden();
 }
 
-void PyDbPlotSettings::setPlotHidden(Adesk::Boolean plotHidden)
+void PyDbPlotSettings::setPlotHidden(Adesk::Boolean plotHidden) const
 {
     impObj()->setPlotHidden(plotHidden);
 }
@@ -324,12 +324,12 @@ AcDbPlotSettings::ShadePlotType PyDbPlotSettings::shadePlot() const
     return impObj()->shadePlot();
 }
 
-void PyDbPlotSettings::setShadePlot1(AcDbPlotSettings::ShadePlotType shadePlot)
+void PyDbPlotSettings::setShadePlot1(AcDbPlotSettings::ShadePlotType shadePlot) const
 {
     return PyThrowBadEs(impObj()->setShadePlot(shadePlot));
 }
 
-void PyDbPlotSettings::setShadePlot2(AcDbPlotSettings::ShadePlotType type, const PyDbObjectId& shadePlotId)
+void PyDbPlotSettings::setShadePlot2(AcDbPlotSettings::ShadePlotType type, const PyDbObjectId& shadePlotId) const
 {
     return PyThrowBadEs(impObj()->setShadePlot(type, shadePlotId.m_id));
 }
@@ -349,7 +349,7 @@ AcDbPlotSettings::ShadePlotResLevel PyDbPlotSettings::shadePlotResLevel() const
     return impObj()->shadePlotResLevel();
 }
 
-void PyDbPlotSettings::setShadePlotResLevel(AcDbPlotSettings::ShadePlotResLevel resLevel)
+void PyDbPlotSettings::setShadePlotResLevel(AcDbPlotSettings::ShadePlotResLevel resLevel) const
 {
     return PyThrowBadEs(impObj()->setShadePlotResLevel(resLevel));
 }
@@ -359,7 +359,7 @@ Adesk::Int16 PyDbPlotSettings::shadePlotCustomDPI() const
     return impObj()->shadePlotCustomDPI();
 }
 
-void PyDbPlotSettings::setShadePlotCustomDPI(Adesk::Int16 val)
+void PyDbPlotSettings::setShadePlotCustomDPI(Adesk::Int16 val) const
 {
     return PyThrowBadEs(impObj()->setShadePlotCustomDPI(val));
 }
@@ -425,7 +425,7 @@ Adesk::Boolean PyDbPlotSettings::scaleLineweights() const
     return impObj()->scaleLineweights();
 }
 
-void PyDbPlotSettings::setScaleLineweights(Adesk::Boolean scaleLineweights)
+void PyDbPlotSettings::setScaleLineweights(Adesk::Boolean scaleLineweights) const
 {
     return impObj()->setScaleLineweights(scaleLineweights);
 }
@@ -435,7 +435,7 @@ Adesk::Boolean PyDbPlotSettings::printLineweights() const
     return impObj()->printLineweights();
 }
 
-void PyDbPlotSettings::setPrintLineweights(Adesk::Boolean printLineweights)
+void PyDbPlotSettings::setPrintLineweights(Adesk::Boolean printLineweights) const
 {
     impObj()->setPrintLineweights(printLineweights);
 }
@@ -445,7 +445,7 @@ Adesk::Boolean PyDbPlotSettings::drawViewportsFirst() const
     return impObj()->drawViewportsFirst();
 }
 
-void PyDbPlotSettings::setDrawViewportsFirst(Adesk::Boolean drawViewportsFirst)
+void PyDbPlotSettings::setDrawViewportsFirst(Adesk::Boolean drawViewportsFirst) const
 {
     impObj()->setDrawViewportsFirst(drawViewportsFirst);
 }
@@ -457,7 +457,7 @@ Adesk::Boolean PyDbPlotSettings::modelType() const
 
 PyDbObjectId PyDbPlotSettings::shadePlotId() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->shadePlotId());
@@ -496,12 +496,18 @@ AcDbPlotSettings* PyDbPlotSettings::impObj(const std::source_location& src /*= s
 //PyDbLayout
 void makePyDbLayoutWrapper()
 {
-    PyDocString DS("PyDb.Layout");
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
+    PyDocString DS("Layout");
     class_<PyDbLayout, bases<PyDbPlotSettings>>("Layout")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 5829)))
         .def("getBlockTableRecordId", &PyDbLayout::getBlockTableRecordId, DS.ARGS())
         .def("setBlockTableRecordId", &PyDbLayout::setBlockTableRecordId, DS.ARGS({ "id: PyDb.ObjectId" }))
         .def("addToLayoutDict", &PyDbLayout::addToLayoutDict, DS.ARGS({ "db: PyDb.Database","id: PyDb.ObjectId" }))
@@ -555,12 +561,12 @@ PyDbObjectId PyDbLayout::getBlockTableRecordId() const
     return PyDbObjectId(impObj()->getBlockTableRecordId());
 }
 
-void PyDbLayout::setBlockTableRecordId(PyDbObjectId& BlockTableRecordId)
+void PyDbLayout::setBlockTableRecordId(PyDbObjectId& BlockTableRecordId) const
 {
     return PyThrowBadEs(impObj()->setBlockTableRecordId(BlockTableRecordId.m_id));
 }
 
-void PyDbLayout::addToLayoutDict(PyDbDatabase& towhichDb, PyDbObjectId BlockTableRecordId)
+void PyDbLayout::addToLayoutDict(PyDbDatabase& towhichDb, PyDbObjectId BlockTableRecordId) const
 {
     return PyThrowBadEs(impObj()->addToLayoutDict(towhichDb.impObj(), BlockTableRecordId.m_id));
 }
@@ -572,7 +578,7 @@ std::string PyDbLayout::getLayoutName() const
     return wstr_to_utf8(layoutName);
 }
 
-void PyDbLayout::setLayoutName(const std::string& layoutName)
+void PyDbLayout::setLayoutName(const std::string& layoutName) const
 {
     return PyThrowBadEs(impObj()->setLayoutName(utf8_to_wstr(layoutName).c_str()));
 }
@@ -582,7 +588,7 @@ int PyDbLayout::getTabOrder() const
     return impObj()->getTabOrder();
 }
 
-void PyDbLayout::setTabOrder(int newOrder)
+void PyDbLayout::setTabOrder(int newOrder) const
 {
     impObj()->setTabOrder(newOrder);
 }
@@ -592,7 +598,7 @@ bool PyDbLayout::getTabSelected() const
     return impObj()->getTabSelected();
 }
 
-void PyDbLayout::setTabSelected(Adesk::Boolean tabSelected)
+void PyDbLayout::setTabSelected(Adesk::Boolean tabSelected) const
 {
     impObj()->setTabSelected(tabSelected);
 }
@@ -619,7 +625,7 @@ boost::python::tuple PyDbLayout::getLimits() const
 
 boost::python::tuple PyDbLayout::getExtents() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -630,12 +636,12 @@ boost::python::tuple PyDbLayout::getExtents() const
 #endif
 }
 
-void PyDbLayout::initialize1()
+void PyDbLayout::initialize1() const
 {
     return PyThrowBadEs(impObj()->initialize());
 }
 
-void PyDbLayout::initialize2(PyDbObjectId& paperVportId)
+void PyDbLayout::initialize2(PyDbObjectId& paperVportId) const
 {
     return PyThrowBadEs(impObj()->initialize(&paperVportId.m_id));
 }
@@ -645,7 +651,7 @@ bool PyDbLayout::annoAllVisible() const
     return impObj()->annoAllVisible();
 }
 
-void PyDbLayout::setAnnoAllVisible(bool newVal)
+void PyDbLayout::setAnnoAllVisible(bool newVal) const
 {
     return PyThrowBadEs(impObj()->setAnnoAllVisible(newVal));
 }
@@ -686,33 +692,33 @@ void makePyDbLayoutManagerWrapper()
     class_<PyDbLayoutManager, bases<PyRxObject>>("LayoutManager")
         .def(init<>(DS.ARGS()))
         .def("setCurrentLayout", &PyDbLayoutManager::setCurrentLayout1)
-        .def("setCurrentLayout", &PyDbLayoutManager::setCurrentLayout2, DS.ARGS({ "name: str","db: PyDb.Database=None" }))
+        .def("setCurrentLayout", &PyDbLayoutManager::setCurrentLayout2, DS.ARGS({ "name: str","db: PyDb.Database = ..." }))
         .def("setCurrentLayoutId", &PyDbLayoutManager::setCurrentLayoutId, DS.ARGS({ "id: PyDb.ObjectId" }))
         .def("getActiveLayoutName", &PyDbLayoutManager::getActiveLayoutName1)
-        .def("getActiveLayoutName", &PyDbLayoutManager::getActiveLayoutName2, DS.ARGS({ "allowModel: bool","db: PyDb.Database=None" }))
+        .def("getActiveLayoutName", &PyDbLayoutManager::getActiveLayoutName2, DS.ARGS({ "allowModel: bool","db: PyDb.Database = ..." }))
         .def("getActiveLayoutBTRId", &PyDbLayoutManager::getActiveLayoutBTRId1)
-        .def("getActiveLayoutBTRId", &PyDbLayoutManager::getActiveLayoutBTRId2, DS.ARGS({ "db: PyDb.Database=None" }))
+        .def("getActiveLayoutBTRId", &PyDbLayoutManager::getActiveLayoutBTRId2, DS.ARGS({ "db: PyDb.Database = ..." }))
         .def("findLayoutNamed", &PyDbLayoutManager::findLayoutNamed1)
-        .def("findLayoutNamed", &PyDbLayoutManager::findLayoutNamed2, DS.ARGS({ "name: str","db: PyDb.Database=None" }))
+        .def("findLayoutNamed", &PyDbLayoutManager::findLayoutNamed2, DS.ARGS({ "name: str","db: PyDb.Database = ..." }))
         .def("layoutExists", &PyDbLayoutManager::layoutExists1)
-        .def("layoutExists", &PyDbLayoutManager::layoutExists2, DS.ARGS({ "name: str","db: PyDb.Database=None" }))
+        .def("layoutExists", &PyDbLayoutManager::layoutExists2, DS.ARGS({ "name: str","db: PyDb.Database = ..." }))
         .def("copyLayout", &PyDbLayoutManager::copyLayout1)
-        .def("copyLayout", &PyDbLayoutManager::copyLayout2, DS.ARGS({ "name: str", "newname: str", "db: PyDb.Database=None" }))
+        .def("copyLayout", &PyDbLayoutManager::copyLayout2, DS.ARGS({ "name: str", "newname: str", "db: PyDb.Database = ..." }))
         .def("deleteLayout", &PyDbLayoutManager::deleteLayout1)
-        .def("deleteLayout", &PyDbLayoutManager::deleteLayout2, DS.ARGS({ "name: str","db: PyDb.Database=None" }))
+        .def("deleteLayout", &PyDbLayoutManager::deleteLayout2, DS.ARGS({ "name: str","db: PyDb.Database = ..." }))
         .def("createLayout", &PyDbLayoutManager::createLayout1)
-        .def("createLayout", &PyDbLayoutManager::createLayout2, DS.ARGS({ "name: str","db: PyDb.Database=None" }))
+        .def("createLayout", &PyDbLayoutManager::createLayout2, DS.ARGS({ "name: str","db: PyDb.Database = ..." }))
         .def("renameLayout", &PyDbLayoutManager::renameLayout1)
-        .def("renameLayout", &PyDbLayoutManager::renameLayout2, DS.ARGS({ "name: str", "newname: str", "db: PyDb.Database=None" }))
+        .def("renameLayout", &PyDbLayoutManager::renameLayout2, DS.ARGS({ "name: str", "newname: str", "db: PyDb.Database = ..." }))
         .def("cloneLayout", &PyDbLayoutManager::cloneLayout1)
-        .def("cloneLayout", &PyDbLayoutManager::cloneLayout2, DS.ARGS({ "layout: PyDb.Layout","newname: str", "newTabOrder: int", "db: PyDb.Database=None" }))
+        .def("cloneLayout", &PyDbLayoutManager::cloneLayout2, DS.ARGS({ "layout: PyDb.Layout","newname: str", "newTabOrder: int", "db: PyDb.Database = ..." }))
         .def("getNonRectVPIdFromClipId", &PyDbLayoutManager::getNonRectVPIdFromClipId, DS.ARGS({ "id: PyDb.ObjectId" }))
         .def("isVpnumClipped", &PyDbLayoutManager::isVpnumClipped1)
-        .def("isVpnumClipped", &PyDbLayoutManager::isVpnumClipped2, DS.ARGS({ "idx: int","db: PyDb.Database=None" }))
+        .def("isVpnumClipped", &PyDbLayoutManager::isVpnumClipped2, DS.ARGS({ "idx: int","db: PyDb.Database = ..." }))
         .def("countLayouts", &PyDbLayoutManager::countLayouts1)
-        .def("countLayouts", &PyDbLayoutManager::countLayouts2, DS.ARGS({ "db: PyDb.Database=None" }))
+        .def("countLayouts", &PyDbLayoutManager::countLayouts2, DS.ARGS({ "db: PyDb.Database = ..." }))
         .def("getLayouts", &PyDbLayoutManager::getLayouts1)
-        .def("getLayouts", &PyDbLayoutManager::getLayouts2, DS.ARGS({ "db: PyDb.Database=None" }))
+        .def("getLayouts", &PyDbLayoutManager::getLayouts2, DS.ARGS({ "db: PyDb.Database = ..." }))
         .def("setupForLayouts", &PyDbLayoutManager::setupForLayouts, DS.SARGS({ "db: PyDb.Database" })).staticmethod("setupForLayouts")
         .def("clearSetupForLayouts", &PyDbLayoutManager::clearSetupForLayouts, DS.SARGS({ "handle: int" })).staticmethod("clearSetupForLayouts")
         .def("desc", &PyDbLayoutManager::desc, DS.SARGS(15560)).staticmethod("desc")
@@ -730,12 +736,12 @@ PyDbLayoutManager::PyDbLayoutManager(AcDbLayoutManager* ptr, bool autoDelete)
 {
 }
 
-void PyDbLayoutManager::setCurrentLayout1(const std::string& newname)
+void PyDbLayoutManager::setCurrentLayout1(const std::string& newname) const
 {
     return PyThrowBadEs(impObj()->setCurrentLayout(utf8_to_wstr(newname).c_str()));
 }
 
-void PyDbLayoutManager::setCurrentLayout2(const std::string& newname, PyDbDatabase& pDb)
+void PyDbLayoutManager::setCurrentLayout2(const std::string& newname, PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -743,19 +749,19 @@ void PyDbLayoutManager::setCurrentLayout2(const std::string& newname, PyDbDataba
     return PyThrowBadEs(impObj()->setCurrentLayout(utf8_to_wstr(newname).c_str(), pDb.impObj()));
 }
 
-void PyDbLayoutManager::setCurrentLayoutId(const PyDbObjectId& layoutId)
+void PyDbLayoutManager::setCurrentLayoutId(const PyDbObjectId& layoutId) const
 {
     return PyThrowBadEs(impObj()->setCurrentLayoutId(layoutId.m_id));
 }
 
-std::string PyDbLayoutManager::getActiveLayoutName1(bool allowModel)
+std::string PyDbLayoutManager::getActiveLayoutName1(bool allowModel) const
 {
     AcString sName;
     PyThrowBadEs(impObj()->getActiveLayoutName(sName, allowModel));
     return wstr_to_utf8(sName);
 }
 
-std::string PyDbLayoutManager::getActiveLayoutName2(bool allowModel, PyDbDatabase& pDb)
+std::string PyDbLayoutManager::getActiveLayoutName2(bool allowModel, PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -765,12 +771,12 @@ std::string PyDbLayoutManager::getActiveLayoutName2(bool allowModel, PyDbDatabas
     return wstr_to_utf8(sName);
 }
 
-PyDbObjectId PyDbLayoutManager::getActiveLayoutBTRId1()
+PyDbObjectId PyDbLayoutManager::getActiveLayoutBTRId1() const
 {
     return PyDbObjectId(impObj()->getActiveLayoutBTRId());
 }
 
-PyDbObjectId PyDbLayoutManager::getActiveLayoutBTRId2(const PyDbDatabase& pDb)
+PyDbObjectId PyDbLayoutManager::getActiveLayoutBTRId2(const PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -778,12 +784,12 @@ PyDbObjectId PyDbLayoutManager::getActiveLayoutBTRId2(const PyDbDatabase& pDb)
     return PyDbObjectId(impObj()->getActiveLayoutBTRId(pDb.impObj()));
 }
 
-PyDbObjectId PyDbLayoutManager::findLayoutNamed1(const std::string& name)
+PyDbObjectId PyDbLayoutManager::findLayoutNamed1(const std::string& name) const
 {
     return PyDbObjectId(impObj()->findLayoutNamed(utf8_to_wstr(name).c_str()));
 }
 
-PyDbObjectId PyDbLayoutManager::findLayoutNamed2(const std::string& name, const PyDbDatabase& pDb)
+PyDbObjectId PyDbLayoutManager::findLayoutNamed2(const std::string& name, const PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -791,12 +797,12 @@ PyDbObjectId PyDbLayoutManager::findLayoutNamed2(const std::string& name, const 
     return PyDbObjectId(impObj()->findLayoutNamed(utf8_to_wstr(name).c_str(), pDb.impObj()));
 }
 
-bool PyDbLayoutManager::layoutExists1(const std::string& name)
+bool PyDbLayoutManager::layoutExists1(const std::string& name) const
 {
     return impObj()->layoutExists(utf8_to_wstr(name).c_str());
 }
 
-bool PyDbLayoutManager::layoutExists2(const std::string& name, const PyDbDatabase& pDb)
+bool PyDbLayoutManager::layoutExists2(const std::string& name, const PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -804,12 +810,12 @@ bool PyDbLayoutManager::layoutExists2(const std::string& name, const PyDbDatabas
     return impObj()->layoutExists(utf8_to_wstr(name).c_str(), pDb.impObj());
 }
 
-void PyDbLayoutManager::copyLayout1(const std::string& copyname, const std::string& newname)
+void PyDbLayoutManager::copyLayout1(const std::string& copyname, const std::string& newname) const
 {
     return PyThrowBadEs(impObj()->copyLayout(utf8_to_wstr(copyname).c_str(), utf8_to_wstr(newname).c_str()));
 }
 
-void PyDbLayoutManager::copyLayout2(const std::string& copyname, const std::string& newname, const PyDbDatabase& pDb)
+void PyDbLayoutManager::copyLayout2(const std::string& copyname, const std::string& newname, const PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -817,12 +823,12 @@ void PyDbLayoutManager::copyLayout2(const std::string& copyname, const std::stri
     return PyThrowBadEs(impObj()->copyLayout(utf8_to_wstr(copyname).c_str(), utf8_to_wstr(newname).c_str(), pDb.impObj()));
 }
 
-void PyDbLayoutManager::deleteLayout1(const std::string& delname)
+void PyDbLayoutManager::deleteLayout1(const std::string& delname) const
 {
     return PyThrowBadEs(impObj()->deleteLayout(utf8_to_wstr(delname).c_str()));
 }
 
-void PyDbLayoutManager::deleteLayout2(const std::string& delname, PyDbDatabase& pDb)
+void PyDbLayoutManager::deleteLayout2(const std::string& delname, PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -830,7 +836,7 @@ void PyDbLayoutManager::deleteLayout2(const std::string& delname, PyDbDatabase& 
     return PyThrowBadEs(impObj()->deleteLayout(utf8_to_wstr(delname).c_str(), pDb.impObj()));
 }
 
-boost::python::tuple PyDbLayoutManager::createLayout1(const std::string& newname)
+boost::python::tuple PyDbLayoutManager::createLayout1(const std::string& newname) const
 {
     PyDbObjectId layoutId;
     PyDbObjectId blockTableRecId;
@@ -838,7 +844,7 @@ boost::python::tuple PyDbLayoutManager::createLayout1(const std::string& newname
     return boost::python::make_tuple(layoutId, blockTableRecId);
 }
 
-boost::python::tuple PyDbLayoutManager::createLayout2(const std::string& newname, PyDbDatabase& pDb)
+boost::python::tuple PyDbLayoutManager::createLayout2(const std::string& newname, PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -849,12 +855,12 @@ boost::python::tuple PyDbLayoutManager::createLayout2(const std::string& newname
     return boost::python::make_tuple(layoutId, blockTableRecId);
 }
 
-void PyDbLayoutManager::renameLayout1(const std::string& oldname, const std::string& newname)
+void PyDbLayoutManager::renameLayout1(const std::string& oldname, const std::string& newname) const
 {
     return PyThrowBadEs(impObj()->renameLayout(utf8_to_wstr(oldname).c_str(), utf8_to_wstr(newname).c_str()));
 }
 
-void PyDbLayoutManager::renameLayout2(const std::string& oldname, const std::string& newname, PyDbDatabase& pDb)
+void PyDbLayoutManager::renameLayout2(const std::string& oldname, const std::string& newname, PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -862,12 +868,12 @@ void PyDbLayoutManager::renameLayout2(const std::string& oldname, const std::str
     return PyThrowBadEs(impObj()->renameLayout(utf8_to_wstr(oldname).c_str(), utf8_to_wstr(newname).c_str(), pDb.impObj()));
 }
 
-void PyDbLayoutManager::cloneLayout1(PyDbLayout& pLBTR, const std::string& newname)
+void PyDbLayoutManager::cloneLayout1(PyDbLayout& pLBTR, const std::string& newname) const
 {
     return PyThrowBadEs(impObj()->cloneLayout(pLBTR.impObj(), utf8_to_wstr(newname).c_str()));
 }
 
-void PyDbLayoutManager::cloneLayout2(PyDbLayout& pLBTR, const std::string& newname, int newTabOrder, PyDbDatabase& pDb)
+void PyDbLayoutManager::cloneLayout2(PyDbLayout& pLBTR, const std::string& newname, int newTabOrder, PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -875,17 +881,17 @@ void PyDbLayoutManager::cloneLayout2(PyDbLayout& pLBTR, const std::string& newna
     return PyThrowBadEs(impObj()->cloneLayout(pLBTR.impObj(), utf8_to_wstr(newname).c_str(), newTabOrder, pDb.impObj()));
 }
 
-PyDbObjectId PyDbLayoutManager::getNonRectVPIdFromClipId(PyDbObjectId& clipId)
+PyDbObjectId PyDbLayoutManager::getNonRectVPIdFromClipId(PyDbObjectId& clipId) const
 {
     return PyDbObjectId(impObj()->getNonRectVPIdFromClipId(clipId.m_id));
 }
 
-bool PyDbLayoutManager::isVpnumClipped1(int index)
+bool PyDbLayoutManager::isVpnumClipped1(int index) const
 {
     return impObj()->isVpnumClipped(index);
 }
 
-bool PyDbLayoutManager::isVpnumClipped2(int index, const PyDbDatabase& pDb)
+bool PyDbLayoutManager::isVpnumClipped2(int index, const PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -893,12 +899,12 @@ bool PyDbLayoutManager::isVpnumClipped2(int index, const PyDbDatabase& pDb)
     return impObj()->isVpnumClipped(index, pDb.impObj());
 }
 
-int PyDbLayoutManager::countLayouts1()
+int PyDbLayoutManager::countLayouts1() const
 {
     return impObj()->countLayouts();
 }
 
-int PyDbLayoutManager::countLayouts2(PyDbDatabase& pDb)
+int PyDbLayoutManager::countLayouts2(PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -923,13 +929,13 @@ static boost::python::dict getLayouts(AcDbDatabase* pDb)
     return _items;
 }
 
-boost::python::dict PyDbLayoutManager::getLayouts1()
+boost::python::dict PyDbLayoutManager::getLayouts1() const
 {
     AcDbDatabase* pDb = acdbHostApplicationServices()->workingDatabase();
     return getLayouts(pDb);
 }
 
-boost::python::dict PyDbLayoutManager::getLayouts2(PyDbDatabase& pDb)
+boost::python::dict PyDbLayoutManager::getLayouts2(PyDbDatabase& pDb) const
 {
 #ifdef ZRXAPP
     AutoWorkingDatabase autowb(pDb.impObj());
@@ -939,7 +945,7 @@ boost::python::dict PyDbLayoutManager::getLayouts2(PyDbDatabase& pDb)
 
 Adesk::ULongPtr PyDbLayoutManager::setupForLayouts(PyDbDatabase& pDb)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     Adesk::ULongPtr contextHandle = 0;
@@ -950,7 +956,7 @@ Adesk::ULongPtr PyDbLayoutManager::setupForLayouts(PyDbDatabase& pDb)
 
 void PyDbLayoutManager::clearSetupForLayouts(Adesk::ULongPtr contextHandle)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(acdbClearSetupForLayouts(contextHandle));

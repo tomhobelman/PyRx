@@ -8,7 +8,7 @@ using namespace boost::python;
 
 void makePyGeCurveSurfIntWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
         "- curve: PyGe.Curve3d, surf: PyGe.Surface\n"
@@ -22,7 +22,7 @@ void makePyGeCurveSurfIntWrapper()
     class_<PyGeCurveSurfInt, bases<PyGeEntity3d>>("CurveSurfInt")
         .def(init<>())
         .def(init<const PyGeCurve3d&, const PyGeSurface&>())
-        .def(init<const PyGeCurve3d&, const PyGeSurface&, const AcGeTol&>(DS.CTOR(ctor)))
+        .def(init<const PyGeCurve3d&, const PyGeSurface&, const AcGeTol&>(DS.CTOR(ctor, 11936)))
         .def("curve", &PyGeCurveSurfInt::curve, DS.ARGS())
         .def("surface", &PyGeCurveSurfInt::surface, DS.ARGS())
         .def("tolerance", &PyGeCurveSurfInt::tolerance, DS.ARGS())
@@ -41,7 +41,7 @@ void makePyGeCurveSurfIntWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeCurveSurfInt::PyGeCurveSurfInt(AcGeEntity3d* pEnt)
     : PyGeEntity3d(pEnt)
 {
@@ -147,12 +147,12 @@ boost::python::tuple PyGeCurveSurfInt::getIntConfigs(int intNum) const
     return boost::python::make_tuple(lower, higher, smallAngle);
 }
 
-void PyGeCurveSurfInt::set1(const PyGeCurve3d& cvr, const PyGeSurface& srf)
+void PyGeCurveSurfInt::set1(const PyGeCurve3d& cvr, const PyGeSurface& srf) const
 {
     impObj()->set(*cvr.impObj(), *srf.impObj());
 }
 
-void PyGeCurveSurfInt::set2(const PyGeCurve3d& cvr, const PyGeSurface& srf, const AcGeTol& tol)
+void PyGeCurveSurfInt::set2(const PyGeCurve3d& cvr, const PyGeSurface& srf, const AcGeTol& tol) const
 {
     impObj()->set(*cvr.impObj(), *srf.impObj(), tol);
 }

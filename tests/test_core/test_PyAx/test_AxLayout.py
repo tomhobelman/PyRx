@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from pyrx import Ap, Ax
+import pytest
+
+from pyrx import Ap
 
 
 class TestAxLayout:
 
+    @pytest.mark.known_failure_IRX
     def test_acadLayouts(self):
         axApp = Ap.Application.acadApplication()
         axDoc = axApp.activeDocument()

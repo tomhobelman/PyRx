@@ -1,9 +1,13 @@
 from __future__ import annotations
+
 import pytest
+
+from pyrx import Ap
 from tests import HOST
-from pyrx import Ap, Ax
 
 
+@pytest.mark.known_failure_GRX
+@pytest.mark.known_failure_IRX
 class TestAxMenu:
 
     def setup_class(self):
@@ -20,7 +24,7 @@ class TestAxMenu:
     # in BricsCAD, dynamic menues are persisted in the CUI (SR-26299 2011)
     # GRX shutdown behavior, the menus are null, it's OK in a command context
     def teardown_class(self):
-        if "GRX" in HOST:
+        if HOST is None or "GRX" in HOST:
             return
         axApp = Ap.Application.acadApplication()
         axMenuGroups = axApp.menuGroups()

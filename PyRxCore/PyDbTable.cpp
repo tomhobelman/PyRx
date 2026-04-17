@@ -36,7 +36,7 @@ static bool AcCellNotEquals(const AcCell& cell, const AcCell& other)
     return !AcCellEquals(cell, other);
 }
 
-int AcCellGetItem(const AcCell& cell, int idx)
+static int AcCellGetItem(const AcCell& cell, int idx)
 {
     switch (idx)
     {
@@ -49,7 +49,7 @@ int AcCellGetItem(const AcCell& cell, int idx)
     }
 }
 
-void AcCellSetItem(AcCell& cell, int idx, int val)
+static void AcCellSetItem(AcCell& cell, int idx, int val)
 {
     switch (idx)
     {
@@ -112,7 +112,7 @@ static bool AcCellRangeNotEquals(const AcCellRange& range, const AcCellRange& ot
     return !AcCellRangeEquals(range, other);
 }
 
-int AcCellRangeGetItem(const AcCellRange& range, int idx)
+static int AcCellRangeGetItem(const AcCellRange& range, int idx)
 {
     switch (idx)
     {
@@ -129,7 +129,7 @@ int AcCellRangeGetItem(const AcCellRange& range, int idx)
     }
 }
 
-void AcCellRangeSetItem(AcCellRange& range, int idx, int val)
+static void AcCellRangeSetItem(AcCellRange& range, int idx, int val)
 {
     switch (idx)
     {
@@ -318,258 +318,263 @@ void makePyDbTableWrapper()
         "- row: int, col: int, content: int, val: PyDb.AcValue, opt: PyDb.ValueParseOption\n"
         "- row: int, col: int, content: int, val: str, opt: PyDb.ValueParseOption\n";
 
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n";
+
     PyDocString DS("Table");
     class_<PyDbTable, bases<PyDbBlockReference>>("Table")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" })))
-        .def("tableStyle", &PyDbTable::tableStyle, DS.ARGS())
-        .def("setTableStyle", &PyDbTable::setTableStyle, DS.ARGS({ "val : PyDb.ObjectId" }))
-        .def("direction", &PyDbTable::direction, DS.ARGS())
-        .def("setDirection", &PyDbTable::setDirection, DS.ARGS({ "val : PyGe.Vector3d" }))
-        .def("numRows", &PyDbTable::numRows, DS.ARGS())
-        .def("numColumns", &PyDbTable::numColumns, DS.ARGS())
-        .def("width", &PyDbTable::width, DS.ARGS())
-        .def("setWidth", &PyDbTable::setWidth, DS.ARGS({ "val : float" }))
-        .def("columnWidth", &PyDbTable::columnWidth, DS.ARGS({ "col : int" }))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.CTOR(ctords)))
+        .def("tableStyle", &PyDbTable::tableStyle, DS.ARGS(9437))
+        .def("setTableStyle", &PyDbTable::setTableStyle, DS.ARGS({ "val : PyDb.ObjectId" }, 9422))
+        .def("direction", &PyDbTable::direction, DS.ARGS(9293))
+        .def("setDirection", &PyDbTable::setDirection, DS.ARGS({ "val : PyGe.Vector3d" }, 9395))
+        .def("numRows", &PyDbTable::numRows, DS.ARGS(9357))
+        .def("numColumns", &PyDbTable::numColumns, DS.ARGS(9355))
+        .def("width", &PyDbTable::width, DS.ARGS(9448))
+        .def("setWidth", &PyDbTable::setWidth, DS.ARGS({ "val : float" }, 9430))
+        .def("columnWidth", &PyDbTable::columnWidth, DS.ARGS({ "col : int" }, 9281))
         .def("setColumnWidth", &PyDbTable::setColumnWidth1)
-        .def("setColumnWidth", &PyDbTable::setColumnWidth2, DS.OVRL(setColumnWidthOverloads))
-        .def("height", &PyDbTable::height, DS.ARGS())
-        .def("setHeight", &PyDbTable::setHeight, DS.ARGS({ "val : float" }))
-        .def("rowHeight", &PyDbTable::rowHeight, DS.ARGS({ "row : int" }))
+        .def("setColumnWidth", &PyDbTable::setColumnWidth2, DS.OVRL(setColumnWidthOverloads, 9388))
+        .def("height", &PyDbTable::height, DS.ARGS(9329))
+        .def("setHeight", &PyDbTable::setHeight, DS.ARGS({ "val : float" }, 9407))
+        .def("rowHeight", &PyDbTable::rowHeight, DS.ARGS({ "row : int" }, 9365))
         .def("setRowHeight", &PyDbTable::setRowHeight1)
-        .def("setRowHeight", &PyDbTable::setRowHeight2, DS.OVRL(setRowHeightOverloads))
-        .def("minimumColumnWidth", &PyDbTable::minimumColumnWidth, DS.ARGS({ "col: int" }))
-        .def("minimumRowHeight", &PyDbTable::minimumRowHeight, DS.ARGS({ "row: int" }))
-        .def("minimumTableWidth", &PyDbTable::minimumTableWidth, DS.ARGS())
-        .def("minimumTableHeight", &PyDbTable::minimumTableHeight, DS.ARGS())
-        .def("horzCellMargin", &PyDbTable::horzCellMargin, DS.ARGS())
-        .def("setHorzCellMargin", &PyDbTable::setHorzCellMargin, DS.ARGS({ "val : float" }))
-        .def("vertCellMargin", &PyDbTable::vertCellMargin, DS.ARGS())
-        .def("setVertCellMargin", &PyDbTable::setVertCellMargin, DS.ARGS({ "val : float" }))
-        .def("flowDirection", &PyDbTable::flowDirection, DS.ARGS())
-        .def("setFlowDirection", &PyDbTable::setFlowDirection, DS.ARGS({ "val : PyDb.TableFlowDirection" }))
-        .def("isTitleSuppressed", &PyDbTable::isTitleSuppressed, DS.ARGS())
-        .def("suppressTitleRow", &PyDbTable::suppressTitleRow, DS.ARGS({ "val : bool" }))
-        .def("isHeaderSuppressed", &PyDbTable::isHeaderSuppressed, DS.ARGS())
-        .def("suppressHeaderRow", &PyDbTable::suppressHeaderRow, DS.ARGS({ "val : bool" }))
+        .def("setRowHeight", &PyDbTable::setRowHeight2, DS.OVRL(setRowHeightOverloads, 9418))
+        .def("minimumColumnWidth", &PyDbTable::minimumColumnWidth, DS.ARGS({ "col: int" }, 9350))
+        .def("minimumRowHeight", &PyDbTable::minimumRowHeight, DS.ARGS({ "row: int" }, 9351))
+        .def("minimumTableWidth", &PyDbTable::minimumTableWidth, DS.ARGS(9353))
+        .def("minimumTableHeight", &PyDbTable::minimumTableHeight, DS.ARGS(9352))
+        .def("horzCellMargin", &PyDbTable::horzCellMargin, DS.ARGS(9331))
+        .def("setHorzCellMargin", &PyDbTable::setHorzCellMargin, DS.ARGS({ "val : float" }, 9408))
+        .def("vertCellMargin", &PyDbTable::vertCellMargin, DS.ARGS(9447))
+        .def("setVertCellMargin", &PyDbTable::setVertCellMargin, DS.ARGS({ "val : float" }, 9429))
+        .def("flowDirection", &PyDbTable::flowDirection, DS.ARGS(9303))
+        .def("setFlowDirection", &PyDbTable::setFlowDirection, DS.ARGS({ "val : PyDb.TableFlowDirection" }, 9397))
+        .def("isTitleSuppressed", &PyDbTable::isTitleSuppressed, DS.ARGS(9347))
+        .def("suppressTitleRow", &PyDbTable::suppressTitleRow, DS.ARGS({ "val : bool" }, 9436))
+        .def("isHeaderSuppressed", &PyDbTable::isHeaderSuppressed, DS.ARGS(9342))
+        .def("suppressHeaderRow", &PyDbTable::suppressHeaderRow, DS.ARGS({ "val : bool" }, 9433))
         .def("alignment", &PyDbTable::alignment)
-        .def("alignment", &PyDbTable::alignment2, DS.OVRL(getXXXOverloads))
+        .def("alignment", &PyDbTable::alignment2, DS.OVRL(getXXXOverloads, 9259))
         .def("setAlignment", &PyDbTable::setAlignment)
-        .def("setAlignment", &PyDbTable::setAlignment2, DS.OVRL(setAlignmentOverloads))
+        .def("setAlignment", &PyDbTable::setAlignment2, DS.OVRL(setAlignmentOverloads, 9371))
         .def("isBackgroundColorNone", &PyDbTable::isBackgroundColorNone)
-        .def("isBackgroundColorNone", &PyDbTable::isBackgroundColorNone2, DS.OVRL(getXXXOverloads))
+        .def("isBackgroundColorNone", &PyDbTable::isBackgroundColorNone2, DS.OVRL(getXXXOverloads, 9337))
         .def("setBackgroundColorNone", &PyDbTable::setBackgroundColorNone)
-        .def("setBackgroundColorNone", &PyDbTable::setBackgroundColorNone2, DS.OVRL(setBackgroundColorNoneOverloads))
+        .def("setBackgroundColorNone", &PyDbTable::setBackgroundColorNone2, DS.OVRL(setBackgroundColorNoneOverloads, 9374))
         .def("backgroundColor", &PyDbTable::backgroundColor)
-        .def("backgroundColor", &PyDbTable::backgroundColor2, DS.OVRL(backgroundColorOverloads))
+        .def("backgroundColor", &PyDbTable::backgroundColor2, DS.OVRL(backgroundColorOverloads, 9262))
         .def("setBackgroundColor", &PyDbTable::setBackgroundColor)
-        .def("setBackgroundColor", &PyDbTable::setBackgroundColor2, DS.OVRL(setBackgroundColorOverloads))
+        .def("setBackgroundColor", &PyDbTable::setBackgroundColor2, DS.OVRL(setBackgroundColorOverloads, 9373))
         .def("contentColor", &PyDbTable::contentColor)
         .def("contentColor", &PyDbTable::contentColor2)
-        .def("contentColor", &PyDbTable::contentColor3, DS.OVRL(getXXXContentOverloads))
+        .def("contentColor", &PyDbTable::contentColor3, DS.OVRL(getXXXContentOverloads, 9282))
         .def("setContentColor", &PyDbTable::setContentColor)
         .def("setContentColor", &PyDbTable::setContentColor2)
-        .def("setContentColor", &PyDbTable::setContentColor3, DS.OVRL(setContentColorOverloads))
+        .def("setContentColor", &PyDbTable::setContentColor3, DS.OVRL(setContentColorOverloads, 9389))
         .def("getDataType", &PyDbTable::getDataType)
         .def("getDataType", &PyDbTable::getDataType2)
-        .def("getDataType", &PyDbTable::getDataType3, DS.OVRL(getXXXContentOverloads))
+        .def("getDataType", &PyDbTable::getDataType3, DS.OVRL(getXXXContentOverloads, 9312))
         .def("setDataType", &PyDbTable::setDataType1)
         .def("setDataType", &PyDbTable::setDataType2)
         .def("setDataType", &PyDbTable::setDataType3)
-        .def("setDataType", &PyDbTable::setDataType4, DS.OVRL(setDataTypeOverloads))
+        .def("setDataType", &PyDbTable::setDataType4, DS.OVRL(setDataTypeOverloads, 9394))
         .def("textStyle", &PyDbTable::textStyle)
         .def("textStyle", &PyDbTable::textStyle2)
-        .def("textStyle", &PyDbTable::textStyle3, DS.OVRL(getXXXContentOverloads))
+        .def("textStyle", &PyDbTable::textStyle3, DS.OVRL(getXXXContentOverloads, 9443))
         .def("setTextStyle", &PyDbTable::setTextStyle)
         .def("setTextStyle", &PyDbTable::setTextStyle2)
-        .def("setTextStyle", &PyDbTable::setTextStyle3, DS.OVRL(setTextStyleOverloads))
+        .def("setTextStyle", &PyDbTable::setTextStyle3, DS.OVRL(setTextStyleOverloads, 9426))
         .def("textHeight", &PyDbTable::textHeight)
         .def("textHeight", &PyDbTable::textHeight2)
-        .def("textHeight", &PyDbTable::textHeight3, DS.OVRL(getXXXContentOverloads))
+        .def("textHeight", &PyDbTable::textHeight3, DS.OVRL(getXXXContentOverloads, 9439))
         .def("setTextHeight", &PyDbTable::setTextHeight)
         .def("setTextHeight", &PyDbTable::setTextHeight2)
-        .def("setTextHeight", &PyDbTable::setTextHeight3, DS.OVRL(setTextHeightOverloads))
+        .def("setTextHeight", &PyDbTable::setTextHeight3, DS.OVRL(setTextHeightOverloads, 9423))
         .def("gridLineWeight", &PyDbTable::gridLineWeight)
-        .def("gridLineWeight", &PyDbTable::gridLineWeight2, DS.OVRL(gridLineWeightOverloads))
+        .def("gridLineWeight", &PyDbTable::gridLineWeight2, DS.OVRL(gridLineWeightOverloads, 9325))
         .def("setGridLineWeight", &PyDbTable::setGridLineWeight)
-        .def("setGridLineWeight", &PyDbTable::setGridLineWeight2, DS.OVRL(setGridLineWeightOverloads))
+        .def("setGridLineWeight", &PyDbTable::setGridLineWeight2, DS.OVRL(setGridLineWeightOverloads, 9404))
         .def("gridColor", &PyDbTable::gridColor)
-        .def("gridColor", &PyDbTable::gridColor2, DS.OVRL(gridColorOverloads))
+        .def("gridColor", &PyDbTable::gridColor2, DS.OVRL(gridColorOverloads, 9321))
         .def("setGridColor", &PyDbTable::setGridColor)
-        .def("setGridColor", &PyDbTable::setGridColor2, DS.OVRL(setGridColorOverloads))
+        .def("setGridColor", &PyDbTable::setGridColor2, DS.OVRL(setGridColorOverloads, 9400))
         .def("gridVisibility", &PyDbTable::gridVisibility)
-        .def("gridVisibility", &PyDbTable::gridVisibility2, DS.OVRL(gridVisibilityOverloads))
+        .def("gridVisibility", &PyDbTable::gridVisibility2, DS.OVRL(gridVisibilityOverloads, 9326))
         .def("setGridVisibility", &PyDbTable::setGridVisibility)
-        .def("setGridVisibility", &PyDbTable::setGridVisibility2, DS.OVRL(setGridVisibilityOverloads))
-        .def("tableStyleOverrides", &PyDbTable::tableStyleOverrides, DS.ARGS())
-        .def("clearTableStyleOverrides", &PyDbTable::clearTableStyleOverrides, DS.ARGS())
-        .def("cellType", &PyDbTable::cellType, DS.ARGS({ "row: int", "col: int" }))
-        .def("setCellType", &PyDbTable::setCellType, DS.ARGS({ "row: int", "col: int", "type: CellType" }))
-        .def("getCellExtents", &PyDbTable::getCellExtents, DS.ARGS({ "row: int", "col: int", "isOuterCell: bool" }))
+        .def("setGridVisibility", &PyDbTable::setGridVisibility2, DS.OVRL(setGridVisibilityOverloads, 9406))
+        .def("tableStyleOverrides", &PyDbTable::tableStyleOverrides, DS.ARGS(9438))
+        .def("clearTableStyleOverrides", &PyDbTable::clearTableStyleOverrides, DS.ARGS(9280))
+        .def("cellType", &PyDbTable::cellType, DS.ARGS({ "row: int", "col: int" }, 9277))
+        .def("setCellType", &PyDbTable::setCellType, DS.ARGS({ "row: int", "col: int", "type: CellType" }, 9386))
+        .def("getCellExtents", &PyDbTable::getCellExtents, DS.ARGS({ "row: int", "col: int", "isOuterCell: bool" }, 9307))
         .def("attachmentPoint", &PyDbTable::attachmentPoint)
-        .def("attachmentPoint", &PyDbTable::attachmentPoint2, DS.ARGS({ "row: int", "col: int", "content: int = 1" }))
-        .def("cellStyleOverrides", &PyDbTable::cellStyleOverrides, DS.ARGS({ "row: int","col: int" }))
-        .def("clearCellOverrides", &PyDbTable::clearCellOverrides, DS.ARGS({ "row: int","col: int" }))
-        .def("deleteCellContent", &PyDbTable::deleteCellContent, DS.ARGS({ "row: int", "col: int" }))
-        .def("rowType", &PyDbTable::rowType, DS.ARGS({ "row: int" }))
-        .def("setFormat", &PyDbTable::setFormat, DS.ARGS({ "row: int", "col: int", "format : str" }))
+        .def("attachmentPoint", &PyDbTable::attachmentPoint2, DS.ARGS({ "row: int", "col: int", "content: int = 1" }, 9260))
+        .def("cellStyleOverrides", &PyDbTable::cellStyleOverrides, DS.ARGS({ "row: int","col: int" }, 9276))
+        .def("clearCellOverrides", &PyDbTable::clearCellOverrides, DS.ARGS({ "row: int","col: int" }, 9278))
+        .def("deleteCellContent", &PyDbTable::deleteCellContent, DS.ARGS({ "row: int", "col: int" }, 9289))
+        .def("rowType", &PyDbTable::rowType, DS.ARGS({ "row: int" }, 9366))
+        .def("setFormat", &PyDbTable::setFormat, DS.ARGS({ "row: int", "col: int", "format : str" }, 9398))
         .def("textString", &PyDbTable::textString)
         .def("textString", &PyDbTable::textString2)
-        .def("textString", &PyDbTable::textString3, DS.OVRL(textStringOverloads))
+        .def("textString", &PyDbTable::textString3, DS.OVRL(textStringOverloads, 9441))
         .def("textStringFmt", &PyDbTable::textStringFmt1)
         .def("textStringFmt", &PyDbTable::textStringFmt2)
-        .def("textStringFmt", &PyDbTable::textStringFmt3, DS.OVRL(textStringFmtOverloads))
+        .def("textStringFmt", &PyDbTable::textStringFmt3, DS.OVRL(textStringFmtOverloads, 9441))
         .def("setTextString", &PyDbTable::setTextString)
         .def("setTextString", &PyDbTable::setTextString2)
-        .def("setTextString", &PyDbTable::setTextString3, DS.OVRL(setTextStringOverloads))
+        .def("setTextString", &PyDbTable::setTextString3, DS.OVRL(setTextStringOverloads, 9425))
         .def("fieldId", &PyDbTable::fieldId)
-        .def("fieldId", &PyDbTable::fieldId2, DS.OVRL(fieldIdOverloads))
+        .def("fieldId", &PyDbTable::fieldId2, DS.OVRL(fieldIdOverloads, 9301))
         .def("setFieldId", &PyDbTable::setFieldId)
-        .def("setFieldId", &PyDbTable::setFieldId2, DS.OVRL(setFieldIdOverloads))
-        .def("textRotation", &PyDbTable::textRotation, DS.ARGS({ "row: int", "col: int" }))
-        .def("setTextRotation", &PyDbTable::setTextRotation, DS.ARGS({ "row: int", "col: int, rot: RotationAngle" }))
+        .def("setFieldId", &PyDbTable::setFieldId2, DS.OVRL(setFieldIdOverloads, 9396))
+        .def("textRotation", &PyDbTable::textRotation, DS.ARGS({ "row: int", "col: int" }, 9440))
+        .def("setTextRotation", &PyDbTable::setTextRotation, DS.ARGS({ "row: int", "col: int, rot: RotationAngle" }, 9424))
         .def("isAutoScale", &PyDbTable::isAutoScale)
-        .def("isAutoScale", &PyDbTable::isAutoScale2, DS.OVRL(isAutoScaleOverloads))
+        .def("isAutoScale", &PyDbTable::isAutoScale2, DS.OVRL(isAutoScaleOverloads, 9336))
         .def("setAutoScale", &PyDbTable::setAutoScale)
-        .def("setAutoScale", &PyDbTable::setAutoScale2, DS.OVRL(setAutoScaleOverloads))
+        .def("setAutoScale", &PyDbTable::setAutoScale2, DS.OVRL(setAutoScaleOverloads, 9372))
         .def("blockTableRecordId", &PyDbTable::blockTableRecordId)
-        .def("blockTableRecordId", &PyDbTable::blockTableRecordId2, DS.OVRL(blockTableRecordIdOverloads))
+        .def("blockTableRecordId", &PyDbTable::blockTableRecordId2, DS.OVRL(blockTableRecordIdOverloads, 9265))
         .def("setBlockTableRecordId", &PyDbTable::setBlockTableRecordId)
-        .def("setBlockTableRecordId", &PyDbTable::setBlockTableRecordId2, DS.OVRL(setBlockTableRecordIdOverloads))
-        .def("blockScale", &PyDbTable::blockScale, DS.ARGS({ "row: int", "col: int" }))
-        .def("setBlockScale", &PyDbTable::setBlockScale, DS.ARGS({ "row: int", "col: int","scale : float" }))
-        .def("blockRotation", &PyDbTable::blockRotation, DS.ARGS({ "row: int", "col: int" }))
-        .def("setBlockRotation", &PyDbTable::setBlockRotation, DS.ARGS({ "row: int", "col: int","rotAng : float" }))
+        .def("setBlockTableRecordId", &PyDbTable::setBlockTableRecordId2, DS.OVRL(setBlockTableRecordIdOverloads, 9378))
+        .def("blockScale", &PyDbTable::blockScale, DS.ARGS({ "row: int", "col: int" }, 9264))
+        .def("setBlockScale", &PyDbTable::setBlockScale, DS.ARGS({ "row: int", "col: int","scale : float" }, 9377))
+        .def("blockRotation", &PyDbTable::blockRotation, DS.ARGS({ "row: int", "col: int" }, 9263))
+        .def("setBlockRotation", &PyDbTable::setBlockRotation, DS.ARGS({ "row: int", "col: int","rotAng : float" }, 9376))
         .def("gridEdgeColor", &PyDbTable::gridEdgeColor, DS.ARGS({ "row: int", "col: int", "content: CellEdgeMask" }))
         .def("setGridEdgeColor", &PyDbTable::setGridEdgeColor, DS.ARGS({ "row: int", "col: int", "content: CellEdgeMask","clr: PyDb.AcCmColor" }))
         .def("gridEdgeVisibility", &PyDbTable::gridEdgeVisibility, DS.ARGS({ "row: int", "col: int", "content: CellEdgeMask" }))
         .def("setGridEdgeVisibility", &PyDbTable::setGridEdgeVisibility, DS.ARGS({ "row: int", "col: int", "content: CellEdgeMask","val: PyDb.Visibility" }))
         .def("gridEdgeLineWeight", &PyDbTable::gridEdgeLineWeight, DS.ARGS({ "row: int", "col: int", "content: CellEdgeMask" }))
         .def("setGridEdgeLineWeight", &PyDbTable::setGridEdgeLineWeight, DS.ARGS({ "row: int", "col: int", "content: CellEdgeMask","val: PyDb.LineWeight" }))
-        .def("insertColumns", &PyDbTable::insertColumns, DS.ARGS({ "row: int","width : float", "nCols: int" }))
-        .def("deleteColumns", &PyDbTable::deleteColumns, DS.ARGS({ "row: int", "nCols: int" }))
-        .def("insertRows", &PyDbTable::insertRows, DS.ARGS({ "row: int","height : float", "nRows: int" }))
-        .def("deleteRows", &PyDbTable::deleteRows, DS.ARGS({ "row: int", "nRows: int" }))
-        .def("mergeCells", &PyDbTable::mergeCells, DS.ARGS({ "minRow: int", "maxRow: int","minCol: int", "maxCol: int" }))
-        .def("unmergeCells", &PyDbTable::unmergeCells, DS.ARGS({ "minRow: int", "maxRow: int","minCol: int", "maxCol: int" }))
-        .def("isMergedCell", &PyDbTable::isMergedCell, DS.ARGS({ "row: int", "col: int" }))
-        .def("generateLayout", &PyDbTable::generateLayout, DS.ARGS())
-        .def("recomputeTableBlock", &PyDbTable::recomputeTableBlock, DS.ARGS({ "val : bool" }))
+        .def("insertColumns", &PyDbTable::insertColumns, DS.ARGS({ "row: int","width : float", "nCols: int" }, 9332))
+        .def("deleteColumns", &PyDbTable::deleteColumns, DS.ARGS({ "row: int", "nCols: int" }, 9290))
+        .def("insertRows", &PyDbTable::insertRows, DS.ARGS({ "row: int","height : float", "nRows: int" }, 9334))
+        .def("deleteRows", &PyDbTable::deleteRows, DS.ARGS({ "row: int", "nRows: int" }, 9292))
+        .def("mergeCells", &PyDbTable::mergeCells, DS.ARGS({ "minRow: int", "maxRow: int","minCol: int", "maxCol: int" }, 9349))
+        .def("unmergeCells", &PyDbTable::unmergeCells, DS.ARGS({ "minRow: int", "maxRow: int","minCol: int", "maxCol: int" }, 9444))
+        .def("isMergedCell", &PyDbTable::isMergedCell, DS.ARGS({ "row: int", "col: int" }, 9345))
+        .def("generateLayout", &PyDbTable::generateLayout, DS.ARGS(9305))
+        .def("recomputeTableBlock", &PyDbTable::recomputeTableBlock, DS.ARGS({ "val : bool" }, 9359))
         .def("hitTest", &PyDbTable::hitTest)
-        .def("hitTest", &PyDbTable::hitTest2, DS.ARGS({ "wpt: PyGe.Point3d","viewvec: PyGe.Vector3d","wx: float=0.0","wy: float=0.0" }))
-        .def("getSubSelection", &PyDbTable::getSubSelection, DS.ARGS())
-        .def("setSubSelection", &PyDbTable::setSubSelection, DS.ARGS({ "val : PyDb.CellRange" }))
-        .def("clearSubSelection", &PyDbTable::clearSubSelection, DS.ARGS())
-        .def("hasSubSelection", &PyDbTable::hasSubSelection, DS.ARGS())
-        .def("setPosition", &PyDbTable::setPosition, DS.ARGS({ "val : PyGe.Point3d" }))
-        .def("setNormal", &PyDbTable::setNormal, DS.ARGS({ "val : PyGe.Vector3d" }))
-        .def("setRegen", &PyDbTable::setRegen, DS.ARGS())
-        .def("suppressInvisibleGrid", &PyDbTable::suppressInvisibleGrid, DS.ARGS({ "val : bool" }))
-        .def("isRegenerateTableSuppressed", &PyDbTable::isRegenerateTableSuppressed, DS.ARGS())
-        .def("suppressRegenerateTable", &PyDbTable::suppressRegenerateTable, DS.ARGS({ "val : bool" }))
-        .def("setRecomputeTableBlock", &PyDbTable::setRecomputeTableBlock, DS.ARGS({ "val : bool" }))
-        .def("setSize", &PyDbTable::setSize, DS.ARGS({ "rows: int", "cols: int" }))
-        .def("canInsert", &PyDbTable::canInsert, DS.ARGS({ "index: int", "brow: bool" }))
-        .def("insertRowsAndInherit", &PyDbTable::insertRowsAndInherit, DS.ARGS({ "nIndex: int", "nInheritFrom: int", "nNumRows: int" }))
-        .def("insertColumnsAndInherit", &PyDbTable::insertColumnsAndInherit, DS.ARGS({ "nIndex: int", "nInheritFrom: int", "nNumCols: int" }))
-        .def("canDelete", &PyDbTable::canDelete, DS.ARGS({ "row: int", "col: int", "brow : bool" }))
-        .def("isEmpty", &PyDbTable::isEmpty, DS.ARGS({ "row: int", "col: int" }))
-        .def("getMergeRange", &PyDbTable::getMergeRange, DS.ARGS({ "row: int", "col: int" }))
-        .def("isContentEditable", &PyDbTable::isContentEditable, DS.ARGS({ "row: int", "col: int" }))
-        .def("isFormatEditable", &PyDbTable::isFormatEditable, DS.ARGS({ "row: int", "col: int" }))
-        .def("cellState", &PyDbTable::cellState, DS.ARGS({ "row: int", "col: int" }))
-        .def("setCellState", &PyDbTable::setCellState, DS.ARGS({ "row: int", "col: int","val : PyDb.CellState" }))
-        .def("numContents", &PyDbTable::numContents, DS.ARGS({ "row: int", "col: int" }))
-        .def("createContent", &PyDbTable::createContent, DS.ARGS({ "row: int", "col: int", "idx: int" }))
-        .def("moveContent", &PyDbTable::moveContent, DS.ARGS({ "row: int", "col: int", "frm: int","to: int" }))
+        .def("hitTest", &PyDbTable::hitTest2, DS.ARGS({ "wpt: PyGe.Point3d","viewvec: PyGe.Vector3d","wx: float=0.0","wy: float=0.0" }, 9330))
+        .def("getSubSelection", &PyDbTable::getSubSelection, DS.ARGS(9319))
+        .def("setSubSelection", &PyDbTable::setSubSelection, DS.ARGS({ "val : PyDb.CellRange" }, 9421))
+        .def("clearSubSelection", &PyDbTable::clearSubSelection, DS.ARGS(9279))
+        .def("hasSubSelection", &PyDbTable::hasSubSelection, DS.ARGS(9328))
+        .def("setPosition", &PyDbTable::setPosition, DS.ARGS({ "val : PyGe.Point3d" }, 9414))
+        .def("setNormal", &PyDbTable::setNormal, DS.ARGS({ "val : PyGe.Vector3d" }, 9410))
+        .def("setRegen", &PyDbTable::setRegen, DS.ARGS(9416))
+        .def("suppressInvisibleGrid", &PyDbTable::suppressInvisibleGrid, DS.ARGS({ "val : bool" }, 9434))
+        .def("isRegenerateTableSuppressed", &PyDbTable::isRegenerateTableSuppressed, DS.ARGS(9346))
+        .def("suppressRegenerateTable", &PyDbTable::suppressRegenerateTable, DS.ARGS({ "val : bool" }, 9435))
+        .def("setRecomputeTableBlock", &PyDbTable::setRecomputeTableBlock, DS.ARGS({ "val : bool" }, 9415))
+        .def("setSize", &PyDbTable::setSize, DS.ARGS({ "rows: int", "cols: int" }, 9420))
+        .def("canInsert", &PyDbTable::canInsert, DS.ARGS({ "index: int", "brow: bool" }, 9272))
+        .def("insertRowsAndInherit", &PyDbTable::insertRowsAndInherit, DS.ARGS({ "nIndex: int", "nInheritFrom: int", "nNumRows: int" }, 9335))
+        .def("insertColumnsAndInherit", &PyDbTable::insertColumnsAndInherit, DS.ARGS({ "nIndex: int", "nInheritFrom: int", "nNumCols: int" }, 9333))
+        .def("canDelete", &PyDbTable::canDelete, DS.ARGS({ "row: int", "col: int", "brow : bool" }, 9271))
+        .def("isEmpty", &PyDbTable::isEmpty, DS.ARGS({ "row: int", "col: int" }, 9340))
+        .def("getMergeRange", &PyDbTable::getMergeRange, DS.ARGS({ "row: int", "col: int" }, 9317))
+        .def("isContentEditable", &PyDbTable::isContentEditable, DS.ARGS({ "row: int", "col: int" }, 9339))
+        .def("isFormatEditable", &PyDbTable::isFormatEditable, DS.ARGS({ "row: int", "col: int" }, 9341))
+        .def("cellState", &PyDbTable::cellState, DS.ARGS({ "row: int", "col: int" }, 9274))
+        .def("setCellState", &PyDbTable::setCellState, DS.ARGS({ "row: int", "col: int","val : PyDb.CellState" }, 9384))
+        .def("numContents", &PyDbTable::numContents, DS.ARGS({ "row: int", "col: int" }, 9356))
+        .def("createContent", &PyDbTable::createContent, DS.ARGS({ "row: int", "col: int", "idx: int" }, 9286))
+        .def("moveContent", &PyDbTable::moveContent, DS.ARGS({ "row: int", "col: int", "frm: int","to: int" }, 9354))
         .def("deleteContent", &PyDbTable::deleteContent1)
         .def("deleteContent", &PyDbTable::deleteContent2)
-        .def("deleteContent", &PyDbTable::deleteContent3, DS.OVRL(deleteContentOverloads))
+        .def("deleteContent", &PyDbTable::deleteContent3, DS.OVRL(deleteContentOverloads, 9291))
         .def("contentType", &PyDbTable::contentType1)
-        .def("contentType", &PyDbTable::contentType2, DS.OVRL(contentTypeOverloads))
+        .def("contentType", &PyDbTable::contentType2, DS.OVRL(contentTypeOverloads, 9284))
         .def("dataFormat", &PyDbTable::dataFormat1)
-        .def("dataFormat", &PyDbTable::dataFormat2, DS.OVRL(dataFormatOverloads))
+        .def("dataFormat", &PyDbTable::dataFormat2, DS.OVRL(dataFormatOverloads, 9288))
         .def("setDataFormat", &PyDbTable::setDataFormat1)
-        .def("setDataFormat", &PyDbTable::setDataFormat2, DS.OVRL(setDataFormatOverloads))
-        .def("hasFormula", &PyDbTable::hasFormula, DS.ARGS({ "row: int", "col: int", "content: int" }))
-        .def("getFormula", &PyDbTable::getFormula, DS.ARGS({ "row: int", "col: int", "content: int" }))
-        .def("setFormula", &PyDbTable::setFormula, DS.ARGS({ "row: int", "col: int", "content: int", "val: str" }))
+        .def("setDataFormat", &PyDbTable::setDataFormat2, DS.OVRL(setDataFormatOverloads, 9392))
+        .def("hasFormula", &PyDbTable::hasFormula, DS.ARGS({ "row: int", "col: int", "content: int" }, 9327))
+        .def("getFormula", &PyDbTable::getFormula, DS.ARGS({ "row: int", "col: int", "content: int" }, 9313))
+        .def("setFormula", &PyDbTable::setFormula, DS.ARGS({ "row: int", "col: int", "content: int", "val: str" }, 9399))
         .def("getBlockAttributeValue", &PyDbTable::getBlockAttributeValue1)
-        .def("getBlockAttributeValue", &PyDbTable::getBlockAttributeValue2, DS.OVRL(getBlockAttributeValueOverloads))
+        .def("getBlockAttributeValue", &PyDbTable::getBlockAttributeValue2, DS.OVRL(getBlockAttributeValueOverloads, 9306))
         .def("setBlockAttributeValue", &PyDbTable::setBlockAttributeValue1)
-        .def("setBlockAttributeValue", &PyDbTable::setBlockAttributeValue2, DS.OVRL(setBlockAttributeValueOverloads))
-        .def("cellStyle", &PyDbTable::cellStyle, DS.ARGS({ "row: int", "col: int" }))
-        .def("setCellStyle", &PyDbTable::setCellStyle, DS.ARGS({ "row: int", "col: int", "style: str" }))
-        .def("margin", &PyDbTable::margin, DS.ARGS({ "row: int", "col: int", "nMargin: PyDb.CellMargin" }))
-        .def("setMargin", &PyDbTable::setMargin, DS.ARGS({ "row: int", "col: int", "nMargin: PyDb.CellMargin","val : float" }))
-        .def("tableRotation", &PyDbTable::rotation, DS.ARGS())
-        .def("rotation", &PyDbTable::rotation2, DS.ARGS({ "row: int", "col: int", "content: int" }))
-        .def("setTableRotation", &PyDbTable::setRotation, DS.ARGS({ "val: float" }))
-        .def("setRotation", &PyDbTable::setRotation2, DS.ARGS({ "row: int", "col: int", "content: int","fang: float" }))
-        .def("scale", &PyDbTable::scale, DS.ARGS({ "row: int", "col: int", "content: int" }))
-        .def("setScale", &PyDbTable::setScale, DS.ARGS({ "row: int", "col: int", "content: int","val : float" }))
-        .def("contentLayout", &PyDbTable::contentLayout, DS.ARGS({ "row: int", "col: int" }))
-        .def("setContentLayout", &PyDbTable::setContentLayout, DS.ARGS({ "row: int", "col: int" , "val: PyDb.CellContentLayout" }))
-        .def("isMergeAllEnabled", &PyDbTable::isMergeAllEnabled, DS.ARGS({ "row: int", "col: int" }))
-        .def("enableMergeAll", &PyDbTable::enableMergeAll, DS.ARGS({ "row: int", "col: int","val : bool" }))
+        .def("setBlockAttributeValue", &PyDbTable::setBlockAttributeValue2, DS.OVRL(setBlockAttributeValueOverloads, 9375))
+        .def("cellStyle", &PyDbTable::cellStyle, DS.ARGS({ "row: int", "col: int" }, 9275))
+        .def("setCellStyle", &PyDbTable::setCellStyle, DS.ARGS({ "row: int", "col: int", "style: str" }, 9385))
+        .def("margin", &PyDbTable::margin, DS.ARGS({ "row: int", "col: int", "nMargin: PyDb.CellMargin" }, 9348))
+        .def("setMargin", &PyDbTable::setMargin, DS.ARGS({ "row: int", "col: int", "nMargin: PyDb.CellMargin","val : float" }, 9409))
+        .def("tableRotation", &PyDbTable::rotation, DS.ARGS(9364))
+        .def("rotation", &PyDbTable::rotation2, DS.ARGS({ "row: int", "col: int", "content: int" }, 9364))
+        .def("setTableRotation", &PyDbTable::setRotation, DS.ARGS({ "val: float" }, 9417))
+        .def("setRotation", &PyDbTable::setRotation2, DS.ARGS({ "row: int", "col: int", "content: int","fang: float" }, 9417))
+        .def("scale", &PyDbTable::scale, DS.ARGS({ "row: int", "col: int", "content: int" }, 9367))
+        .def("setScale", &PyDbTable::setScale, DS.ARGS({ "row: int", "col: int", "content: int","val : float" }, 9419))
+        .def("contentLayout", &PyDbTable::contentLayout, DS.ARGS({ "row: int", "col: int" }, 9283))
+        .def("setContentLayout", &PyDbTable::setContentLayout, DS.ARGS({ "row: int", "col: int" , "val: PyDb.CellContentLayout" }, 9390))
+        .def("isMergeAllEnabled", &PyDbTable::isMergeAllEnabled, DS.ARGS({ "row: int", "col: int" }, 9344))
+        .def("enableMergeAll", &PyDbTable::enableMergeAll, DS.ARGS({ "row: int", "col: int","val : bool" }, 9299))
         .def("getCellOverride", &PyDbTable::getCellOverride, DS.ARGS({ "row: int", "col: int", "content: int" }))
         .def("getGridOverride", &PyDbTable::getGridOverride, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType" }))
         .def("setCellOverride", &PyDbTable::setCellOverride, DS.ARGS({ "row: int", "col: int", "content: int", "nOverride: PyDb.CellProperty" }))
         .def("setGridOverride", &PyDbTable::setGridOverride, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType","nOverride: PyDb.GridProperty" }))
-        .def("removeAllOverrides", &PyDbTable::removeAllOverrides, DS.ARGS({ "row: int", "col: int" }))
-        .def("gridLineStyle", &PyDbTable::gridLineStyle, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType" }))
-        .def("setGridLineStyle", &PyDbTable::setGridLineStyle, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType","nLineStyle: PyDb.GridLineStyle" }))
-        .def("gridLinetype", &PyDbTable::gridLinetype, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType" }))
-        .def("setGridLinetype", &PyDbTable::setGridLinetype, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType","idLinetype: PyDb.ObjectId" }))
-        .def("gridDoubleLineSpacing", &PyDbTable::gridDoubleLineSpacing, DS.ARGS({ "row: int", "col: int","nGridLineType: GridLineType" }))
-        .def("setGridDoubleLineSpacing", &PyDbTable::setGridDoubleLineSpacing, DS.ARGS({ "row: int", "col: int","nGridLineType: GridLineType","spacing: float" }))
-        .def("getGridProperty", &PyDbTable::getGridProperty, DS.ARGS({ "row: int", "col: int","nGridLineType: GridLineType" }))
+        .def("removeAllOverrides", &PyDbTable::removeAllOverrides, DS.ARGS({ "row: int", "col: int" }, 9360))
+        .def("gridLineStyle", &PyDbTable::gridLineStyle, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType" }, 9323))
+        .def("setGridLineStyle", &PyDbTable::setGridLineStyle, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType","nLineStyle: PyDb.GridLineStyle" }, 9402))
+        .def("gridLinetype", &PyDbTable::gridLinetype, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType" }, 9324))
+        .def("setGridLinetype", &PyDbTable::setGridLinetype, DS.ARGS({ "row: int", "col: int", "nGridLineType: PyDb.GridLineType","idLinetype: PyDb.ObjectId" }, 9403))
+        .def("gridDoubleLineSpacing", &PyDbTable::gridDoubleLineSpacing, DS.ARGS({ "row: int", "col: int","nGridLineType: GridLineType" }, 9322))
+        .def("setGridDoubleLineSpacing", &PyDbTable::setGridDoubleLineSpacing, DS.ARGS({ "row: int", "col: int","nGridLineType: GridLineType","spacing: float" }, 9401))
+        .def("getGridProperty", &PyDbTable::getGridProperty, DS.ARGS({ "row: int", "col: int","nGridLineType: GridLineType" }, 9314))
         //.def("setGridProperty", &PyDbTable::setGridProperty1)// TODO:
         //.def("setGridProperty", &PyDbTable::setGridProperty2)
         .def("value", &PyDbTable::value1)
         .def("value", &PyDbTable::value2)
-        .def("value", &PyDbTable::value3, DS.OVRL(valueOverloads))
+        .def("value", &PyDbTable::value3, DS.OVRL(valueOverloads, 9446))
         .def("setValue", &PyDbTable::setValue1)
         .def("setValue", &PyDbTable::setValue2)
         .def("setValue", &PyDbTable::setValue3)
-        .def("setValue", &PyDbTable::setValue4, DS.OVRL(setValueOverloads))
-        .def("isLinked", &PyDbTable::isLinked, DS.ARGS({ "row: int", "col: int" }))
-        .def("getDataLink", &PyDbTable::getDataLink, DS.ARGS({ "row: int", "col: int" }))
-        .def("setDataLink", &PyDbTable::setDataLink, DS.ARGS({ "row: int", "col: int","id : PyDb.ObjectId","update : bool" }))
-        .def("getDataLinkRange", &PyDbTable::getDataLinkRange, DS.ARGS({ "row: int", "col: int" }))
+        .def("setValue", &PyDbTable::setValue4, DS.OVRL(setValueOverloads, 9428))
+        .def("isLinked", &PyDbTable::isLinked, DS.ARGS({ "row: int", "col: int" }, 9343))
+        .def("getDataLink", &PyDbTable::getDataLink, DS.ARGS({ "row: int", "col: int" }, 9310))
+        .def("setDataLink", &PyDbTable::setDataLink, DS.ARGS({ "row: int", "col: int","id : PyDb.ObjectId","update : bool" }, 9393))
+        .def("getDataLinkRange", &PyDbTable::getDataLinkRange, DS.ARGS({ "row: int", "col: int" }, 9311))
         .def("removeDataLink", &PyDbTable::removeDataLink1)
-        .def("removeDataLink", &PyDbTable::removeDataLink2, DS.ARGS({ "row: int=-1", "col: int=-1" }))
+        .def("removeDataLink", &PyDbTable::removeDataLink2, DS.ARGS({ "row: int=-1", "col: int=-1" }, 9361))
         .def("updateDataLink", &PyDbTable::updateDataLink1)
-        .def("updateDataLink", &PyDbTable::updateDataLink2, DS.OVRL(updateDataLinkOverloads))
-        .def("isBreakEnabled", &PyDbTable::isBreakEnabled, DS.ARGS())
-        .def("enableBreak", &PyDbTable::enableBreak, DS.ARGS({ "val : bool" }))
-        .def("breakFlowDirection", &PyDbTable::breakFlowDirection, DS.ARGS())
-        .def("setBreakFlowDirection", &PyDbTable::setBreakFlowDirection, DS.ARGS({ "dir: PyDb.TableBreakFlowDirection" }))
-        .def("breakHeight", &PyDbTable::breakHeight, DS.ARGS({ "val : int" }))
-        .def("setBreakHeight", &PyDbTable::setBreakHeight, DS.ARGS({ "val : int","height : float" }))
-        .def("breakOffset", &PyDbTable::breakOffset, DS.ARGS({ "idx: int" }))
-        .def("setBreakOffset", &PyDbTable::setBreakOffset, DS.ARGS({ "idx: int","vec: PyGe.Vector3d" }))
-        .def("breakOption", &PyDbTable::breakOption, DS.ARGS())
-        .def("setBreakOption", &PyDbTable::setBreakOption, DS.ARGS({ "val: TableBreakOption" }))
-        .def("breakSpacing", &PyDbTable::breakSpacing, DS.ARGS())
-        .def("setBreakSpacing", &PyDbTable::setBreakSpacing, DS.ARGS({ "val : float" }))
-        .def("cellRange", &PyDbTable::cellRange, DS.ARGS())
+        .def("updateDataLink", &PyDbTable::updateDataLink2, DS.OVRL(updateDataLinkOverloads, 9445))
+        .def("isBreakEnabled", &PyDbTable::isBreakEnabled, DS.ARGS(9338))
+        .def("enableBreak", &PyDbTable::enableBreak, DS.ARGS({ "val : bool" }, 9298))
+        .def("breakFlowDirection", &PyDbTable::breakFlowDirection, DS.ARGS(9266))
+        .def("setBreakFlowDirection", &PyDbTable::setBreakFlowDirection, DS.ARGS({ "dir: PyDb.TableBreakFlowDirection" }, 9379))
+        .def("breakHeight", &PyDbTable::breakHeight, DS.ARGS({ "val : int" }, 9267))
+        .def("setBreakHeight", &PyDbTable::setBreakHeight, DS.ARGS({ "val : int","height : float" }, 9380))
+        .def("breakOffset", &PyDbTable::breakOffset, DS.ARGS({ "idx: int" }, 9268))
+        .def("setBreakOffset", &PyDbTable::setBreakOffset, DS.ARGS({ "idx: int","vec: PyGe.Vector3d" }, 9381))
+        .def("breakOption", &PyDbTable::breakOption, DS.ARGS(9269))
+        .def("setBreakOption", &PyDbTable::setBreakOption, DS.ARGS({ "val: TableBreakOption" }, 9382))
+        .def("breakSpacing", &PyDbTable::breakSpacing, DS.ARGS(9270))
+        .def("setBreakSpacing", &PyDbTable::setBreakSpacing, DS.ARGS({ "val : float" }, 9383))
+        .def("cellRange", &PyDbTable::cellRange, DS.ARGS(9273))
         .def("cells", &PyDbTable::getIterator1)
         .def("cells", &PyDbTable::getIterator2)
         .def("cells", &PyDbTable::getIterator3)
-        .def("cells", &PyDbTable::getIterator4, DS.OVRL(getIteratorOverloads))
+        .def("cells", &PyDbTable::getIterator4, DS.OVRL(getIteratorOverloads, 9316))
         .def("cellValues", &PyDbTable::getValueIterator1)
         .def("cellValues", &PyDbTable::getValueIterator2)
         .def("cellValues", &PyDbTable::getValueIterator3)
-        .def("cellValues", &PyDbTable::getValueIterator4, DS.OVRL(getIteratorOverloads))
+        .def("cellValues", &PyDbTable::getValueIterator4, DS.OVRL(getIteratorOverloads, 9316))
         .def("cellStrValues", &PyDbTable::getStrValueIterator1)
         .def("cellStrValues", &PyDbTable::getStrValueIterator2)
         .def("cellStrValues", &PyDbTable::getStrValueIterator3)
-        .def("cellStrValues", &PyDbTable::getStrValueIterator4, DS.OVRL(getIteratorOverloads))
+        .def("cellStrValues", &PyDbTable::getStrValueIterator4, DS.OVRL(getIteratorOverloads, 9316))
         .def("clearCustomData", &PyDbTable::clearCustomData, DS.ARGS({ "row: int", "col: int", "style: str" }))
-        .def("getCustomData", &PyDbTable::getCustomData, DS.ARGS({ "row: int", "col: int", "style: str" }))
-        .def("setCustomData", &PyDbTable::setCustomData, DS.ARGS({ "row: int", "col: int", "style: str", "val: PyDb.AcValue" }))
+        .def("getCustomData", &PyDbTable::getCustomData, DS.ARGS({ "row: int", "col: int", "style: str" }, 9309))
+        .def("setCustomData", &PyDbTable::setCustomData, DS.ARGS({ "row: int", "col: int", "style: str", "val: PyDb.AcValue" }, 9391))
         .def("calcTextExtents", &PyDbTable::calcTextExtents, DS.SARGS({ "val: str" , "textStyleId: PyDb.ObjectId" })).staticmethod("calcTextExtents")
         .def("className", &PyDbTable::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbTable::desc, DS.SARGS(15560)).staticmethod("desc")
@@ -626,7 +631,7 @@ void makePyDbTableWrapper()
         .value("kDataRow", AcDb::RowType::kDataRow)
         .value("kTitleRow", AcDb::RowType::kTitleRow)
         .value("kHeaderRow", AcDb::RowType::kHeaderRow)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kAllRowTypes", AcDb::RowType::kAllRowTypes)
 #endif
         .export_values()
@@ -815,7 +820,7 @@ PyDbObjectId PyDbTable::tableStyle() const
     return PyDbObjectId(impObj()->tableStyle());
 }
 
-void PyDbTable::setTableStyle(const PyDbObjectId& id)
+void PyDbTable::setTableStyle(const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setTableStyle(id.m_id));
 }
@@ -825,7 +830,7 @@ AcGeVector3d PyDbTable::direction() const
     return impObj()->direction();
 }
 
-void PyDbTable::setDirection(const AcGeVector3d& horzVec)
+void PyDbTable::setDirection(const AcGeVector3d& horzVec) const
 {
     return PyThrowBadEs(impObj()->setDirection(horzVec));
 }
@@ -845,7 +850,7 @@ double PyDbTable::width() const
     return impObj()->width();
 }
 
-void PyDbTable::setWidth(double width)
+void PyDbTable::setWidth(double width) const
 {
     return PyThrowBadEs(impObj()->setWidth(width));
 }
@@ -855,12 +860,12 @@ double PyDbTable::columnWidth(int col) const
     return impObj()->columnWidth(col);
 }
 
-void PyDbTable::setColumnWidth1(int col, double width)
+void PyDbTable::setColumnWidth1(int col, double width) const
 {
     return PyThrowBadEs(impObj()->setColumnWidth(col, width));
 }
 
-void PyDbTable::setColumnWidth2(double width)
+void PyDbTable::setColumnWidth2(double width) const
 {
     return PyThrowBadEs(impObj()->setColumnWidth(width));
 }
@@ -870,7 +875,7 @@ double PyDbTable::height() const
     return impObj()->height();
 }
 
-void PyDbTable::setHeight(double height)
+void PyDbTable::setHeight(double height) const
 {
     return PyThrowBadEs(impObj()->setHeight(height));
 }
@@ -880,12 +885,12 @@ double PyDbTable::rowHeight(int row) const
     return impObj()->rowHeight(row);
 }
 
-void PyDbTable::setRowHeight1(int row, double height)
+void PyDbTable::setRowHeight1(int row, double height) const
 {
     return PyThrowBadEs(impObj()->setRowHeight(row, height));
 }
 
-void PyDbTable::setRowHeight2(double height)
+void PyDbTable::setRowHeight2(double height) const
 {
     return PyThrowBadEs(impObj()->setRowHeight(height));
 }
@@ -915,7 +920,7 @@ double PyDbTable::horzCellMargin() const
     return impObj()->horzCellMargin();
 }
 
-void PyDbTable::setHorzCellMargin(double gap)
+void PyDbTable::setHorzCellMargin(double gap) const
 {
     return PyThrowBadEs(impObj()->setHorzCellMargin(gap));
 }
@@ -925,7 +930,7 @@ double PyDbTable::vertCellMargin() const
     return impObj()->vertCellMargin();
 }
 
-void PyDbTable::setVertCellMargin(double gap)
+void PyDbTable::setVertCellMargin(double gap) const
 {
     return PyThrowBadEs(impObj()->setVertCellMargin(gap));
 }
@@ -935,7 +940,7 @@ AcDb::FlowDirection PyDbTable::flowDirection() const
     return impObj()->flowDirection();
 }
 
-void PyDbTable::setFlowDirection(AcDb::FlowDirection flow)
+void PyDbTable::setFlowDirection(AcDb::FlowDirection flow) const
 {
     return PyThrowBadEs(impObj()->setFlowDirection(flow));
 }
@@ -945,7 +950,7 @@ bool PyDbTable::isTitleSuppressed() const
     return impObj()->isTitleSuppressed();
 }
 
-void PyDbTable::suppressTitleRow(bool value)
+void PyDbTable::suppressTitleRow(bool value) const
 {
     return PyThrowBadEs(impObj()->suppressTitleRow(value));
 }
@@ -955,7 +960,7 @@ bool PyDbTable::isHeaderSuppressed() const
     return impObj()->isHeaderSuppressed();
 }
 
-void PyDbTable::suppressHeaderRow(bool value)
+void PyDbTable::suppressHeaderRow(bool value) const
 {
     return PyThrowBadEs(impObj()->suppressHeaderRow(value));
 }
@@ -970,12 +975,12 @@ AcDb::CellAlignment PyDbTable::alignment2(int row, int col) const
     return impObj()->alignment(row, col);
 }
 
-void PyDbTable::setAlignment(AcDb::CellAlignment align, AcDb::RowType rowTypes)
+void PyDbTable::setAlignment(AcDb::CellAlignment align, AcDb::RowType rowTypes) const
 {
     return PyThrowBadEs(impObj()->setAlignment(align, rowTypes));
 }
 
-void PyDbTable::setAlignment2(int row, int col, AcDb::CellAlignment align)
+void PyDbTable::setAlignment2(int row, int col, AcDb::CellAlignment align) const
 {
     return PyThrowBadEs(impObj()->setAlignment(row, col, align));
 }
@@ -990,12 +995,12 @@ bool PyDbTable::isBackgroundColorNone2(int row, int col) const
     return impObj()->isBackgroundColorNone(row, col);
 }
 
-void PyDbTable::setBackgroundColorNone(bool value, AcDb::RowType type)
+void PyDbTable::setBackgroundColorNone(bool value, AcDb::RowType type) const
 {
     return PyThrowBadEs(impObj()->setBackgroundColorNone(value, type));
 }
 
-void PyDbTable::setBackgroundColorNone2(int row, int col, bool value)
+void PyDbTable::setBackgroundColorNone2(int row, int col, bool value) const
 {
     return PyThrowBadEs(impObj()->setBackgroundColorNone(row, col, value));
 }
@@ -1010,12 +1015,12 @@ AcCmColor PyDbTable::backgroundColor2(int row, int col) const
     return impObj()->backgroundColor(row, col);
 }
 
-void PyDbTable::setBackgroundColor(const AcCmColor& color, AcDb::RowType type)
+void PyDbTable::setBackgroundColor(const AcCmColor& color, AcDb::RowType type) const
 {
     return PyThrowBadEs(impObj()->setBackgroundColor(color, type));
 }
 
-void PyDbTable::setBackgroundColor2(int row, int col, const AcCmColor& color)
+void PyDbTable::setBackgroundColor2(int row, int col, const AcCmColor& color) const
 {
     return PyThrowBadEs(impObj()->setBackgroundColor(row, col, color));
 }
@@ -1035,17 +1040,17 @@ AcCmColor PyDbTable::contentColor3(int row, int col, int nContent) const
     return impObj()->contentColor(row, col, nContent);
 }
 
-void PyDbTable::setContentColor(const AcCmColor& color, AcDb::RowType type)
+void PyDbTable::setContentColor(const AcCmColor& color, AcDb::RowType type) const
 {
     return PyThrowBadEs(impObj()->setContentColor(color, type));
 }
 
-void PyDbTable::setContentColor2(int row, int col, const AcCmColor& color)
+void PyDbTable::setContentColor2(int row, int col, const AcCmColor& color) const
 {
     return PyThrowBadEs(impObj()->setContentColor(row, col, color));
 }
 
-void PyDbTable::setContentColor3(int row, int col, int nContent, const AcCmColor& color)
+void PyDbTable::setContentColor3(int row, int col, int nContent, const AcCmColor& color) const
 {
     return PyThrowBadEs(impObj()->setContentColor(row, col, nContent, color));
 }
@@ -1057,12 +1062,12 @@ boost::python::list PyDbTable::cellStyleOverrides(int row, int col) const
     return IntArrayToPyList(overrides);
 }
 
-void PyDbTable::clearCellOverrides(int row, int column)
+void PyDbTable::clearCellOverrides(int row, int column) const
 {
     return impObj()->clearCellOverrides(row, column);
 }
 
-void PyDbTable::deleteCellContent(int row, int col)
+void PyDbTable::deleteCellContent(int row, int col) const
 {
     return PyThrowBadEs(impObj()->deleteCellContent(row, col));
 }
@@ -1099,29 +1104,29 @@ boost::python::tuple PyDbTable::getDataType3(int row, int col, int nContent) con
     return boost::python::make_tuple(nDataType, nUnitType);
 }
 
-void PyDbTable::setDataType1(AcValue::DataType nDataType, AcValue::UnitType nUnitType)
+void PyDbTable::setDataType1(AcValue::DataType nDataType, AcValue::UnitType nUnitType) const
 {
     return PyThrowBadEs(impObj()->setDataType(nDataType, nUnitType));
 }
 
-void PyDbTable::setDataType2(AcValue::DataType nDataType, AcValue::UnitType nUnitType, AcDb::RowType type)
+void PyDbTable::setDataType2(AcValue::DataType nDataType, AcValue::UnitType nUnitType, AcDb::RowType type) const
 {
     return PyThrowBadEs(impObj()->setDataType(nDataType, nUnitType, type));
 }
 
-void PyDbTable::setDataType3(int row, int col, AcValue::DataType nDataType, AcValue::UnitType nUnitType)
+void PyDbTable::setDataType3(int row, int col, AcValue::DataType nDataType, AcValue::UnitType nUnitType) const
 {
     return PyThrowBadEs(impObj()->setDataType(row, col, nDataType, nUnitType));
 }
 
-void PyDbTable::setDataType4(int row, int col, int nContent, AcValue::DataType nDataType, AcValue::UnitType nUnitType)
+void PyDbTable::setDataType4(int row, int col, int nContent, AcValue::DataType nDataType, AcValue::UnitType nUnitType) const
 {
     return PyThrowBadEs(impObj()->setDataType(row, col, nContent, nDataType, nUnitType));
 }
 
-void PyDbTable::setFormat(int row, int col, const std::string& pszFormat)
+void PyDbTable::setFormat(int row, int col, const std::string& pszFormat) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setFormat(row, col, utf8_to_wstr(pszFormat).c_str()));
@@ -1164,17 +1169,17 @@ std::string PyDbTable::textStringFmt3(const AcCell& cell, AcValue::FormatOption 
     return wstr_to_utf8(str);
 }
 
-void PyDbTable::setTextString(int row, int col, const std::string& text)
+void PyDbTable::setTextString(int row, int col, const std::string& text) const
 {
     return PyThrowBadEs(impObj()->setTextString(row, col, utf8_to_wstr(text).c_str()));
 }
 
-void PyDbTable::setTextString2(int row, int col, int nContent, const std::string& text)
+void PyDbTable::setTextString2(int row, int col, int nContent, const std::string& text) const
 {
     return PyThrowBadEs(impObj()->setTextString(row, col, nContent, utf8_to_wstr(text).c_str()));
 }
 
-void PyDbTable::setTextString3(const AcCell& cell, const std::string& text)
+void PyDbTable::setTextString3(const AcCell& cell, const std::string& text) const
 {
     return PyThrowBadEs(impObj()->setTextString(cell.mnRow, cell.mnColumn, utf8_to_wstr(text).c_str()));
 }
@@ -1194,17 +1199,17 @@ PyDbObjectId PyDbTable::textStyle3(int row, int col, int nContent) const
     return PyDbObjectId(impObj()->textStyle(row, col, nContent));
 }
 
-void PyDbTable::setTextStyle(const PyDbObjectId& id, AcDb::RowType rowTypes)
+void PyDbTable::setTextStyle(const PyDbObjectId& id, AcDb::RowType rowTypes) const
 {
     return PyThrowBadEs(impObj()->setTextStyle(id.m_id, rowTypes));
 }
 
-void PyDbTable::setTextStyle2(int row, int col, const PyDbObjectId& id)
+void PyDbTable::setTextStyle2(int row, int col, const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setTextStyle(row, col, id.m_id));
 }
 
-void PyDbTable::setTextStyle3(int row, int col, int nContent, const PyDbObjectId& id)
+void PyDbTable::setTextStyle3(int row, int col, int nContent, const PyDbObjectId& id) const
 {
     return PyThrowBadEs(impObj()->setTextStyle(row, col, nContent, id.m_id));
 }
@@ -1224,17 +1229,17 @@ double PyDbTable::textHeight3(int row, int col, int nContent) const
     return impObj()->textHeight(row, col, nContent);
 }
 
-void PyDbTable::setTextHeight(double height, AcDb::RowType rowTypes)
+void PyDbTable::setTextHeight(double height, AcDb::RowType rowTypes) const
 {
     return PyThrowBadEs(impObj()->setTextHeight(height, rowTypes));
 }
 
-void PyDbTable::setTextHeight2(int row, int col, double height)
+void PyDbTable::setTextHeight2(int row, int col, double height) const
 {
     return PyThrowBadEs(impObj()->setTextHeight(row, col, height));
 }
 
-void PyDbTable::setTextHeight3(int row, int col, int nContent, double height)
+void PyDbTable::setTextHeight3(int row, int col, int nContent, double height) const
 {
     return PyThrowBadEs(impObj()->setTextHeight(row, col, nContent, height));
 }
@@ -1254,17 +1259,17 @@ AcDb::LineWeight PyDbTable::gridLineWeight2(int nRow, int nCol, AcDb::GridLineTy
     return impObj()->gridLineWeight(nRow, nCol, nGridLineType);
 }
 
-void PyDbTable::setGridLineWeight(AcDb::LineWeight lwt, int nBorders, int nRows)
+void PyDbTable::setGridLineWeight(AcDb::LineWeight lwt, int nBorders, int nRows) const
 {
     return PyThrowBadEs(impObj()->setGridLineWeight(lwt, nBorders, nRows));
 }
 
-void PyDbTable::setGridEdgeLineWeight(int row, int col, AcDb::CellEdgeMask nEdges, AcDb::LineWeight value)
+void PyDbTable::setGridEdgeLineWeight(int row, int col, AcDb::CellEdgeMask nEdges, AcDb::LineWeight value) const
 {
     return PyThrowBadEs(impObj()->setGridLineWeight(row, col, nEdges, value));
 }
 
-void PyDbTable::setGridLineWeight2(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, AcDb::LineWeight nLineWeight)
+void PyDbTable::setGridLineWeight2(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, AcDb::LineWeight nLineWeight) const
 {
     return PyThrowBadEs(impObj()->setGridLineWeight(nRow, nCol, nGridLineTypes, nLineWeight));
 }
@@ -1284,17 +1289,17 @@ AcCmColor PyDbTable::gridColor2(int nRow, int nCol, AcDb::GridLineType nGridLine
     return impObj()->gridColor(nRow, nCol, nGridLineType);
 }
 
-void PyDbTable::setGridColor(const AcCmColor& color, int nBorders, int nRows)
+void PyDbTable::setGridColor(const AcCmColor& color, int nBorders, int nRows) const
 {
     return PyThrowBadEs(impObj()->setGridColor(color, nBorders, nRows));
 }
 
-void PyDbTable::setGridEdgeColor(int row, int col, AcDb::CellEdgeMask nEdges, const AcCmColor& color)
+void PyDbTable::setGridEdgeColor(int row, int col, AcDb::CellEdgeMask nEdges, const AcCmColor& color) const
 {
     return PyThrowBadEs(impObj()->setGridColor(row, col, nEdges, color));
 }
 
-void PyDbTable::setGridColor2(int nRow, int nCol, AcDb::GridLineType nGridlineTypes, const AcCmColor& color)
+void PyDbTable::setGridColor2(int nRow, int nCol, AcDb::GridLineType nGridlineTypes, const AcCmColor& color) const
 {
     return PyThrowBadEs(impObj()->setGridColor(nRow, nCol, nGridlineTypes, color));
 }
@@ -1314,17 +1319,17 @@ AcDb::Visibility PyDbTable::gridVisibility2(int nRow, int nCol, AcDb::GridLineTy
     return impObj()->gridVisibility(nRow, nCol, nGridLineType);
 }
 
-void PyDbTable::setGridVisibility(AcDb::Visibility visible, int nBorders, int nRows)
+void PyDbTable::setGridVisibility(AcDb::Visibility visible, int nBorders, int nRows) const
 {
     return PyThrowBadEs(impObj()->setGridVisibility(visible, nBorders, nRows));
 }
 
-void PyDbTable::setGridEdgeVisibility(int row, int col, AcDb::CellEdgeMask iEdge, AcDb::Visibility value)
+void PyDbTable::setGridEdgeVisibility(int row, int col, AcDb::CellEdgeMask iEdge, AcDb::Visibility value) const
 {
     return PyThrowBadEs(impObj()->setGridVisibility(row, col, iEdge, value));
 }
 
-void PyDbTable::setGridVisibility2(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, AcDb::Visibility nVisibility)
+void PyDbTable::setGridVisibility2(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, AcDb::Visibility nVisibility) const
 {
     return PyThrowBadEs(impObj()->setGridVisibility(nRow, nCol, nGridLineTypes, nVisibility));
 }
@@ -1336,7 +1341,7 @@ boost::python::list PyDbTable::tableStyleOverrides() const
     return IntArrayToPyList(overrides);
 }
 
-void PyDbTable::clearTableStyleOverrides()
+void PyDbTable::clearTableStyleOverrides() const
 {
     impObj()->clearTableStyleOverrides();
 }
@@ -1346,7 +1351,7 @@ AcDb::CellType PyDbTable::cellType(int row, int col) const
     return impObj()->cellType(row, col);
 }
 
-void PyDbTable::setCellType(int row, int col, AcDb::CellType type)
+void PyDbTable::setCellType(int row, int col, AcDb::CellType type) const
 {
     return PyThrowBadEs(impObj()->setCellType(row, col, type));
 }
@@ -1378,12 +1383,12 @@ PyDbObjectId PyDbTable::fieldId2(int row, int col, int nContent) const
     return PyDbObjectId(impObj()->fieldId(row, col, nContent));
 }
 
-void PyDbTable::setFieldId(int row, int col, const PyDbObjectId& fieldId)
+void PyDbTable::setFieldId(int row, int col, const PyDbObjectId& fieldId) const
 {
     return PyThrowBadEs(impObj()->setFieldId(row, col, fieldId.m_id));
 }
 
-void PyDbTable::setFieldId2(int row, int col, int nContent, const PyDbObjectId& fieldId, AcDb::CellOption nFlag)
+void PyDbTable::setFieldId2(int row, int col, int nContent, const PyDbObjectId& fieldId, AcDb::CellOption nFlag) const
 {
     return PyThrowBadEs(impObj()->setFieldId(row, col, nContent, fieldId.m_id, nFlag));
 }
@@ -1393,7 +1398,7 @@ AcDb::RotationAngle PyDbTable::textRotation(int row, int col) const
     return impObj()->textRotation(row, col);
 }
 
-void PyDbTable::setTextRotation(int row, int col, AcDb::RotationAngle rot)
+void PyDbTable::setTextRotation(int row, int col, AcDb::RotationAngle rot) const
 {
     return PyThrowBadEs(impObj()->setTextRotation(row, col, rot));
 }
@@ -1408,12 +1413,12 @@ bool PyDbTable::isAutoScale2(int row, int col, int nContent) const
     return impObj()->isAutoScale(row, col, nContent);
 }
 
-void PyDbTable::setAutoScale(int row, int col, bool autoFit)
+void PyDbTable::setAutoScale(int row, int col, bool autoFit) const
 {
     return PyThrowBadEs(impObj()->setAutoScale(row, col, autoFit));
 }
 
-void PyDbTable::setAutoScale2(int row, int col, int nContent, bool autoFit)
+void PyDbTable::setAutoScale2(int row, int col, int nContent, bool autoFit) const
 {
     return PyThrowBadEs(impObj()->setAutoScale(row, col, nContent, autoFit));
 }
@@ -1428,12 +1433,12 @@ PyDbObjectId PyDbTable::blockTableRecordId2(int row, int col, int nContent) cons
     return PyDbObjectId(impObj()->blockTableRecordId(row, col, nContent));
 }
 
-void PyDbTable::setBlockTableRecordId(int row, int col, const PyDbObjectId& blkId, bool autoFit)
+void PyDbTable::setBlockTableRecordId(int row, int col, const PyDbObjectId& blkId, bool autoFit) const
 {
     return PyThrowBadEs(impObj()->setBlockTableRecordId(row, col, blkId.m_id, autoFit));
 }
 
-void PyDbTable::setBlockTableRecordId2(int row, int col, int nContent, const PyDbObjectId& blkId, bool autoFit)
+void PyDbTable::setBlockTableRecordId2(int row, int col, int nContent, const PyDbObjectId& blkId, bool autoFit) const
 {
     return PyThrowBadEs(impObj()->setBlockTableRecordId(row, col, nContent, blkId.m_id, autoFit));
 }
@@ -1443,7 +1448,7 @@ double PyDbTable::blockScale(int row, int col) const
     return impObj()->blockScale(row, col);
 }
 
-void PyDbTable::setBlockScale(int row, int col, double scale)
+void PyDbTable::setBlockScale(int row, int col, double scale) const
 {
     return PyThrowBadEs(impObj()->setBlockScale(row, col, scale));
 }
@@ -1453,42 +1458,42 @@ double PyDbTable::blockRotation(int row, int col) const
     return impObj()->blockRotation(row, col);
 }
 
-void PyDbTable::setBlockRotation(int row, int col, double rotAng)
+void PyDbTable::setBlockRotation(int row, int col, double rotAng) const
 {
     return PyThrowBadEs(impObj()->setBlockRotation(row, col, rotAng));
 }
 
-void PyDbTable::insertColumns(int col, double width, int nCols)
+void PyDbTable::insertColumns(int col, double width, int nCols) const
 {
     return PyThrowBadEs(impObj()->insertColumns(col, width, nCols));
 }
 
-void PyDbTable::deleteColumns(int col, int nCols)
+void PyDbTable::deleteColumns(int col, int nCols) const
 {
     return PyThrowBadEs(impObj()->deleteColumns(col, nCols));
 }
 
-void PyDbTable::insertRows(int row, double height, int nRows)
+void PyDbTable::insertRows(int row, double height, int nRows) const
 {
     return PyThrowBadEs(impObj()->insertRows(row, height, nRows));
 }
 
-void PyDbTable::deleteRows(int row, int nRows)
+void PyDbTable::deleteRows(int row, int nRows) const
 {
     return PyThrowBadEs(impObj()->deleteRows(row, nRows));
 }
 
-void PyDbTable::mergeCells(int minRow, int maxRow, int minCol, int maxCol)
+void PyDbTable::mergeCells(int minRow, int maxRow, int minCol, int maxCol) const
 {
     return PyThrowBadEs(impObj()->mergeCells(minRow, maxRow, minCol, maxCol));
 }
 
-void PyDbTable::unmergeCells(int minRow, int maxRow, int minCol, int maxCol)
+void PyDbTable::unmergeCells(int minRow, int maxRow, int minCol, int maxCol) const
 {
     return PyThrowBadEs(impObj()->unmergeCells(minRow, maxRow, minCol, maxCol));
 }
 
-boost::python::tuple PyDbTable::isMergedCell(int row, int col)
+boost::python::tuple PyDbTable::isMergedCell(int row, int col) const
 {
     PyAutoLockGIL lock;
     int minRow = -1;
@@ -1499,17 +1504,17 @@ boost::python::tuple PyDbTable::isMergedCell(int row, int col)
     return boost::python::make_tuple(flag, minRow, maxRow, minCol, maxCol);
 }
 
-void PyDbTable::generateLayout()
+void PyDbTable::generateLayout() const
 {
     return PyThrowBadEs(impObj()->generateLayout());
 }
 
-void PyDbTable::recomputeTableBlock(bool forceUpdate)
+void PyDbTable::recomputeTableBlock(bool forceUpdate) const
 {
     return PyThrowBadEs(impObj()->recomputeTableBlock(forceUpdate));
 }
 
-boost::python::tuple PyDbTable::hitTest(const AcGePoint3d& wpt, const AcGeVector3d& wviewVec)
+boost::python::tuple PyDbTable::hitTest(const AcGePoint3d& wpt, const AcGeVector3d& wviewVec) const
 {
     PyAutoLockGIL lock;
     int resultRowIndex = -1;
@@ -1520,7 +1525,7 @@ boost::python::tuple PyDbTable::hitTest(const AcGePoint3d& wpt, const AcGeVector
     return boost::python::make_tuple(flag, resultRowIndex, resultColumnIndex, contentIndex, nItem);
 }
 
-boost::python::tuple PyDbTable::hitTest2(const AcGePoint3d& wpt, const AcGeVector3d& wviewVec, double wxaper, double wyaper)
+boost::python::tuple PyDbTable::hitTest2(const AcGePoint3d& wpt, const AcGeVector3d& wviewVec, double wxaper, double wyaper) const
 {
     PyAutoLockGIL lock;
     int resultRowIndex = -1;
@@ -1536,12 +1541,12 @@ AcCellRange PyDbTable::getSubSelection(void) const
     return impObj()->getSubSelection();
 }
 
-void PyDbTable::setSubSelection(const AcCellRange& range)
+void PyDbTable::setSubSelection(const AcCellRange& range) const
 {
     return PyThrowBadEs(impObj()->setSubSelection(range));
 }
 
-void PyDbTable::clearSubSelection()
+void PyDbTable::clearSubSelection() const
 {
     impObj()->clearSubSelection();
 }
@@ -1551,22 +1556,22 @@ bool PyDbTable::hasSubSelection() const
     return impObj()->hasSubSelection();
 }
 
-void PyDbTable::setPosition(const AcGePoint3d& newVal)
+void PyDbTable::setPosition(const AcGePoint3d& newVal) const
 {
     return PyThrowBadEs(impObj()->setPosition(newVal));
 }
 
-void PyDbTable::setNormal(const AcGeVector3d& newVal)
+void PyDbTable::setNormal(const AcGeVector3d& newVal) const
 {
     return PyThrowBadEs(impObj()->setNormal(newVal));
 }
 
-void PyDbTable::setRegen()
+void PyDbTable::setRegen() const
 {
     impObj()->setRegen();
 }
 
-void PyDbTable::suppressInvisibleGrid(bool value)
+void PyDbTable::suppressInvisibleGrid(bool value) const
 {
     impObj()->suppressInvisibleGrid(value);
 }
@@ -1576,21 +1581,21 @@ bool PyDbTable::isRegenerateTableSuppressed() const
     return impObj()->isRegenerateTableSuppressed();
 }
 
-void PyDbTable::suppressRegenerateTable(bool bSuppress)
+void PyDbTable::suppressRegenerateTable(bool bSuppress) const
 {
     impObj()->suppressRegenerateTable(bSuppress);
 }
 
-void PyDbTable::setRecomputeTableBlock(bool newVal)
+void PyDbTable::setRecomputeTableBlock(bool newVal) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->setRecomputeTableBlock(newVal);
 #endif
 }
 
-void PyDbTable::setSize(int nRows, int nCols)
+void PyDbTable::setSize(int nRows, int nCols) const
 {
     return PyThrowBadEs(impObj()->setSize(nRows, nCols));
 }
@@ -1600,12 +1605,12 @@ bool PyDbTable::canInsert(int nIndex, bool bRow) const
     return impObj()->canInsert(nIndex, bRow);
 }
 
-void PyDbTable::insertRowsAndInherit(int nIndex, int nInheritFrom, int nNumRows)
+void PyDbTable::insertRowsAndInherit(int nIndex, int nInheritFrom, int nNumRows) const
 {
     return PyThrowBadEs(impObj()->insertRowsAndInherit(nIndex, nInheritFrom, nNumRows));
 }
 
-void PyDbTable::insertColumnsAndInherit(int col, int nInheritFrom, int nNumCols)
+void PyDbTable::insertColumnsAndInherit(int col, int nInheritFrom, int nNumCols) const
 {
     return PyThrowBadEs(impObj()->insertRowsAndInherit(col, nInheritFrom, nNumCols));
 }
@@ -1625,18 +1630,25 @@ AcCellRange PyDbTable::getMergeRange(int nRow, int nCol) const
     return impObj()->getMergeRange(nRow, nCol);
 }
 
-boost::python::list PyDbTable::getIterator1()
+boost::python::list PyDbTable::getIterator1() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     std::unique_ptr<AcDbTableIterator> iter(impObj()->getIterator());
     for (iter->start(); !iter->done(); iter->step())
         l.append(iter->getCell());
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getIterator2(AcDb::TableIteratorOption nOption) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     const auto range = cellRange();
@@ -1644,30 +1656,42 @@ boost::python::list PyDbTable::getIterator2(AcDb::TableIteratorOption nOption) c
     for (iter->start(); !iter->done(); iter->step())
         l.append(iter->getCell());
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getIterator3(const AcCellRange& pRange, AcDb::TableIteratorOption nOption) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     std::unique_ptr<AcDbTableIterator> iter(impObj()->getIterator(&pRange, nOption));
     for (iter->start(); !iter->done(); iter->step())
         l.append(iter->getCell());
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getIterator4(const AcCellRange& pRange) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     std::unique_ptr<AcDbTableIterator> iter(impObj()->getIterator(&pRange, AcDb::kTableIteratorNone));
     for (iter->start(); !iter->done(); iter->step())
         l.append(iter->getCell());
     return l;
+#endif
 }
 
-boost::python::list PyDbTable::getStrValueIterator1()
+boost::python::list PyDbTable::getStrValueIterator1() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     AcDbMText mt;
     boost::python::list l;
@@ -1679,10 +1703,14 @@ boost::python::list PyDbTable::getStrValueIterator1()
         l.append(boost::python::make_tuple(c.mnRow, c.mnColumn, wstr_to_utf8(mt.text())));
     }
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getStrValueIterator2(AcDb::TableIteratorOption nOption) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     AcDbMText mt;
     boost::python::list l;
@@ -1695,10 +1723,14 @@ boost::python::list PyDbTable::getStrValueIterator2(AcDb::TableIteratorOption nO
         l.append(boost::python::make_tuple(c.mnRow, c.mnColumn, wstr_to_utf8(mt.text())));
     }
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getStrValueIterator3(const AcCellRange& pRange, AcDb::TableIteratorOption nOption) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     AcDbMText mt;
     boost::python::list l;
@@ -1710,10 +1742,14 @@ boost::python::list PyDbTable::getStrValueIterator3(const AcCellRange& pRange, A
         l.append(boost::python::make_tuple(c.mnRow, c.mnColumn, wstr_to_utf8(mt.text())));
     }
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getStrValueIterator4(const AcCellRange& pRange) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     AcDbMText mt;
     boost::python::list l;
@@ -1725,6 +1761,7 @@ boost::python::list PyDbTable::getStrValueIterator4(const AcCellRange& pRange) c
         l.append(boost::python::make_tuple(c.mnRow, c.mnColumn, wstr_to_utf8(mt.text())));
     }
     return l;
+#endif
 }
 
 static boost::python::tuple acValueToPyVal(const AcDbTable& table, int r, int c)
@@ -1764,8 +1801,11 @@ static boost::python::tuple acValueToPyVal(const AcDbTable& table, int r, int c)
     return boost::python::make_tuple(r, c, boost::python::object());
 }
 
-boost::python::list PyDbTable::getValueIterator1()
+boost::python::list PyDbTable::getValueIterator1() const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     std::unique_ptr<AcDbTableIterator> iter(impObj()->getIterator());
@@ -1775,10 +1815,14 @@ boost::python::list PyDbTable::getValueIterator1()
         l.append(acValueToPyVal(*impObj(), c.mnRow, c.mnColumn));
     }
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getValueIterator2(AcDb::TableIteratorOption nOption) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     const auto range = cellRange();
@@ -1789,10 +1833,14 @@ boost::python::list PyDbTable::getValueIterator2(AcDb::TableIteratorOption nOpti
         l.append(acValueToPyVal(*impObj(), c.mnRow, c.mnColumn));
     }
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getValueIterator3(const AcCellRange& pRange, AcDb::TableIteratorOption nOption) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     PyAutoLockGIL lock;
     boost::python::list l;
     std::unique_ptr<AcDbTableIterator> iter(impObj()->getIterator(&pRange, nOption));
@@ -1802,10 +1850,14 @@ boost::python::list PyDbTable::getValueIterator3(const AcCellRange& pRange, AcDb
         l.append(acValueToPyVal(*impObj(), c.mnRow, c.mnColumn));
     }
     return l;
+#endif
 }
 
 boost::python::list PyDbTable::getValueIterator4(const AcCellRange& pRange) const
 {
+#if defined(_IRXTARGET140)
+    throw PyNotimplementedByHost{};
+#else
     AcDbMText mt;
     PyAutoLockGIL lock;
     boost::python::list l;
@@ -1816,6 +1868,7 @@ boost::python::list PyDbTable::getValueIterator4(const AcCellRange& pRange) cons
         l.append(acValueToPyVal(*impObj(), c.mnRow, c.mnColumn));
     }
     return l;
+#endif
 }
 
 bool PyDbTable::isContentEditable(int nRow, int nCol) const
@@ -1833,7 +1886,7 @@ AcDb::CellState PyDbTable::cellState(int nRow, int nCol) const
     return impObj()->cellState(nRow, nCol);
 }
 
-void PyDbTable::setCellState(int nRow, int nCol, AcDb::CellState nLock)
+void PyDbTable::setCellState(int nRow, int nCol, AcDb::CellState nLock) const
 {
     return PyThrowBadEs(impObj()->setCellState(nRow, nCol, nLock));
 }
@@ -1843,27 +1896,27 @@ int PyDbTable::numContents(int nRow, int nCol) const
     return impObj()->numContents(nRow, nCol);
 }
 
-int PyDbTable::createContent(int nRow, int nCol, int nIndex)
+int PyDbTable::createContent(int nRow, int nCol, int nIndex) const
 {
     return impObj()->createContent(nRow, nCol, nIndex);
 }
 
-void PyDbTable::moveContent(int nRow, int nCol, int nFromIndex, int nToIndex)
+void PyDbTable::moveContent(int nRow, int nCol, int nFromIndex, int nToIndex) const
 {
     return PyThrowBadEs(impObj()->moveContent(nRow, nCol, nFromIndex, nToIndex));
 }
 
-void PyDbTable::deleteContent1(int nRow, int nCol)
+void PyDbTable::deleteContent1(int nRow, int nCol) const
 {
     return PyThrowBadEs(impObj()->deleteContent(nRow, nCol));
 }
 
-void PyDbTable::deleteContent2(int nRow, int nCol, int nIndex)
+void PyDbTable::deleteContent2(int nRow, int nCol, int nIndex) const
 {
     return PyThrowBadEs(impObj()->deleteContent(nRow, nCol, nIndex));
 }
 
-void PyDbTable::deleteContent3(const AcCellRange& range)
+void PyDbTable::deleteContent3(const AcCellRange& range) const
 {
     return PyThrowBadEs(impObj()->deleteContent(range));
 }
@@ -1893,22 +1946,22 @@ PyDbAcValue PyDbTable::value3(int row, int col, int nContent, AcValue::FormatOpt
     return PyDbAcValue(impObj()->value(row, col, nContent, nOption));
 }
 
-void PyDbTable::setValue1(int row, int col, const PyDbAcValue& val)
+void PyDbTable::setValue1(int row, int col, const PyDbAcValue& val) const
 {
     PyThrowBadEs(impObj()->setValue(row, col, *val.impObj()));
 }
 
-void PyDbTable::setValue2(int row, int col, int nContent, const PyDbAcValue& val)
+void PyDbTable::setValue2(int row, int col, int nContent, const PyDbAcValue& val) const
 {
     PyThrowBadEs(impObj()->setValue(row, col, nContent, *val.impObj()));
 }
 
-void PyDbTable::setValue3(int row, int col, int nContent, const PyDbAcValue& val, AcValue::ParseOption nOption)
+void PyDbTable::setValue3(int row, int col, int nContent, const PyDbAcValue& val, AcValue::ParseOption nOption) const
 {
     PyThrowBadEs(impObj()->setValue(row, col, nContent, *val.impObj(), nOption));
 }
 
-void PyDbTable::setValue4(int row, int col, int nContent, const std::string& pszText, AcValue::ParseOption nOption)
+void PyDbTable::setValue4(int row, int col, int nContent, const std::string& pszText, AcValue::ParseOption nOption) const
 {
     PyThrowBadEs(impObj()->setValue(row, col, nContent, utf8_to_wstr(pszText).c_str(), nOption));
 }
@@ -1923,12 +1976,12 @@ std::string PyDbTable::dataFormat2(int row, int col, int nContent) const
     return wstr_to_utf8(impObj()->dataFormat(row, row, nContent));
 }
 
-void PyDbTable::setDataFormat1(int row, int col, const std::string& pszFormat)
+void PyDbTable::setDataFormat1(int row, int col, const std::string& pszFormat) const
 {
     return PyThrowBadEs(impObj()->setDataFormat(row, col, utf8_to_wstr(pszFormat).c_str()));
 }
 
-void PyDbTable::setDataFormat2(int row, int col, int nContent, const std::string& pszFormat)
+void PyDbTable::setDataFormat2(int row, int col, int nContent, const std::string& pszFormat) const
 {
     return PyThrowBadEs(impObj()->setDataFormat(row, col, nContent, utf8_to_wstr(pszFormat).c_str()));
 }
@@ -1943,7 +1996,7 @@ std::string PyDbTable::getFormula(int nRow, int nCol, int nContent) const
     return wstr_to_utf8(impObj()->getFormula(nRow, nCol, nContent));
 }
 
-void PyDbTable::setFormula(int nRow, int nCol, int nContent, const std::string& pszFormula)
+void PyDbTable::setFormula(int nRow, int nCol, int nContent, const std::string& pszFormula) const
 {
     return PyThrowBadEs(impObj()->setFormula(nRow, nCol, nContent, utf8_to_wstr(pszFormula).c_str()));
 }
@@ -1959,7 +2012,7 @@ std::string PyDbTable::getBlockAttributeValue1(int row, int col, const PyDbObjec
 
 std::string PyDbTable::getBlockAttributeValue2(int row, int col, int nContent, const PyDbObjectId& attdefId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     ACHAR* val = nullptr;
@@ -1970,14 +2023,14 @@ std::string PyDbTable::getBlockAttributeValue2(int row, int col, int nContent, c
 #endif
 }
 
-void PyDbTable::setBlockAttributeValue1(int row, int col, const PyDbObjectId& attdefId, const std::string& value)
+void PyDbTable::setBlockAttributeValue1(int row, int col, const PyDbObjectId& attdefId, const std::string& value) const
 {
     return PyThrowBadEs(impObj()->setBlockAttributeValue(row, col, attdefId.m_id, utf8_to_wstr(value).c_str()));
 }
 
-void PyDbTable::setBlockAttributeValue2(int row, int col, int nContent, const PyDbObjectId& attdefId, const std::string& value)
+void PyDbTable::setBlockAttributeValue2(int row, int col, int nContent, const PyDbObjectId& attdefId, const std::string& value) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setBlockAttributeValue(row, col, nContent, attdefId.m_id, utf8_to_wstr(value).c_str()));
@@ -1989,7 +2042,7 @@ const std::string PyDbTable::cellStyle(int nRow, int nCol) const
     return wstr_to_utf8(impObj()->cellStyle(nRow, nCol));
 }
 
-void PyDbTable::setCellStyle(int nRow, int nCol, const std::string& pszCellStyle)
+void PyDbTable::setCellStyle(int nRow, int nCol, const std::string& pszCellStyle) const
 {
     return PyThrowBadEs(impObj()->setCellStyle(nRow, nCol, utf8_to_wstr(pszCellStyle).c_str()));
 }
@@ -1999,7 +2052,7 @@ double PyDbTable::margin(int nRow, int nCol, AcDb::CellMargin nMargin) const
     return impObj()->margin(nRow, nCol, nMargin);
 }
 
-void PyDbTable::setMargin(int nRow, int nCol, AcDb::CellMargin nMargins, double fMargin)
+void PyDbTable::setMargin(int nRow, int nCol, AcDb::CellMargin nMargins, double fMargin) const
 {
     return PyThrowBadEs(impObj()->setMargin(nRow, nCol, nMargins, fMargin));
 }
@@ -2014,12 +2067,12 @@ double PyDbTable::rotation2(int row, int col, int nContent) const
     return impObj()->rotation(row, col, nContent);
 }
 
-void PyDbTable::setRotation(double fAngle)
+void PyDbTable::setRotation(double fAngle) const
 {
     return PyThrowBadEs(impObj()->setRotation(fAngle));
 }
 
-void PyDbTable::setRotation2(int row, int col, int nContent, double fAngle)
+void PyDbTable::setRotation2(int row, int col, int nContent, double fAngle) const
 {
     return PyThrowBadEs(impObj()->setRotation(row, col, nContent, fAngle));
 }
@@ -2029,7 +2082,7 @@ double PyDbTable::scale(int row, int col, int nContent) const
     return impObj()->scale(row, col, nContent);
 }
 
-void PyDbTable::setScale(int row, int col, int nContent, double scale)
+void PyDbTable::setScale(int row, int col, int nContent, double scale) const
 {
     return PyThrowBadEs(impObj()->setScale(row, col, nContent, scale));
 }
@@ -2039,7 +2092,7 @@ AcDb::CellContentLayout PyDbTable::contentLayout(int row, int col) const
     return impObj()->contentLayout(row, col);
 }
 
-void PyDbTable::setContentLayout(int row, int col, AcDb::CellContentLayout nLayout)
+void PyDbTable::setContentLayout(int row, int col, AcDb::CellContentLayout nLayout) const
 {
     return PyThrowBadEs(impObj()->setContentLayout(row, col, nLayout));
 }
@@ -2049,7 +2102,7 @@ bool PyDbTable::isMergeAllEnabled(int nRow, int nCol) const
     return impObj()->isMergeAllEnabled(nRow, nCol);
 }
 
-void PyDbTable::enableMergeAll(int nRow, int nCol, bool bEnable)
+void PyDbTable::enableMergeAll(int nRow, int nCol, bool bEnable) const
 {
     return PyThrowBadEs(impObj()->enableMergeAll(nRow, nCol, bEnable));
 }
@@ -2064,17 +2117,17 @@ AcDb::GridProperty PyDbTable::getGridOverride(int nRow, int nCol, AcDb::GridLine
     return impObj()->getOverride(nRow, nCol, nGridLineType);
 }
 
-void PyDbTable::setCellOverride(int nRow, int nCol, int nContent, AcDb::CellProperty nOverride)
+void PyDbTable::setCellOverride(int nRow, int nCol, int nContent, AcDb::CellProperty nOverride) const
 {
     return PyThrowBadEs(impObj()->setOverride(nRow, nCol, nContent, nOverride));
 }
 
-void PyDbTable::setGridOverride(int nRow, int nCol, AcDb::GridLineType nGridLineType, AcDb::GridProperty nOverride)
+void PyDbTable::setGridOverride(int nRow, int nCol, AcDb::GridLineType nGridLineType, AcDb::GridProperty nOverride) const
 {
     return PyThrowBadEs(impObj()->setOverride(nRow, nCol, nGridLineType, nOverride));
 }
 
-void PyDbTable::removeAllOverrides(int nRow, int nCol)
+void PyDbTable::removeAllOverrides(int nRow, int nCol) const
 {
     return PyThrowBadEs(impObj()->removeAllOverrides(nRow, nCol));
 }
@@ -2084,7 +2137,7 @@ AcDb::GridLineStyle PyDbTable::gridLineStyle(int nRow, int nCol, AcDb::GridLineT
     return impObj()->gridLineStyle(nRow, nCol, nGridLineType);
 }
 
-void PyDbTable::setGridLineStyle(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, AcDb::GridLineStyle nLineStyle)
+void PyDbTable::setGridLineStyle(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, AcDb::GridLineStyle nLineStyle) const
 {
     return PyThrowBadEs(impObj()->setGridLineStyle(nRow, nCol, nGridLineTypes, nLineStyle));
 }
@@ -2094,7 +2147,7 @@ PyDbObjectId PyDbTable::gridLinetype(int nRow, int nCol, AcDb::GridLineType nGri
     return PyDbObjectId(impObj()->gridLinetype(nRow, nCol, nGridLineType));
 }
 
-void PyDbTable::setGridLinetype(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, const PyDbObjectId& idLinetype)
+void PyDbTable::setGridLinetype(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, const PyDbObjectId& idLinetype) const
 {
     return PyThrowBadEs(impObj()->setGridLinetype(nRow, nCol, nGridLineTypes, idLinetype.m_id));
 }
@@ -2104,7 +2157,7 @@ double PyDbTable::gridDoubleLineSpacing(int nRow, int nCol, AcDb::GridLineType n
     return impObj()->gridDoubleLineSpacing(nRow, nCol, nGridLineType);
 }
 
-void PyDbTable::setGridDoubleLineSpacing(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, double fSpacing)
+void PyDbTable::setGridDoubleLineSpacing(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, double fSpacing) const
 {
     return PyThrowBadEs(impObj()->setGridDoubleLineSpacing(nRow, nCol, nGridLineTypes, fSpacing));
 }
@@ -2116,12 +2169,12 @@ AcGridProperty PyDbTable::getGridProperty(int nRow, int nCol, AcDb::GridLineType
     return prop;
 }
 
-void PyDbTable::setGridProperty1(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, const AcGridProperty& gridProp)
+void PyDbTable::setGridProperty1(int nRow, int nCol, AcDb::GridLineType nGridLineTypes, const AcGridProperty& gridProp) const
 {
     return PyThrowBadEs(impObj()->setGridProperty(nRow, nCol, nGridLineTypes, gridProp));
 }
 
-void PyDbTable::setGridProperty2(const AcCellRange& rangeIn, AcDb::GridLineType nGridLineTypes, const AcGridProperty& gridProp)
+void PyDbTable::setGridProperty2(const AcCellRange& rangeIn, AcDb::GridLineType nGridLineTypes, const AcGridProperty& gridProp) const
 {
     return PyThrowBadEs(impObj()->setGridProperty(rangeIn, nGridLineTypes, gridProp));
 }
@@ -2136,7 +2189,7 @@ PyDbObjectId PyDbTable::getDataLink(int nRow, int nCol) const
     return PyDbObjectId(impObj()->getDataLink(nRow, nCol));
 }
 
-void PyDbTable::setDataLink(const AcCellRange& range, const PyDbObjectId& idDataLink, bool bUpdate)
+void PyDbTable::setDataLink(const AcCellRange& range, const PyDbObjectId& idDataLink, bool bUpdate) const
 {
     return PyThrowBadEs(impObj()->setDataLink(range, idDataLink.m_id, bUpdate));
 }
@@ -2146,22 +2199,22 @@ AcCellRange PyDbTable::getDataLinkRange(int nRow, int nCol) const
     return impObj()->getDataLinkRange(nRow, nCol);
 }
 
-void PyDbTable::removeDataLink1(void)
+void PyDbTable::removeDataLink1(void) const
 {
     return PyThrowBadEs(impObj()->removeDataLink());
 }
 
-void PyDbTable::removeDataLink2(int nRow, int nCol)
+void PyDbTable::removeDataLink2(int nRow, int nCol) const
 {
     return PyThrowBadEs(impObj()->removeDataLink(nRow, nCol));
 }
 
-void PyDbTable::updateDataLink1(AcDb::UpdateDirection nDir, AcDb::UpdateOption nOption)
+void PyDbTable::updateDataLink1(AcDb::UpdateDirection nDir, AcDb::UpdateOption nOption) const
 {
     return PyThrowBadEs(impObj()->updateDataLink(nDir, nOption));
 }
 
-void PyDbTable::updateDataLink2(int nRow, int nCol, AcDb::UpdateDirection nDir, AcDb::UpdateOption nOption)
+void PyDbTable::updateDataLink2(int nRow, int nCol, AcDb::UpdateDirection nDir, AcDb::UpdateOption nOption) const
 {
     return PyThrowBadEs(impObj()->updateDataLink(nRow, nCol, nDir, nOption));
 }
@@ -2171,7 +2224,7 @@ bool PyDbTable::isBreakEnabled(void) const
     return impObj()->isBreakEnabled();
 }
 
-void PyDbTable::enableBreak(bool bEnable)
+void PyDbTable::enableBreak(bool bEnable) const
 {
     return PyThrowBadEs(impObj()->enableBreak(bEnable));
 }
@@ -2181,7 +2234,7 @@ AcDb::TableBreakFlowDirection PyDbTable::breakFlowDirection(void) const
     return impObj()->breakFlowDirection();
 }
 
-void PyDbTable::setBreakFlowDirection(AcDb::TableBreakFlowDirection nDir)
+void PyDbTable::setBreakFlowDirection(AcDb::TableBreakFlowDirection nDir) const
 {
     return PyThrowBadEs(impObj()->setBreakFlowDirection(nDir));
 }
@@ -2191,7 +2244,7 @@ double PyDbTable::breakHeight(int nIndex) const
     return impObj()->breakHeight(nIndex);
 }
 
-void PyDbTable::setBreakHeight(int nIndex, double fHeight)
+void PyDbTable::setBreakHeight(int nIndex, double fHeight) const
 {
     return PyThrowBadEs(impObj()->setBreakHeight(nIndex, fHeight));
 }
@@ -2201,7 +2254,7 @@ AcGeVector3d PyDbTable::breakOffset(int nIndex) const
     return impObj()->breakOffset(nIndex);
 }
 
-void PyDbTable::setBreakOffset(int nIndex, const AcGeVector3d& vec)
+void PyDbTable::setBreakOffset(int nIndex, const AcGeVector3d& vec) const
 {
     return PyThrowBadEs(impObj()->setBreakOffset(nIndex, vec));
 }
@@ -2211,7 +2264,7 @@ AcDb::TableBreakOption PyDbTable::breakOption(void) const
     return impObj()->breakOption();
 }
 
-void PyDbTable::setBreakOption(AcDb::TableBreakOption nOption)
+void PyDbTable::setBreakOption(AcDb::TableBreakOption nOption) const
 {
     return PyThrowBadEs(impObj()->setBreakOption(nOption));
 }
@@ -2221,14 +2274,14 @@ double PyDbTable::breakSpacing(void) const
     return impObj()->breakSpacing();
 }
 
-void PyDbTable::setBreakSpacing(double fSpacing)
+void PyDbTable::setBreakSpacing(double fSpacing) const
 {
     return PyThrowBadEs(impObj()->setBreakSpacing(fSpacing));
 }
 
 AcCellRange PyDbTable::cellRange() const
 {
-#if defined(_GRXTARGET250) || defined(_ZRXTARGET260) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET250) || defined(_ZRXTARGET260) || defined(_BRXTARGET260)
     auto range = AcCellRange{};
     range.mnTopRow = 0;
     range.mnLeftColumn = 0;
@@ -2240,19 +2293,19 @@ AcCellRange PyDbTable::cellRange() const
 #endif
 }
 
-void PyDbTable::clearCustomData(int nrow, int ncol, const std::string& key)
+void PyDbTable::clearCustomData(int nrow, int ncol, const std::string& key) const
 {
     PyThrowBadEs(impObj()->setCustomData(nrow, ncol, utf8_to_wstr(key).c_str(), nullptr));
 }
 
-PyDbAcValue PyDbTable::getCustomData(int nrow, int ncol, const std::string& key)
+PyDbAcValue PyDbTable::getCustomData(int nrow, int ncol, const std::string& key) const
 {
     AcValue val;
     PyThrowBadEs(impObj()->getCustomData(nrow, ncol, utf8_to_wstr(key).c_str(), &val));
     return PyDbAcValue{ val };
 }
 
-void PyDbTable::setCustomData(int nrow, int ncol, const std::string& key, const PyDbAcValue& val)
+void PyDbTable::setCustomData(int nrow, int ncol, const std::string& key, const PyDbAcValue& val) const
 {
     PyThrowBadEs(impObj()->setCustomData(nrow, ncol, utf8_to_wstr(key).c_str(), val.impObj()));
 }

@@ -6,6 +6,11 @@
 #include "PyDbObjectId.h"
 #include "BrxCvDbPoint.h"
 
+#if defined(_BRXTARGET) && (_BRXTARGET == 260)
+#include "PyBrxCvAttribVariant.h"
+#endif
+
+
 using namespace boost::python;
 void makePyBrxCvDbPointWrapper()
 {
@@ -54,6 +59,16 @@ void makePyBrxCvDbPointWrapper()
         .def("referencedEntityAt", &PyBrxCvDbPoint::referencedEntityAt, DS.ARGS({ "val : int" }))
         .def("update", &PyBrxCvDbPoint::update, DS.ARGS())
 
+#if defined(_BRXTARGET) && (_BRXTARGET == 260)
+        .def("addUserAttribute", &PyBrxCvDbPoint::addUserAttribute, DS.ARGS({ "name : str", "value : PyBrxCv.CvAttribVariant" }))
+        .def("removeUserAttribute", &PyBrxCvDbPoint::removeUserAttribute, DS.ARGS({ "name : str", "value : PyBrxCv.CvDataType" }))
+        .def("userAttributes", &PyBrxCvDbPoint::userAttributes, DS.ARGS())
+        .def("userAttribute", &PyBrxCvDbPoint::userAttribute, DS.ARGS({ "name : str", "value : PyBrxCv.CvDataType" }))
+        .def("userAttributeNames", &PyBrxCvDbPoint::userAttributeNames, DS.ARGS())
+        .def("userAttributeCount", &PyBrxCvDbPoint::userAttributeCount, DS.ARGS())
+        .def("userAttributeAt", &PyBrxCvDbPoint::userAttributeAt, DS.ARGS({ "index : int" }))
+#endif
+
         .def("importPointsFromFile", &PyBrxCvDbPoint::importPointsFromFile, 
             DS.SARGS({ "files: list[str]","fmtid: PyDb.ObjectId" })).staticmethod("importPointsFromFile")
         .def("assignPointToPointGroup", &PyBrxCvDbPoint::assignPointToPointGroup, 
@@ -100,7 +115,7 @@ Adesk::UInt32 PyBrxCvDbPoint::number() const
     return impObj()->number();
 }
 
-bool PyBrxCvDbPoint::setNumber(const Adesk::UInt32 number)
+bool PyBrxCvDbPoint::setNumber(const Adesk::UInt32 number) const
 {
     return impObj()->setNumber(number);
 }
@@ -110,7 +125,7 @@ const std::string PyBrxCvDbPoint::rawDescription() const
     return wstr_to_utf8(impObj()->rawDescription());
 }
 
-bool PyBrxCvDbPoint::setRawDescription(const std::string& szDescription)
+bool PyBrxCvDbPoint::setRawDescription(const std::string& szDescription) const
 {
     return impObj()->setRawDescription(utf8_to_wstr(szDescription).c_str());
 }
@@ -121,7 +136,7 @@ const std::string PyBrxCvDbPoint::fullDescription() const
 }
 
 #if !defined(_BRXTARGET240)
-bool PyBrxCvDbPoint::setFullDescription(const std::string& szDescription)
+bool PyBrxCvDbPoint::setFullDescription(const std::string& szDescription) const
 {
     return impObj()->setFullDescription(utf8_to_wstr(szDescription).c_str());
 }
@@ -132,7 +147,7 @@ double PyBrxCvDbPoint::easting() const
     return impObj()->easting();
 }
 
-bool PyBrxCvDbPoint::setEasting(double easting)
+bool PyBrxCvDbPoint::setEasting(double easting) const
 {
     return impObj()->setEasting(easting);
 }
@@ -142,7 +157,7 @@ double PyBrxCvDbPoint::northing() const
     return impObj()->northing();
 }
 
-bool PyBrxCvDbPoint::setNorthing(double northing)
+bool PyBrxCvDbPoint::setNorthing(double northing) const
 {
     return impObj()->setNorthing(northing);
 }
@@ -152,7 +167,7 @@ double PyBrxCvDbPoint::elevation() const
     return impObj()->elevation();
 }
 
-bool PyBrxCvDbPoint::setElevation(double elevation)
+bool PyBrxCvDbPoint::setElevation(double elevation) const
 {
     return impObj()->setElevation(elevation);
 }
@@ -162,7 +177,7 @@ AcGePoint3d PyBrxCvDbPoint::position() const
     return impObj()->position();
 }
 
-bool PyBrxCvDbPoint::setPosition(const AcGePoint3d& value)
+bool PyBrxCvDbPoint::setPosition(const AcGePoint3d& value) const
 {
     return impObj()->setPosition(value);
 }
@@ -182,7 +197,7 @@ PyDbObjectId PyBrxCvDbPoint::symbolId() const
     return PyDbObjectId(impObj()->symbolId());
 }
 
-bool PyBrxCvDbPoint::setSymbolId(const PyDbObjectId& symbolId)
+bool PyBrxCvDbPoint::setSymbolId(const PyDbObjectId& symbolId) const
 {
     return impObj()->setSymbolId(symbolId.m_id);
 }
@@ -192,7 +207,7 @@ PyDbObjectId PyBrxCvDbPoint::labelId() const
     return PyDbObjectId(impObj()->labelId());
 }
 
-bool PyBrxCvDbPoint::setLabelId(const PyDbObjectId& labelId)
+bool PyBrxCvDbPoint::setLabelId(const PyDbObjectId& labelId) const
 {
     return impObj()->setLabelId(labelId.m_id);
 }
@@ -202,7 +217,7 @@ AcGePoint3d PyBrxCvDbPoint::labelPosition() const
     return impObj()->labelPosition();
 }
 
-bool PyBrxCvDbPoint::setLabelPosition(const AcGePoint3d& position)
+bool PyBrxCvDbPoint::setLabelPosition(const AcGePoint3d& position) const
 {
     return impObj()->setLabelPosition(position);
 }
@@ -212,7 +227,7 @@ double PyBrxCvDbPoint::symbolRotation() const
     return impObj()->symbolRotation();
 }
 
-bool PyBrxCvDbPoint::setSymbolRotation(double rotation)
+bool PyBrxCvDbPoint::setSymbolRotation(double rotation) const
 {
     return impObj()->setSymbolRotation(rotation);
 }
@@ -222,7 +237,7 @@ double PyBrxCvDbPoint::labelRotation() const
     return impObj()->labelRotation();
 }
 
-bool PyBrxCvDbPoint::setLabelRotation(double rotation)
+bool PyBrxCvDbPoint::setLabelRotation(double rotation) const
 {
     return impObj()->setLabelRotation(rotation);
 }
@@ -232,7 +247,7 @@ bool PyBrxCvDbPoint::isLabelPinned() const
     return impObj()->isLabelPinned();
 }
 
-bool PyBrxCvDbPoint::setLabelPinned(bool value)
+bool PyBrxCvDbPoint::setLabelPinned(bool value) const
 {
     return impObj()->setLabelPinned(value);
 }
@@ -247,12 +262,12 @@ boost::python::list PyBrxCvDbPoint::labelLeaderVertices() const
     return Point3dArrayToPyList(impObj()->labelLeaderVertices());
 }
 
-bool PyBrxCvDbPoint::setLabelLeaderVertices(const boost::python::list& vertices)
+bool PyBrxCvDbPoint::setLabelLeaderVertices(const boost::python::list& vertices) const
 {
     return impObj()->setLabelLeaderVertices(PyListToPoint3dArray(vertices));
 }
 
-bool PyBrxCvDbPoint::resetLabel()
+bool PyBrxCvDbPoint::resetLabel() const
 {
     return impObj()->resetLabel();
 }
@@ -271,7 +286,7 @@ PyBrxCvDbPointReferencedEntity PyBrxCvDbPoint::referencedEntityAt(Adesk::UInt32 
     throw PyErrorStatusException(Acad::eInvalidOpenState);
 }
 
-bool PyBrxCvDbPoint::update()
+bool PyBrxCvDbPoint::update() const
 {
     return impObj()->update();
 }
@@ -324,6 +339,57 @@ void PyBrxCvDbPoint::assignStylesToPoints(const boost::python::list& cvpoints, c
     PyThrowBadEs(BrxCvDbPoint::assignStylesToPoints(pnts, symbolStyleId.m_id, labelStyleId.m_id));
 #endif
 }
+
+#if defined(_BRXTARGET) && (_BRXTARGET == 260)
+bool PyBrxCvDbPoint::addUserAttribute(const std::string& name, const PyBrxCvAttribVariant& value) const
+{
+    return impObj()->addUserAttribute(utf8_to_wstr(name).c_str(), value.impl);
+}
+
+bool PyBrxCvDbPoint::removeUserAttribute(const std::string& name, BrxCvDataType type) const
+{
+    return impObj()->removeUserAttribute(utf8_to_wstr(name).c_str(), type);
+}
+
+boost::python::list PyBrxCvDbPoint::userAttributes() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pylist;
+    for (const auto& item : impObj()->userAttributes())
+        pylist.append(PyBrxCvAttribVariant(item));
+    return pylist;
+}
+
+PyBrxCvAttribVariant PyBrxCvDbPoint::userAttribute(const std::string& name, BrxCvDataType spec) const
+{
+    return PyBrxCvAttribVariant(impObj()->userAttribute(utf8_to_wstr(name).c_str(), spec));
+}
+
+boost::python::list PyBrxCvDbPoint::userAttributeNames() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pylist;
+    for (const auto& item : impObj()->userAttributeNames())
+        pylist.append(wstr_to_utf8(item));
+    return pylist;
+}
+
+Adesk::UInt32 PyBrxCvDbPoint::userAttributeCount() const
+{
+    return impObj()->userAttributeCount();
+}
+
+boost::python::tuple PyBrxCvDbPoint::userAttributeAt(Adesk::UInt32 index) const
+{
+    
+    PyAutoLockGIL lock;
+    AcString name;
+    BrxCvAttribVariant variant;
+    bool flag = impObj()->userAttributeAt(index, name, variant);
+    return boost::python::make_tuple(flag, wstr_to_utf8(name), PyBrxCvAttribVariant{ variant });
+}
+
+#endif
 
 std::string PyBrxCvDbPoint::className()
 {
@@ -386,7 +452,7 @@ PyDbObjectId PyBrxCvDbPointReferencedEntity::id() const
     return PyDbObjectId(impObj()->id());
 }
 
-bool PyBrxCvDbPointReferencedEntity::setId(const PyDbObjectId& value)
+bool PyBrxCvDbPointReferencedEntity::setId(const PyDbObjectId& value) const
 {
     return impObj()->setId(value.m_id);
 }
@@ -594,72 +660,72 @@ std::string PyBrxCvDbPointGroup::excludeUserAttributesValues() const
     return wstr_to_utf8(impObj()->excludeUserAttributesValues());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeNumbers(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeNumbers(const std::string& szFilter) const
 {
     return impObj()->setIncludeNumbers(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeNumbers(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeNumbers(const std::string& szFilter) const
 {
     return impObj()->setExcludeNumbers(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeElevations(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeElevations(const std::string& szFilter) const
 {
     return impObj()->setIncludeElevations(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeElevations(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeElevations(const std::string& szFilter) const
 {
     return impObj()->setExcludeElevations(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeRawDescriptions(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeRawDescriptions(const std::string& szFilter) const
 {
     return impObj()->setIncludeRawDescriptions(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeRawDescriptions(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeRawDescriptions(const std::string& szFilter) const
 {
     return impObj()->setExcludeRawDescriptions(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeFullDescriptions(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeFullDescriptions(const std::string& szFilter) const
 {
     return impObj()->setIncludeFullDescriptions(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeFullDescriptions(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeFullDescriptions(const std::string& szFilter) const
 {
     return impObj()->setExcludeFullDescriptions(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeNames(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeNames(const std::string& szFilter) const
 {
     return impObj()->setIncludeNames(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeNames(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeNames(const std::string& szFilter) const
 {
     return impObj()->setExcludeNames(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeUserAttributesKeys(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeUserAttributesKeys(const std::string& szFilter) const
 {
     return impObj()->setIncludeUserAttributesKeys(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeUserAttributesKeys(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeUserAttributesKeys(const std::string& szFilter) const
 {
     return impObj()->setExcludeUserAttributesKeys(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setIncludeUserAttributesValues(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setIncludeUserAttributesValues(const std::string& szFilter) const
 {
     return impObj()->setIncludeUserAttributesValues(utf8_to_wstr(szFilter).c_str());
 }
 
-bool PyBrxCvDbPointGroup::setExcludeUserAttributesValues(const std::string& szFilter)
+bool PyBrxCvDbPointGroup::setExcludeUserAttributesValues(const std::string& szFilter) const
 {
     return impObj()->setExcludeUserAttributesValues(utf8_to_wstr(szFilter).c_str());
 }
@@ -669,7 +735,7 @@ bool PyBrxCvDbPointGroup::updateNeeded() const
     return impObj()->updateNeeded();
 }
 
-bool PyBrxCvDbPointGroup::update()
+bool PyBrxCvDbPointGroup::update() const
 {
     return impObj()->update();
 }

@@ -1,18 +1,138 @@
 #include "stdafx.h"
+#include "PyCmColorBase.h"
 
 using namespace boost::python;
 
-
 //----------------------------------------------------------------------------------------------------
 //wrapper
-std::string AcCmColorToString(const AcCmColor& s)
+
+#include <string>
+#include <tuple>
+#include <cctype>
+#include <stdexcept>
+#include <sstream>
+#include <iomanip>
+
+// Helper to ensure the number is always 2 digits (e.g., 5 -> "05")
+static std::string intToHexStr(int value)
+{
+    std::stringstream ss;
+    ss << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << value;
+    return ss.str();
+}
+
+// Function to convert RGB to HTML color string
+std::string rgbToHex(int r, int g, int b)
+{
+    // Validate input range
+    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255)
+    {
+        PyThrowBadEs(eInvalidInput);
+    }
+    return "#" + intToHexStr(r) + intToHexStr(g) + intToHexStr(b);
+}
+
+
+// Helper function to convert a single hex character to its integer value
+// e.g., 'F' -> 15, 'a' -> 10
+static int hexCharToInt(char c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return -1; // Invalid character
+}
+
+// Function to convert HTML color string to RGB
+std::tuple<int, int, int> hexToRGB(const std::string& hexString)
+{
+    // 1. Check if the string starts with '#'
+    if (hexString.empty() || hexString[0] != '#')
+    {
+        PyThrowBadEs(eInvalidInput);
+    }
+
+    // 2. Check length (6 digits for standard RGB, 3 digits for shorthand like #FFF)
+    size_t length = hexString.length();
+    if (length != 7 && length != 4)
+    {
+        PyThrowBadEs(eInvalidInput);
+    }
+
+    // 3. Extract the hex digits
+    std::string digits = hexString.substr(1);
+
+    // 4. Convert to integers
+    int r, g, b;
+
+    if (length == 7)
+    {
+        // Standard format: #RRGGBB
+        int r1 = hexCharToInt(digits[0]);
+        int r2 = hexCharToInt(digits[1]);
+        int g1 = hexCharToInt(digits[2]);
+        int g2 = hexCharToInt(digits[3]);
+        int b1 = hexCharToInt(digits[4]);
+        int b2 = hexCharToInt(digits[5]);
+
+        if (r1 == -1 || r2 == -1 || g1 == -1 || g2 == -1 || b1 == -1 || b2 == -1)
+        {
+            PyThrowBadEs(eInvalidInput);
+        }
+
+        r = r1 * 16 + r2;
+        g = g1 * 16 + g2;
+        b = b1 * 16 + b2;
+    }
+    else
+    {
+        // Shorthand format: #RGB
+        int r1 = hexCharToInt(digits[0]);
+        int g1 = hexCharToInt(digits[1]);
+        int b1 = hexCharToInt(digits[2]);
+
+        if (r1 == -1 || g1 == -1 || b1 == -1)
+        {
+            PyThrowBadEs(eInvalidInput);
+        }
+
+        r = r1 * 17; // 16 + 1
+        g = g1 * 17;
+        b = b1 * 17;
+    }
+    return std::make_tuple(r, g, b);
+}
+
+static boost::shared_ptr<AcCmColor> AcCmColorFromStringCtor(const std::string& htmlColor)
+{
+    auto [r, g, b] = hexToRGB(htmlColor);
+    boost::shared_ptr<AcCmColor> pcolor(new AcCmColor());
+    pcolor->setRGB(r, g, b);
+    return pcolor;
+}
+
+static boost::shared_ptr<AcCmColor> AcCmColorFromRgbCtor(int r, int g, int b)
+{
+    boost::shared_ptr<AcCmColor> pcolor(new AcCmColor());
+    pcolor->setRGB(r, g, b);
+    return pcolor;
+}
+
+static boost::shared_ptr<AcCmColor> AcCmColorFromIndexCtor(Adesk::UInt16 val)
+{
+    boost::shared_ptr<AcCmColor> pcolor(new AcCmColor());
+    pcolor->setColorIndex(val);
+    return pcolor;
+}
+
+static std::string AcCmColorToString(const AcCmColor& s)
 {
     if (s.isByACI())
         return std::format("({})", s.colorIndex());
     return std::format("({},{},{})", s.red(), s.green(), s.blue());
 }
 
-std::string AcCmColorRepr(const AcCmColor& s)
+static std::string AcCmColorRepr(const AcCmColor& s)
 {
     if (s.isByACI())
         return std::format("{}.Color({})", PyDbNamespace, s.colorIndex());
@@ -28,11 +148,28 @@ static bool AcCmColorNotEqualsOperator(const AcCmColor& left, const AcCmColor& r
     return left != right;
 }
 
+static std::string AcCmColorRGBToHex(const AcCmColor& left)
+{
+    return rgbToHex(left.red(), left.green(), left.blue());
+}
+
+static void FromAcCmColorFromString(AcCmColor& left, const std::string& htmlColor)
+{
+    auto [r, g, b] = hexToRGB(htmlColor);
+    left.setRGB(r, g, b);
+}
+
 void makePyCmColorWrapper()
 {
-    PyDocString DS("PyDb.Color");
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- htmlColor: str\n"
+        "- colorIndex: int\n"
+        "- red: int, green: int, blue: int\n";
+
+    PyDocString DS("Color");
     class_<AcCmColor>("Color")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.CTOR(ctords, 826)))
 #if defined(_ZRXTARGET) && (_ZRXTARGET > 240)
         .def("setNone", &AcCmColor::setNone, DS.ARGS())
         .def("setByBlock", &AcCmColor::setByBlock, DS.ARGS())
@@ -66,6 +203,13 @@ void makePyCmColorWrapper()
         .def("penIndex", &AcCmColor::penIndex, DS.ARGS())
         .def("setPenIndex", &AcCmColor::setPenIndex, DS.ARGS({ "val : int" }))
         .def("entityColor", &AcCmColor::entityColor, DS.ARGS())
+        .def("toHTMLColor", &AcCmColorRGBToHex, DS.ARGS())
+        .def("fromHTMLColor", &FromAcCmColorFromString, DS.ARGS({ "colorString: str" }))
+
+        //ctor
+        .def("__init__", make_constructor(&AcCmColorFromStringCtor))
+        .def("__init__", make_constructor(&AcCmColorFromRgbCtor))
+        .def("__init__", make_constructor(&AcCmColorFromIndexCtor))
         //operators
         .def("__eq__", &AcCmColorEqualsOperator)
         .def("__ne__", &AcCmColorNotEqualsOperator)
@@ -78,7 +222,7 @@ void makePyCmColorWrapper()
 //AcCmTransparency no conversion, so we don't need a py wrapper
 void makePyCmTransparencyWrapper()
 {
-    PyDocString DS("PyDb.Transparency");
+    PyDocString DS("Transparency");
     class_<AcCmTransparency>("Transparency")
         .def(init<Adesk::UInt8>())
         .def(init<double>(DS.ARGS({ "alpha : int|float" })))
@@ -89,11 +233,12 @@ void makePyCmTransparencyWrapper()
         .def("isByAlpha", &AcCmTransparency::isByAlpha, DS.ARGS())
         .def("isByBlock", &AcCmTransparency::isByBlock, DS.ARGS())
         .def("isByLayer", &AcCmTransparency::isByLayer, DS.ARGS())
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
         .def("isInvalid", &AcCmTransparency::isInvalid, DS.ARGS())
 #endif
         .def("isClear", &AcCmTransparency::isClear, DS.ARGS())
         .def("isSolid", &AcCmTransparency::isSolid, DS.ARGS())
+        .def("setMethod", &AcCmTransparency::setMethod, DS.ARGS({ "method: PyDb.TransparencyMethod" }))
         //operators
         .def("__eq__", &AcCmTransparency::operator==)
         .def("__ne__", &AcCmTransparency::operator!=)
@@ -109,37 +254,68 @@ void makePyCmTransparencyWrapper()
 
 //--------------------------------------------------------------------------------------------------------
 //AcCmEntityColor no conversion, so we don't need a py wrapper
-std::string AcCmEntityColorToString(const AcCmEntityColor& s)
+
+static boost::shared_ptr<AcCmEntityColor> AcCmEntityColorFromStringCtor(const std::string& htmlColor)
+{
+    auto [r, g, b] = hexToRGB(htmlColor);
+    return boost::shared_ptr<AcCmEntityColor>(new AcCmEntityColor(r, g, b));
+}
+
+static boost::shared_ptr<AcCmEntityColor> AcCmEntityColorFromIndexCtor(Adesk::UInt16 val)
+{
+    boost::shared_ptr<AcCmEntityColor> pcolor(new AcCmEntityColor());
+    pcolor->setColorIndex(val);
+    return pcolor;
+}
+
+static std::string AcCmEntityColorToString(const AcCmEntityColor& s)
 {
     if (s.isByACI())
         return std::format("({})", s.colorIndex());
     return std::format("({},{},{})", s.red(), s.green(), s.blue());
 }
 
-std::string AcCmEntityColorRepr(const AcCmEntityColor& s)
+static std::string AcCmEntityColorRepr(const AcCmEntityColor& s)
 {
     if (s.isByACI())
         return std::format("{}.EntityColor({})", PyDbNamespace, s.colorIndex());
     return std::format("{}.EntityColor({},{},{})", PyDbNamespace, s.red(), s.green(), s.blue());
 }
 
+static std::string AcCmEntityColorRGBToHex(const AcCmEntityColor& left)
+{
+    return rgbToHex(left.red(), left.green(), left.blue());
+}
+
+static void AcCmEntityColorFromString(AcCmEntityColor& left, const std::string& htmlColor)
+{
+    auto [r, g, b] = hexToRGB(htmlColor);
+    left.setRGB(r, g, b);
+}
+
 void makePyCmEntityColorWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- htmlColor: str\n"
+        "- colorIndex: int\n"
+        "- red: int, green: int, blue: int\n";
+
     constexpr const std::string_view setRgbOverloads = "Overloads:\n"
         "- rgbquad: int\n"
         "- r: int, g: int, b: int\n";
 
-    PyDocString DS("PyDb.EntityColor");
+    PyDocString DS("EntityColor");
     class_<AcCmEntityColor>("EntityColor")
-        .def(init<Adesk::UInt8, Adesk::UInt8, Adesk::UInt8>(DS.ARGS({ "r: int","g: int","b: int" })))
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+        .def(init<Adesk::UInt8, Adesk::UInt8, Adesk::UInt8>(DS.CTOR(ctords)))
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
         .def<Acad::ErrorStatus(AcCmEntityColor::*)(AcCmEntityColor::ColorMethod)>("setColorMethod", &AcCmEntityColor::setColorMethod)
         .def<AcCmEntityColor::ColorMethod(AcCmEntityColor::*)()const>("colorMethod", &AcCmEntityColor::colorMethod)
         .def<Acad::ErrorStatus(AcCmEntityColor::*)(Adesk::UInt32)>("setColor", &AcCmEntityColor::setColor)
         .def<Adesk::UInt32(AcCmEntityColor::*)()const>("color", &AcCmEntityColor::color)
         .def<Acad::ErrorStatus(AcCmEntityColor::*)(Adesk::Int16)>("setColorIndex", &AcCmEntityColor::setColorIndex)
         .def<Adesk::Int16(AcCmEntityColor::*)()const>("colorIndex", &AcCmEntityColor::colorIndex)
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
         .def<Acad::ErrorStatus(AcCmEntityColor::*)(Adesk::Int32)>("setLayerIndex", &AcCmEntityColor::setLayerIndex)
         .def<Adesk::Int32(AcCmEntityColor::*)()const>("layerIndex", &AcCmEntityColor::layerIndex)
 #endif
@@ -163,13 +339,13 @@ void makePyCmEntityColorWrapper()
         .def<bool(AcCmEntityColor::*)()const>("isNone", &AcCmEntityColor::isNone)
         .def<bool(AcCmEntityColor::*)()const>("isLayerFrozenOrOff", &AcCmEntityColor::isLayerFrozenOrOff)
         .def<Adesk::UInt32(AcCmEntityColor::*)()const>("trueColor", &AcCmEntityColor::trueColor)
-       
+
 #if defined(_GRXTARGET) && (_ZRXTARGET > 240)
         .def<Adesk::UInt8(AcCmEntityColor::*)()const>("trueColorMethod", &AcCmEntityColor::trueColorMethod)
         .def<Acad::ErrorStatus(AcCmEntityColor::*)()>("setTrueColor", &AcCmEntityColor::setTrueColor)
         .def<Acad::ErrorStatus(AcCmEntityColor::*)()>("setTrueColorMethod", &AcCmEntityColor::setTrueColorMethod)
 #endif
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
         .def("makeTrueColor", &AcCmEntityColor::makeTrueColor, DS.ARGS())
 #endif
 #else
@@ -220,6 +396,10 @@ void makePyCmEntityColorWrapper()
         .def("white", &AcCmEntityColor::white, DS.SARGS()).staticmethod("white")
         .def("black", &AcCmEntityColor::black, DS.SARGS()).staticmethod("black")
 #endif
+        .def("toHTMLColor", &AcCmEntityColorRGBToHex, DS.ARGS())
+        .def("fromHTMLColor", &AcCmEntityColorFromString, DS.ARGS({ "colorString: str" }))
+        .def("__init__", make_constructor(&AcCmEntityColorFromStringCtor))
+        .def("__init__", make_constructor(&AcCmEntityColorFromIndexCtor))
         .def("__eq__", &AcCmEntityColor::operator==)
         .def("__ne__", &AcCmEntityColor::operator!=)
         ;

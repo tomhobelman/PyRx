@@ -8,7 +8,7 @@ void makePyGeClipBoundary2dWrapper();
 
 class PyGeClipBoundary2d : public PyGeEntity2d
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 public:
     PyGeClipBoundary2d();
     PyGeClipBoundary2d(AcGeEntity2d* pEnt);
@@ -16,6 +16,10 @@ public:
     PyGeClipBoundary2d(const boost::python::list& clipBoundary); //TODO: make test
     PyGeClipBoundary2d(const AcGeClipBoundary2d& src); //TODO test!
     virtual ~PyGeClipBoundary2d() override = default;
+    void set1(const AcGePoint2d& cornerA, const AcGePoint2d& cornerB) const;
+    void set2(const boost::python::list& clipBoundary) const;
+    boost::python::tuple clipPolygon(const boost::python::list& rawVertices) const;
+    boost::python::tuple clipPolyline(const boost::python::list& rawVertices) const;
     static PyGeClipBoundary2d cast(const PyGeEntity2d& src);
     static PyGeClipBoundary2d copycast(const PyGeEntity2d& src);
     static std::string className();
@@ -23,5 +27,11 @@ public:
     AcGeClipBoundary2d* impObj() const;
 #endif
 };
+
+
+bool clipLineSeg2d(AcGeLineSeg2d& outSeg, const AcGeLineSeg2d& seg, const AcDbExtents2d& extents, const AcGeTol& tol = AcGeContext::gTol);
+bool clipLineSeg2d(AcGeLineSeg2d& outSeg, const AcGeLineSeg2d& seg, const AcGeBoundBlock2d& extents, const AcGeTol& tol = AcGeContext::gTol);
+bool clipCircArc2d(AcArray<AcGeCircArc2d>& outArcs, const AcGeCircArc2d& arc, const AcDbExtents2d& extents, const AcGeTol& tol = AcGeContext::gTol);
+bool clipCircArc2d(AcArray<AcGeCircArc2d>& outArcs, const AcGeCircArc2d& arc, const AcGeBoundBlock2d& extents, const AcGeTol& tol = AcGeContext::gTol);
 
 #pragma pack (pop)

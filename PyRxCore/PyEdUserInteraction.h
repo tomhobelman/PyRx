@@ -18,7 +18,7 @@ public:
     ~PySysVarImpl(void);
     void detach(bool flag);
     void set(const std::string& name, const boost::python::object& obj);
-    void clear();
+    void clear() const;
 };
 
 class PySysVar
@@ -33,25 +33,45 @@ private:
 };
 
 //-----------------------------------------------------------------------------------------
+// AutoAfxModuleState
+class AutoAfxModuleState
+{
+public:
+    AutoAfxModuleState()
+        : m_pPrevState(AfxSetModuleState(AfxGetAppModuleState()))
+    {
+    }
+    ~AutoAfxModuleState()
+    {
+        if (m_pPrevState != nullptr)
+            AfxSetModuleState(m_pPrevState);
+    }
+private:
+    AFX_MODULE_STATE* m_pPrevState = nullptr;
+};
+
+//-----------------------------------------------------------------------------------------
 // PyEdUserInteraction
 void makePyEdUserInteractionWrapper();
 class PyEdUserInteraction
 {
     HWND m_activeWindow;
     std::vector<HWND> m_wnds;
+    AutoAfxModuleState m_state;
 public:
     PyEdUserInteraction();
     PyEdUserInteraction(PyApDocument& pDocument, bool prompting);
     PyEdUserInteraction(AcApDocument* pDocument, bool prompting);
     ~PyEdUserInteraction(void);
 protected:
-    void userInteraction(AcApDocument* pDocument, bool prompting);
-    void undoUserInteraction();
+    void beginUserInteraction(AcApDocument* pDocument, bool prompting);
+    void endUserInteraction();
 };
 
 //-----------------------------------------------------------------------------------------
 // PyEdUIContext
 void makePyEdUIContextWrapper();
+
 class PyEdUIContext : AcEdUIContext, public boost::python::wrapper<PyEdUIContext>
 {
 public:
@@ -61,6 +81,7 @@ public:
 public:
     PyEdUIContext();
     virtual ~PyEdUIContext() override;
+
     virtual void* getMenuContext(const AcRxClass* pClass, const AcDbObjectIdArray& ids);
     virtual void  onCommand(Adesk::UInt32 cmd);
     virtual void  OnUpdateMenu();
@@ -69,7 +90,7 @@ public:
     boost::python::object getMenuContextWr(const PyRxClass& pyclass, const boost::python::list& pyids);
     void    onCommandWr(Adesk::UInt32);
     void    OnUpdateMenuWr();
-    void    calcHitPoint();
+    void    calcHitPoint() const;
 
     static bool addObjectContextMenu(PyRxClass& pClass, PyEdUIContext& pContext);
     static bool removeObjectContextMenu(PyRxClass& pClass, PyEdUIContext& pContext);
@@ -77,4 +98,6 @@ public:
     static bool addDefaultContextMenu2(PyEdUIContext& pContext, const std::string& appName);
     static bool removeDefaultContextMenu(PyEdUIContext& pContext);
 };
+
+
 #pragma pack (pop)

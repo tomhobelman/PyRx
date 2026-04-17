@@ -1,13 +1,9 @@
-from pyrx_imp import Rx
-from pyrx_imp import Ge
-from pyrx_imp import Gi
-from pyrx_imp import Db
-from pyrx_imp import Ap
-from pyrx_imp import Ed
-from pyrx_imp import Gs
 import traceback
 
 import numpy as np
+
+from pyrx import Ap, Db, Ed, Ge
+
 
 def calcCentroid2d(pnts):
     polypnts = np.array(pnts, dtype=np.float64)
@@ -16,7 +12,8 @@ def calcCentroid2d(pnts):
     centroids = (polypnts + polygon) / 3.0
     return np.average(centroids, axis=0, weights=signed_areas)
     
-def PyRxCmd_doit():
+@Ap.Command()
+def doit():
     try:
         filter = [(Db.DxfCode.kDxfStart, "point")]
         ss = Ed.Editor.selectPrompt("\nSelect item", "\nRemove item",filter)

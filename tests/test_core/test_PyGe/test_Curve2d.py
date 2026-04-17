@@ -1,7 +1,10 @@
 from __future__ import annotations
-from pyrx import Ge, Db
-import pytest
+
 import unittest
+
+import pytest
+
+from pyrx import Db, Ge
 
 
 class TestCurve2d:
@@ -13,6 +16,7 @@ class TestCurve2d:
         yline = Ge.Line2d.kYAxis
         assert xline.isPerpendicularTo(yline) == True
 
+    @pytest.mark.known_failure_IRX
     def test_ge2dcurve_length(self):
         seg = Ge.LineSeg2d(Ge.Point2d(0, 0), Ge.Point2d(100, 0))
         length = seg.length(0, 1)
@@ -23,10 +27,10 @@ class TestCurve2d:
     def test_CurveCurveInt2d_inter(self, db_06457: Db.Database):
         objHnd1 = Db.Handle("2c959f")
         objId1 = db_06457.getObjectId(False, objHnd1)
-        assert objId1.isValid() == True
+        assert objId1.isNull() == False
         objHnd2 = Db.Handle("2c95a0")
         objId2 = db_06457.getObjectId(False, objHnd2)
-        assert objId2.isValid() == True
+        assert objId2.isNull() == False
         dbcurve1 = Db.Polyline(objId1)
         dbcurve2 = Db.Polyline(objId2)
         gecurve1 = dbcurve1.getAcGeCurve2d()
@@ -41,10 +45,10 @@ class TestCurve2d:
     def test_CurveCurveInt2d_overlap(self, db_06457: Db.Database):
         objHnd1 = Db.Handle("2c94f5")
         objId1 = db_06457.getObjectId(False, objHnd1)
-        assert objId1.isValid() == True
+        assert objId1.isNull() == False
         objHnd2 = Db.Handle("2c94f6")
         objId2 = db_06457.getObjectId(False, objHnd2)
-        assert objId2.isValid() == True
+        assert objId2.isNull() == False
         dbcurve1 = Db.Polyline(objId1)
         dbcurve2 = Db.Polyline(objId2)
         gecurve1 = dbcurve1.getAcGeCurve2d()

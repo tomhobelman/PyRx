@@ -1,49 +1,51 @@
-import wx
 import os
 import sys
-import debugpy
 import traceback
 
-#pip install debugpy
-#https://github.com/microsoft/debugpy/wiki
+import debugpy
+import wx
+
+# pip install debugpy
+# https://github.com/microsoft/debugpy/wiki
+
 
 def testListener():
     try:
         if debugpy.is_client_connected():
-            print("dubugger is conected...")
+            print("debugger is connected...")
         else:
-            print("dubugger not connected...")
+            print("debugger not connected...")
     except Exception as err:
         traceback.print_exception(err)
 
 
-def startListener():
+def startListener(host="127.0.0.1", port=5678, *, quit: bool = False):
     try:
-        result = wx.MessageDialog(
-            None,
-            "This will start the debug Listener for the session"
-            + "\n"
-            + "Now is a good time to run your debugger from vs code:",
-            "Confirm",
-            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
-        ).ShowModal()
+        if not quit:
+            result = wx.MessageDialog(
+                None,
+                "This will start the debug Listener for the session"
+                + "\n"
+                + "Now is a good time to run your debugger from vs code:",
+                "Confirm",
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+            ).ShowModal()
 
-        if result != wx.ID_YES:
-            return
+            if result != wx.ID_YES:
+                return
 
-        #config
-        DEBUG_HOST = "127.0.0.1"
-        DEBUG_PORT = 5678
+        # config
         PYTHON_PATH = sys.base_prefix + "\\python.exe"
-        
+
         os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
         debugpy.configure(python=PYTHON_PATH)
-        debugpy.listen((DEBUG_HOST, DEBUG_PORT))
-        debugpy.wait_for_client()
-        print("dubugger running...")
-        
+        debugpy.listen((host, port))
+        if not quit:
+            print(f"debugger running on {host}:{port} ...")
+
     except Exception as err:
         traceback.print_exception(err)
+
 
 # sample config
 #  {

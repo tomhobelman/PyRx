@@ -11,7 +11,7 @@ using namespace boost::python;
 //NOTE curve1, curve2 are not overloads
 void makePyGeCurveCurveInt2dWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
         "- curve1: PyGe.Curve2d, curve2: PyGe.Curve2d\n"
@@ -25,7 +25,7 @@ void makePyGeCurveCurveInt2dWrapper()
         .def(init<const PyGeCurve2d&, const PyGeCurve2d&>())
         .def(init<const PyGeCurve2d&, const PyGeCurve2d&, const AcGeTol&>())
         .def(init<const PyGeCurve2d&, const PyGeCurve2d&, const PyGeInterval&, const PyGeInterval&>())
-        .def(init<const PyGeCurve2d&, const PyGeCurve2d&, const PyGeInterval&, const PyGeInterval&, const AcGeTol&>(DS.CTOR(ctor)))
+        .def(init<const PyGeCurve2d&, const PyGeCurve2d&, const PyGeInterval&, const PyGeInterval&, const AcGeTol&>(DS.CTOR(ctor, 11889)))
         .def("curve1", &PyGeCurveCurveInt2d::curve1, DS.ARGS())//not overload
         .def("curve2", &PyGeCurveCurveInt2d::curve2, DS.ARGS())//not overload
         .def("getIntRanges", &PyGeCurveCurveInt2d::getIntRanges, DS.ARGS())
@@ -52,7 +52,7 @@ void makePyGeCurveCurveInt2dWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeCurveCurveInt2d::PyGeCurveCurveInt2d()
     : PyGeEntity2d(new AcGeCurveCurveInt2d())
 {
@@ -188,17 +188,17 @@ boost::python::tuple PyGeCurveCurveInt2d::getOverlapRanges(int overlapNum) const
     return boost::python::make_tuple(range1, range2);
 }
 
-void PyGeCurveCurveInt2d::changeCurveOrder()
+void PyGeCurveCurveInt2d::changeCurveOrder() const
 {
     return impObj()->changeCurveOrder();
 }
 
-PyGeCurveCurveInt2d PyGeCurveCurveInt2d::orderWrt1()
+PyGeCurveCurveInt2d PyGeCurveCurveInt2d::orderWrt1() const
 {
     return PyGeCurveCurveInt2d(impObj()->orderWrt1());
 }
 
-PyGeCurveCurveInt2d PyGeCurveCurveInt2d::orderWrt2()
+PyGeCurveCurveInt2d PyGeCurveCurveInt2d::orderWrt2() const
 {
     return PyGeCurveCurveInt2d(impObj()->orderWrt2());
 }

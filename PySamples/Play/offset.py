@@ -1,14 +1,9 @@
-from pyrx_imp import Rx
-from pyrx_imp import Ge
-from pyrx_imp import Gi
-from pyrx_imp import Db
-from pyrx_imp import Ap
-from pyrx_imp import Ed
-from pyrx_imp import Gs
+from pyrx import Ap, Db, Ed
 
 RSG_NONULL = 1
 
-def PyRxCmd_pydoit():
+@Ap.Command()
+def pyoffset():
     try:
         doc = Ap.Application().docManager().curDocument()
         ed = doc.editor()

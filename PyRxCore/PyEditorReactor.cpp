@@ -14,7 +14,7 @@ void makePyEditorReactorWrapper()
         "- dbTo: PyDb.Database, xform: PyGe.Matrix3d, dbFrom: PyDb.Database\n\n";
 
     PyDocString DS("EditorReactor");
-    class_<PyEditorReactor>("EditorReactor")
+    class_<PyEditorReactor, boost::noncopyable>("EditorReactor")
         .def(init<>(DS.ARGS()))
         .def("addReactor", &PyEditorReactor::addReactor, DS.ARGS())
         .def("removeReactor", &PyEditorReactor::removeReactor, DS.ARGS())
@@ -635,7 +635,7 @@ void PyEditorReactor::xrefSubcommandUnloadItem(AcDbDatabase* pHost, int activity
     xrefSubcommandUnloadItemWr(host, activity, id);
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 void PyEditorReactor::undoSubcommandAuto(int activity, bool state)
 {
     if (reg_undoSubcommandAuto == false)
@@ -725,7 +725,7 @@ void PyEditorReactor::dwgViewResized(Adesk::LongPtr hwndDwgView)
     dwgViewResizedWr(hwndDwgView);
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 void PyEditorReactor::fullRegenEnded(AcDbDatabase* pDb, const AcDbIntArray& regenedViewports)
 {
     if (reg_fullRegenEnded == false)
@@ -771,7 +771,7 @@ void PyEditorReactor::beginRightClick(const AcGePoint3d& clickPoint)
     beginRightClickWr(clickPoint);
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 void PyEditorReactor::toolbarBitmapSizeWillChange(bool bLarge)
 {
     if (reg_toolbarBitmapSizeWillChange == false)
@@ -781,7 +781,7 @@ void PyEditorReactor::toolbarBitmapSizeWillChange(bool bLarge)
 }
 #endif
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 void PyEditorReactor::toolbarBitmapSizeChanged(bool bLarge)
 {
     if (reg_toolbarBitmapSizeChanged == false)
@@ -848,7 +848,7 @@ void PyEditorReactor::docCloseWillStart(AcDbDatabase* pDwg)
     docCloseWillStartWr(dwg);
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 void PyEditorReactor::beginCloseAll()
 {
     if (reg_beginCloseAll == false)
@@ -923,7 +923,7 @@ void PyEditorReactor::viewChanged()
     viewChangedWr();
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 void PyEditorReactor::fullRegenWillStart(AcDbDatabase* pDb)
 {
     if (reg_fullRegenWillStart == false)
@@ -2328,4 +2328,3 @@ void PyEditorReactor::fullRegenWillStartWr(PyDbDatabase& pDb)
         printExceptionMsg();
     }
 }
-

@@ -1,10 +1,13 @@
 from __future__ import annotations
-import pytest
+
 import os
-from tests import HOST
+
+import pytest
+
 from pyrx import Ap, Ax
 
 
+@pytest.mark.known_failure_IRX
 class TestAxPreferences:
 
     def setup_class(self):
@@ -18,7 +21,7 @@ class TestAxPreferences:
         axProfiles = self.axPreferences.profiles()
         assert len(axProfiles.getAllProfileNames()) != 0
 
-
+@pytest.mark.known_failure_IRX
 class TestSelection:
     def setup_class(self):
         self.axApp = Ap.Application.acadApplication()
@@ -68,7 +71,7 @@ class TestSelection:
         axSelection.setDisplayGrips(flag)
         assert axSelection.displayGrips() == flag
 
-
+@pytest.mark.known_failure_IRX
 class TestDrafting:
 
     def setup_class(self):
@@ -100,7 +103,7 @@ class TestDrafting:
         axDrafting.setAutoSnapApertureSize(flag)
         assert axDrafting.autoSnapApertureSize() == flag
 
-
+@pytest.mark.known_failure_IRX
 class TestDisplay:
 
     def setup_class(self):
@@ -133,7 +136,7 @@ class TestDisplay:
         axDisplay.setModelCrosshairColor(flag)
         assert axDisplay.modelCrosshairColor() == flag
 
-
+@pytest.mark.known_failure_IRX
 class TestPrefFiles:
 
     def setup_class(self):

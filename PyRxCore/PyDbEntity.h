@@ -29,7 +29,8 @@ public:
     void                setColorIndex2(Adesk::UInt16 color, Adesk::Boolean doSubents) const;
     AcCmEntityColor     entityColor() const;
     AcCmTransparency    transparency() const;
-    void                setTransparency(const AcCmTransparency& trans, Adesk::Boolean doSubents) const;
+    void                setTransparency1(const AcCmTransparency& trans) const;
+    void                setTransparency2(const AcCmTransparency& trans, Adesk::Boolean doSubents) const;
     std::string         layer() const;
     PyDbObjectId        layerId() const;
     void                setLayer1(const std::string& newVal) const;
@@ -99,6 +100,9 @@ public:
     boost::python::list getSubentPathsAtGsMarker2(AcDb::SubentType type, Adesk::GsMarker gsMark, const AcGePoint3d& pickPoint, const AcGeMatrix3d& viewXform, int numInserts, PyDbObjectId& entAndInsertStack) const;
     void                highlight1() const;
     void                highlight2(const PyDbFullSubentPath& subId, const Adesk::Boolean highlightAll)const;
+#if !defined (_BRXTARGET260)
+    void                pushHighlight(const PyDbFullSubentPath& subId, AcGiHighlightStyle highlightStyle)const;
+#endif
     PyDbEntity          subentPtr(const PyDbFullSubentPath& subId) const;
     static std::string  className();
     static PyRxClass    desc();
@@ -132,9 +136,10 @@ void makePyDbBlockBeginWrapper();
 class PyDbBlockBegin : public PyDbEntity
 {
 public:
-    PyDbBlockBegin(AcDbBlockBegin* ptr, bool autoDelete);
+    PyDbBlockBegin();
     PyDbBlockBegin(const PyDbObjectId& id);
     PyDbBlockBegin(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbBlockBegin(AcDbBlockBegin* ptr, bool autoDelete);
     virtual ~PyDbBlockBegin() = default;
     static std::string      className();
     static PyRxClass        desc();
@@ -150,9 +155,10 @@ void makePyDbBlockEndWrapper();
 class PyDbBlockEnd : public PyDbEntity
 {
 public:
-    PyDbBlockEnd(AcDbBlockEnd* ptr, bool autoDelete);
+    PyDbBlockEnd();
     PyDbBlockEnd(const PyDbObjectId& id);
     PyDbBlockEnd(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbBlockEnd(AcDbBlockEnd* ptr, bool autoDelete);
     virtual ~PyDbBlockEnd() = default;
     static std::string      className();
     static PyRxClass        desc();
@@ -168,9 +174,10 @@ void makePyDbSequenceEndWrapper();
 class PyDbSequenceEnd : public PyDbEntity
 {
 public:
-    PyDbSequenceEnd(AcDbSequenceEnd* ptr, bool autoDelete);
+    PyDbSequenceEnd();
     PyDbSequenceEnd(const PyDbObjectId& id);
     PyDbSequenceEnd(const PyDbObjectId& id, AcDb::OpenMode mode);
+    PyDbSequenceEnd(AcDbSequenceEnd* ptr, bool autoDelete);
     virtual ~PyDbSequenceEnd() = default;
     static std::string      className();
     static PyRxClass        desc();
@@ -223,7 +230,6 @@ inline boost::python::list SubentIdArrayToPyList(const AcArray<AcDbSubentId>& su
         pylist.append(PyDbSubentId(item));
     return pylist;
 }
-
 
 //-------------------------------------------------------------------------------------------------------------
 //PyDbFullSubentPath

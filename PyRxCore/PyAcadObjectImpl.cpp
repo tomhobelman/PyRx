@@ -31,7 +31,7 @@ HRESULT AcDbObjectIdArrayToVariant(VARIANT& var, const AcDbObjectIdArray& ids)
     return InitVariantFromInt64Array(data.data(), data.size(), &var);
 }
 
-HRESULT VariantToDoubleArray(VARIANT& var, std::vector<double>& ids)
+HRESULT VariantToDoubleArray(VARIANT& var, std::vector<double>& vec)
 {
     ULONG pcElem = 0;
     double* prgn = nullptr;
@@ -40,13 +40,13 @@ HRESULT VariantToDoubleArray(VARIANT& var, std::vector<double>& ids)
     {
         std::span<double>data(prgn, pcElem);
         for (auto item : data)
-            ids.push_back(item);
+            vec.push_back(item);
         CoTaskMemFree(prgn);
     }
     return hr;
 }
 
-HRESULT VariantToLongArray(VARIANT& var, std::vector<long>& ids)
+HRESULT VariantToLongArray(VARIANT& var, std::vector<long>& vec)
 {
     ULONG pcElem = 0;
     long* prgn = nullptr;
@@ -55,13 +55,13 @@ HRESULT VariantToLongArray(VARIANT& var, std::vector<long>& ids)
     {
         std::span<long>data(prgn, pcElem);
         for (auto item : data)
-            ids.push_back(item);
+            vec.push_back(item);
         CoTaskMemFree(prgn);
     }
     return hr;
 }
 
-HRESULT VariantToInt32Array(VARIANT& var, std::vector<int32_t>& ids)
+HRESULT VariantToInt32Array(VARIANT& var, std::vector<int32_t>& vec)
 {
     ULONG pcElem = 0;
     long* prgn = nullptr;
@@ -70,13 +70,13 @@ HRESULT VariantToInt32Array(VARIANT& var, std::vector<int32_t>& ids)
     {
         std::span<long>data(prgn, pcElem);
         for (auto item : data)
-            ids.push_back(int32_t(item));
+            vec.push_back(int32_t(item));
         CoTaskMemFree(prgn);
     }
     return hr;
 }
 
-HRESULT VariantToInt16Array(VARIANT& var, std::vector<int16_t>& ids)
+HRESULT VariantToInt16Array(VARIANT& var, std::vector<int16_t>& vec)
 {
     ULONG pcElem = 0;
     short* prgn = nullptr;
@@ -85,16 +85,16 @@ HRESULT VariantToInt16Array(VARIANT& var, std::vector<int16_t>& ids)
     {
         std::span<short>data(prgn, pcElem);
         for (auto item : data)
-            ids.push_back(int16_t(item));
+            vec.push_back(int16_t(item));
         CoTaskMemFree(prgn);
     }
     return hr;
 }
 
 
-HRESULT DoubleArrayToVariant(VARIANT& var, const std::vector<double>& ids)
+HRESULT DoubleArrayToVariant(VARIANT& var, const std::vector<double>& vec)
 {
-    return InitVariantFromDoubleArray(ids.data(), ids.size(), &var);
+    return InitVariantFromDoubleArray(vec.data(), vec.size(), &var);
 }
 
 HRESULT VariantToAcGePoint2d(VARIANT& var, AcGePoint2d& val)
@@ -167,7 +167,7 @@ HRESULT VariantToAcGePoint2ds(const VARIANT& var, std::vector<AcGePoint2d>& poin
     {
         CComSafeArray<double> sa;
         sa.Attach(var.parray);
-        auto numItems = sa.GetCount();
+        const auto numItems = sa.GetCount();
         for (int idx = 1; idx < numItems; idx += 2)
             points.emplace_back(AcGePoint2d{ sa[idx - 1], sa[idx] });
         sa.Detach();
@@ -185,7 +185,7 @@ HRESULT VariantToAcGePoint3ds(const VARIANT& var, std::vector<AcGePoint3d>& poin
     {
         CComSafeArray<double> sa;
         sa.Attach(var.parray);
-        auto numItems = sa.GetCount();
+        const auto numItems = sa.GetCount();
         for (int idx = 2; idx < numItems; idx += 3)
             points.emplace_back(AcGePoint3d{ sa[idx - 2], sa[idx - 1], sa[idx] });
         sa.Detach();
@@ -216,7 +216,7 @@ HRESULT VariantToAcGeVector3ds(const VARIANT& var, std::vector<AcGeVector3d>& po
     {
         CComSafeArray<double> sa;
         sa.Attach(var.parray);
-        auto numItems = sa.GetCount();
+        const auto numItems = sa.GetCount();
         for (int idx = 2; idx < numItems; idx += 3)
             points.emplace_back(AcGeVector3d{ sa[idx - 2], sa[idx - 1], sa[idx] });
         sa.Detach();
@@ -234,7 +234,7 @@ HRESULT VariantToPyIAcadEntityPtrArray(const VARIANT& vtents, PyIAcadEntityPtrAr
     {
         CComSafeArray<VARIANT> sa;
         sa.Attach(vtents.parray);
-        auto numEnts = sa.GetCount();
+        const auto numEnts = sa.GetCount();
         for (int idx = 0; idx < numEnts; idx++)
         {
             const VARIANT& item = sa[idx];
@@ -246,7 +246,7 @@ HRESULT VariantToPyIAcadEntityPtrArray(const VARIANT& vtents, PyIAcadEntityPtrAr
     {
         CComSafeArray<IDispatch*> sa;
         sa.Attach(vtents.parray);
-        auto numEnts = sa.GetCount();
+        const auto numEnts = sa.GetCount();
         for (int idx = 0; idx < numEnts; idx++)
             vec.emplace_back(std::make_shared<PyIAcadEntityImpl>((IAcadEntity*)sa[idx].p));
         sa.Detach();
@@ -274,7 +274,7 @@ HRESULT VariantToPyIAcadAttributeRefPtrArray(const VARIANT& vtents, PyIAcadAttri
     {
         CComSafeArray<VARIANT> sa;
         sa.Attach(vtents.parray);
-        auto numEnts = sa.GetCount();
+        const auto numEnts = sa.GetCount();
         for (int idx = 0; idx < numEnts; idx++)
         {
             const VARIANT& item = sa[idx];
@@ -286,7 +286,7 @@ HRESULT VariantToPyIAcadAttributeRefPtrArray(const VARIANT& vtents, PyIAcadAttri
     {
         CComSafeArray<IDispatch*> sa;
         sa.Attach(vtents.parray);
-        auto numEnts = sa.GetCount();
+        const auto numEnts = sa.GetCount();
         for (int idx = 0; idx < numEnts; idx++)
             vec.emplace_back(std::make_shared<PyIAcadAttributeReferenceImpl>((IAcadAttributeReference*)sa[idx].p));
         sa.Detach();
@@ -304,7 +304,7 @@ HRESULT VariantToPyIAcadDynRefPropertyPtrArray(const VARIANT& vtents, PyIAcadDyn
     {
         CComSafeArray<VARIANT> sa;
         sa.Attach(vtents.parray);
-        auto numEnts = sa.GetCount();
+        const auto numEnts = sa.GetCount();
         for (int idx = 0; idx < numEnts; idx++)
         {
             const VARIANT& item = sa[idx];
@@ -316,7 +316,7 @@ HRESULT VariantToPyIAcadDynRefPropertyPtrArray(const VARIANT& vtents, PyIAcadDyn
     {
         CComSafeArray<IDispatch*> sa;
         sa.Attach(vtents.parray);
-        auto numEnts = sa.GetCount();
+        const auto numEnts = sa.GetCount();
         for (int idx = 0; idx < numEnts; idx++)
             vec.emplace_back(std::make_shared<PyIAcadDynamicBlockReferencePropertyImpl>((IAcadDynamicBlockReferenceProperty*)sa[idx].p));
         sa.Detach();
@@ -1599,7 +1599,7 @@ CString PyIAcadPreferencesFilesImpl::GetMenuFile() const
 
 void PyIAcadPreferencesFilesImpl::SetEnterpriseMenuFile(const CString& val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal{ val };
@@ -1609,7 +1609,7 @@ void PyIAcadPreferencesFilesImpl::SetEnterpriseMenuFile(const CString& val) cons
 
 CString PyIAcadPreferencesFilesImpl::GetEnterpriseMenuFile() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal;
@@ -1620,7 +1620,7 @@ CString PyIAcadPreferencesFilesImpl::GetEnterpriseMenuFile() const
 
 void PyIAcadPreferencesFilesImpl::SetCustomIconPath(const CString& val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal{ val };
@@ -1630,7 +1630,7 @@ void PyIAcadPreferencesFilesImpl::SetCustomIconPath(const CString& val) const
 
 CString PyIAcadPreferencesFilesImpl::GetCustomIconPath() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal;
@@ -2014,7 +2014,7 @@ CString PyIAcadPreferencesFilesImpl::GetQNewTemplateFile() const
 
 void PyIAcadPreferencesFilesImpl::SetPlotLogFilePath(const CString& val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal{ val };
@@ -2024,7 +2024,7 @@ void PyIAcadPreferencesFilesImpl::SetPlotLogFilePath(const CString& val) const
 
 CString PyIAcadPreferencesFilesImpl::GetPlotLogFilePath() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal;
@@ -2035,7 +2035,7 @@ CString PyIAcadPreferencesFilesImpl::GetPlotLogFilePath() const
 
 void PyIAcadPreferencesFilesImpl::SetPageSetupOverridesTemplateFile(const CString& val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal{ val };
@@ -2045,7 +2045,7 @@ void PyIAcadPreferencesFilesImpl::SetPageSetupOverridesTemplateFile(const CStrin
 
 CString PyIAcadPreferencesFilesImpl::GetPageSetupOverridesTemplateFile() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal;
@@ -2056,7 +2056,7 @@ CString PyIAcadPreferencesFilesImpl::GetPageSetupOverridesTemplateFile() const
 
 void PyIAcadPreferencesFilesImpl::SetActiveInvProject(const CString& val) const
 {
-#if defined(_GRXTARGET250) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET250) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal{ val };
@@ -2066,7 +2066,7 @@ void PyIAcadPreferencesFilesImpl::SetActiveInvProject(const CString& val) const
 
 CString PyIAcadPreferencesFilesImpl::GetActiveInvProject() const
 {
-#if defined(_GRXTARGET250) || defined(_BRXTARGET250)
+#if defined(_GRXTARGET250) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal;
@@ -2768,7 +2768,7 @@ CString PyIAcadPreferencesOutputImpl::GetDefaultPlotStyleForLayer() const
 
 void PyIAcadPreferencesOutputImpl::SetContinuousPlotLog(bool val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadHr(impObj()->put_ContinuousPlotLog(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -2777,7 +2777,7 @@ void PyIAcadPreferencesOutputImpl::SetContinuousPlotLog(bool val) const
 
 bool PyIAcadPreferencesOutputImpl::GetContinuousPlotLog() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -2788,7 +2788,7 @@ bool PyIAcadPreferencesOutputImpl::GetContinuousPlotLog() const
 
 void PyIAcadPreferencesOutputImpl::SetAutomaticPlotLog(bool val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadHr(impObj()->put_AutomaticPlotLog(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -2797,7 +2797,7 @@ void PyIAcadPreferencesOutputImpl::SetAutomaticPlotLog(bool val) const
 
 bool PyIAcadPreferencesOutputImpl::GetAutomaticPlotLog() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -2808,7 +2808,7 @@ bool PyIAcadPreferencesOutputImpl::GetAutomaticPlotLog() const
 
 void PyIAcadPreferencesOutputImpl::SetDefaultPlotToFilePath(const CString& val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal{ val };
@@ -2818,7 +2818,7 @@ void PyIAcadPreferencesOutputImpl::SetDefaultPlotToFilePath(const CString& val) 
 
 CString PyIAcadPreferencesOutputImpl::GetDefaultPlotToFilePath() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     _bstr_t bstrVal;
@@ -3322,7 +3322,7 @@ long PyIAcadPreferencesSelectionImpl::GetPickBoxSize() const
 
 void PyIAcadPreferencesSelectionImpl::SetDisplayGrips(bool val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     PyThrowBadHr(impObj()->put_DisplayGrips(val ? 1 : 0));
 #else
     PyThrowBadHr(impObj()->put_DisplayGrips(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -3331,7 +3331,7 @@ void PyIAcadPreferencesSelectionImpl::SetDisplayGrips(bool val) const
 
 bool PyIAcadPreferencesSelectionImpl::GetDisplayGrips() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     long rtVal = 0;
     PyThrowBadHr(impObj()->get_DisplayGrips(&rtVal));
     return rtVal != 0;
@@ -3380,8 +3380,8 @@ PyAcColor PyIAcadPreferencesSelectionImpl::GetGripColorUnselected() const
 
 void PyIAcadPreferencesSelectionImpl::SetGripSize(long val) const
 {
-#if defined(_ARXTARGET250)
-    resbuf rb;
+#if defined(_ARXTARGET260)
+    resbuf rb{};
     rb.restype = RTSHORT;
     rb.resval.rint = val;
     PyThrowBadRt(acedSetVar(L"GRIPSIZE", &rb));
@@ -3392,8 +3392,8 @@ void PyIAcadPreferencesSelectionImpl::SetGripSize(long val) const
 
 long PyIAcadPreferencesSelectionImpl::GetGripSize() const
 {
-#if defined(_ARXTARGET250)
-    resbuf rb;
+#if defined(_ARXTARGET260)
+    resbuf rb{};
     PyThrowBadRt(acedGetVar(L"GRIPSIZE", &rb));
     return rb.resval.rint;
 #else
@@ -3779,7 +3779,7 @@ bool PyIAcadDynamicBlockReferencePropertyImpl::GetShow() const
     VARIANT_BOOL rtVal = VARIANT_FALSE;
 #if defined(_ZRXTARGET)
     PyThrowBadHr(impObj()->get_show(&rtVal));
-#elif defined(_GRXTARGET)
+#elif defined(_GRXTARGET250)
     PyThrowBadHr(impObj()->get_Show(&rtVal));
 #elif defined(_BRXTARGET)
     PyThrowBadHr(impObj()->get_Show(&rtVal));

@@ -6,7 +6,7 @@ using namespace boost::python;
 
 void makePyGeKnotVectorWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
         "- size: int, growSize: int\n"
@@ -23,7 +23,7 @@ void makePyGeKnotVectorWrapper()
         .def(init<>())
         .def(init<int, int>())
         .def(init<const boost::python::list&>())
-        .def(init<int, const PyGeKnotVector&>(DS.CTOR(ctor)))
+        .def(init<int, const PyGeKnotVector&>(DS.CTOR(ctor, 12188)))
         .def("isEqualTo", &PyGeKnotVector::isEqualTo, DS.ARGS({ "other: PyGe.KnotVector" }))
         .def("startParam", &PyGeKnotVector::startParam, DS.ARGS())
         .def("endParam", &PyGeKnotVector::endParam, DS.ARGS())
@@ -60,7 +60,7 @@ void makePyGeKnotVectorWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeKnotVector::PyGeKnotVector()
     : m_imp()
 {

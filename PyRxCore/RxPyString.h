@@ -1,5 +1,10 @@
 #pragma once
 
+//- Declare it as an extern here so that it becomes available in all modules
+// PyRxAppSettings.cpp;
+_locale_t& pyrx_locale();
+
+
 #if defined (_MSC_PLATFORM_TOOLSET) && _MSC_PLATFORM_TOOLSET <= 142
 template <class... _Args>
 using ac_Fmt_string = std::_Basic_format_string<wchar_t, std::type_identity_t<_Args>...>;
@@ -27,22 +32,133 @@ constexpr void acprintnl(const std::wformat_string<_Types...> _Fmt, _Types&&... 
 }
 #endif
 
-constexpr inline std::wstring& towlower(std::wstring& s) noexcept {
+//-----------------------------------------------------------------------------------------
+//CString toupper
+inline CString& towupper(CString& s) noexcept {
+    for (size_t idx = 0; idx < s.GetLength(); idx++)
+        s.SetAt(idx, _towupper_l(s.GetAt(idx), pyrx_locale()));
+    return s;
+}
+
+inline CString towupper(const CString& s) noexcept {
+    CString buffer{ s };
+    for (size_t idx = 0; idx < buffer.GetLength(); idx++)
+        buffer.SetAt(idx, _towupper_l(buffer.GetAt(idx), pyrx_locale()));
+    return buffer;
+}
+
+//-----------------------------------------------------------------------------------------
+//CString tolower
+inline CString& towlower(CString& s) noexcept {
+    for (size_t idx = 0; idx < s.GetLength(); idx++)
+        s.SetAt(idx, _towlower_l(s.GetAt(idx), pyrx_locale()));
+    return s;
+}
+
+inline CString towlower(const CString& s) noexcept {
+    CString buffer{ s };
+    for (size_t idx = 0; idx < buffer.GetLength(); idx++)
+        buffer.SetAt(idx, _towlower_l(buffer.GetAt(idx), pyrx_locale()));
+    return buffer;
+}
+
+//-----------------------------------------------------------------------------------------
+//AcString toupper
+inline AcString& towupper(AcString& s) noexcept {
+    for (size_t idx = 0; idx < s.length(); idx++)
+        s.setAt(idx, _towupper_l(s.getAt(idx), pyrx_locale()));
+    return s;
+}
+
+inline AcString towupper(const AcString& s) noexcept {
+
+    AcString buffer{ s };
+    for (size_t idx = 0; idx < buffer.length(); idx++)
+        buffer.setAt(idx, _towupper_l(buffer.getAt(idx), pyrx_locale()));
+    return buffer;
+}
+
+//-----------------------------------------------------------------------------------------
+//AcString tolower
+inline AcString& towlower(AcString& s) noexcept {
+    for (size_t idx = 0; idx < s.length(); idx++)
+        s.setAt(idx, _towlower_l(s.getAt(idx), pyrx_locale()));
+    return s;
+}
+
+inline AcString towlower(const AcString& s) noexcept {
+
+    AcString buffer{ s };
+    for (size_t idx = 0; idx < buffer.length(); idx++)
+        buffer.setAt(idx, _towlower_l(buffer.getAt(idx), pyrx_locale()));
+    return buffer;
+}
+
+//-----------------------------------------------------------------------------------------
+//wstring toupper
+inline std::wstring& towupper(std::wstring& s) noexcept {
     std::transform(s.begin(), s.end(), s.begin(),
-        [](wchar_t c) { return std::towlower(c); });
+        [&](wchar_t c) { return _towupper_l(c, pyrx_locale()); });
+    return s;
+}
+
+inline std::wstring towupper(const std::wstring& s) noexcept {
+
+    std::wstring buffer{ s };
+    std::transform(buffer.begin(), buffer.end(), buffer.begin(),
+        [&](wchar_t c) { return _towupper_l(c, pyrx_locale()); });
+    return buffer;
+}
+
+//-----------------------------------------------------------------------------------------
+//wstring tolower
+inline std::wstring& towlower(std::wstring& s) noexcept {
+    std::transform(s.begin(), s.end(), s.begin(),
+        [&](wchar_t c) { return _towlower_l(c, pyrx_locale()); });
     return s;
 }
 
 inline std::wstring towlower(const std::wstring& s) noexcept {
     std::wstring buffer{ s };
     std::transform(buffer.begin(), buffer.end(), buffer.begin(),
-        [](wchar_t c) { return std::towlower(c); });
+        [&](wchar_t c) { return _towlower_l(c, pyrx_locale()); });
     return buffer;
 }
 
 inline std::filesystem::path towlower(const std::filesystem::path& s) noexcept {
     std::wstring buffer{ s };
     return std::filesystem::path{ towlower(buffer) };
+}
+
+//-----------------------------------------------------------------------------------------
+//string toupper
+inline std::string& toupper(std::string& s) noexcept {
+    std::transform(s.begin(), s.end(), s.begin(),
+        [&](wchar_t c) { return _toupper_l(c, pyrx_locale()); });
+    return s;
+}
+
+inline std::string toupper(const std::string& s) noexcept {
+
+    std::string buffer{ s };
+    std::transform(buffer.begin(), buffer.end(), buffer.begin(),
+        [&](wchar_t c) { return _toupper_l(c, pyrx_locale()); });
+    return buffer;
+}
+
+//-----------------------------------------------------------------------------------------
+//string tolower
+inline std::string& tolower(std::string& s) noexcept {
+    std::transform(s.begin(), s.end(), s.begin(),
+        [&](wchar_t c) { return _tolower_l(c, pyrx_locale()); });
+    return s;
+}
+
+inline std::string tolower(const std::string& s) noexcept {
+    std::string buffer{ s };
+    std::transform(buffer.begin(), buffer.end(), buffer.begin(),
+        [&](wchar_t c) { return _tolower_l(c, pyrx_locale()); });
+    return buffer;
 }
 
 constexpr inline void ltrim(std::string& s, char chr) noexcept {
@@ -111,48 +227,70 @@ constexpr inline std::wstring trim_copy(std::wstring s, wchar_t chr) noexcept {
     return s;
 }
 
-inline bool iCompare(const std::string& a, const std::string& b) noexcept
+inline bool icompare(const std::wstring& l, const std::wstring& r, const _locale_t& lc = pyrx_locale())
 {
-    return _stricmp(a.c_str(), b.c_str()) == 0;
+    if (l.size() != r.size())
+    {
+        return false;
+    }
+    for (size_t idx = 0; idx < l.size(); idx++)
+    {
+        if (_towlower_l(l[idx], lc) != _towlower_l(r[idx], lc))
+            return false;
+    }
+    return true;
 }
 
-inline bool iCompare(const std::wstring& a, const std::wstring& b) noexcept
+inline bool icompare(const std::string& l, const std::string& r, const _locale_t& lc = pyrx_locale())
 {
-    return _wcsicmp(a.c_str(), b.c_str()) == 0;
+    if (l.size() != r.size())
+    {
+        return false;
+    }
+    for (size_t idx = 0; idx < l.size(); idx++)
+    {
+        if (_tolower_l(l[idx], lc) != _tolower_l(r[idx], lc))
+            return false;
+    }
+    return true;
 }
 
-[[nodiscard]] inline std::wstring utf8_to_wstr(const char* str8) noexcept {
+[[nodiscard]] inline std::wstring utf8_to_wstr(const std::string& str)
+{
+    if (str.empty())
+        return {};
+    const int count = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+    if (count <= 0)
+        return {};
+    std::wstring wstr(count, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), wstr.data(), count);
+    return wstr;
+}
+
+[[nodiscard]] inline std::wstring utf8_to_wstr(const char* str8)
+{
     if (str8 == nullptr)
-        return std::wstring{};
-    const std::string str{ str8 };
-    const int count = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), NULL, 0);
-    std::wstring wstr(count, 0);
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), &wstr[0], count);
-    return wstr;
+        return {};
+    return utf8_to_wstr(std::string{ str8 });
 }
 
-[[nodiscard]] inline std::wstring utf8_to_wstr(const std::string& str) noexcept {
-    const int count = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), NULL, 0);
-    std::wstring wstr(count, 0);
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), &wstr[0], count);
-    return wstr;
-}
-
-[[nodiscard]] inline std::string wstr_to_utf8(const std::wstring& wstr) noexcept {
-    const int count = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), wstr.length(), NULL, 0, NULL, NULL);
-    std::string str(count, 0);
-    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &str[0], count, NULL, NULL);
+[[nodiscard]] inline std::string wstr_to_utf8(const std::wstring& wstr)
+{
+    if (wstr.empty())
+        return {};
+    const int count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+    if (count <= 0)
+        return {};
+    std::string str(count, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), str.data(), count, nullptr, nullptr);
     return str;
 }
 
-[[nodiscard]] inline std::string wstr_to_utf8(const wchar_t* utf16wc) noexcept {
+[[nodiscard]] inline std::string wstr_to_utf8(const wchar_t* utf16wc)
+{
     if (utf16wc == nullptr)
-        return std::string{};
-    const std::wstring wstr{ utf16wc };
-    const int count = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), wstr.length(), NULL, 0, NULL, NULL);
-    std::string str(count, 0);
-    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &str[0], count, NULL, NULL);
-    return str;
+        return {};
+    return wstr_to_utf8(std::wstring{ utf16wc });
 }
 
 template <typename Out>
@@ -250,6 +388,33 @@ inline PyObject* acstr_to_py(const AcString& str)
     return PyUnicode_FromWideChar(str.constPtr(), str.length());
 }
 
+inline std::string PyUnicode_AsString(PyObject* my_unicode_object)
+{
+    Py_ssize_t size = 0;
+    const char* data = PyUnicode_AsUTF8AndSize(my_unicode_object, &size);
+    if (data != NULL)
+        return std::string(data, size);
+    return std::string{};
+}
+
+inline std::wstring PyUnicode_AsWString(PyObject* my_unicode_object)
+{
+    Py_ssize_t size = 0;
+    const wchar_t* data = PyUnicode_AsWideCharString(my_unicode_object, &size);
+    if (data != NULL)
+        return std::wstring(data, size);
+    return std::wstring{};
+}
+
+inline AcString PyUnicode_AsAcString(PyObject* my_unicode_object)
+{
+    Py_ssize_t size = 0;
+    const wchar_t* data = PyUnicode_AsWideCharString(my_unicode_object, &size);
+    if (data != NULL && size)
+        return AcString(data);
+    return AcString{};
+}
+
 //use for functions that have not been converted to AcString
 class RxAutoOutStr
 {
@@ -280,7 +445,7 @@ struct std::hash<std::filesystem::path>
 };
 #endif
 
-#if defined _ARXTARGET240 || ( _BRXTARGET )  || ( _GRXTARGET ) || ( _ZRXTARGET )
+#if defined _ARXTARGET240 || ( _BRXTARGET )  || ( _GRXTARGET250 ) || ( _ZRXTARGET ) || (_IRXTARGET140)
 template <>
 struct std::hash<AcString>
 {

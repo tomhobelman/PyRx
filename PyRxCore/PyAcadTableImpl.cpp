@@ -288,7 +288,7 @@ bool PyIAcadTableImpl::GetCellBackgroundColorNone(int row, int col) const
 
 void PyIAcadTableImpl::SetCellBackgroundColorNone(int row, int col, bool val) const
 {
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     PyThrowBadHr(impObj()->SetCellBackgroundColorNone(row, col, val ? VARIANT_TRUE : VARIANT_FALSE));
 #else
     VARIANT_BOOL vtval = val ? VARIANT_TRUE : VARIANT_FALSE;
@@ -343,15 +343,28 @@ PyAcRowType PyIAcadTableImpl::GetRowType(int row) const
 
 CString PyIAcadTableImpl::GetText(int row, int col) const
 {
+#ifdef _IRXTARGET140
+    AcAxDocLock lock;
+    AcDbObjectPointer<AcDbTable> pTable(id());
+    CString val = pTable->textString(row, col);
+    return val;
+#else
     _bstr_t bstrVal;
     PyThrowBadHr(impObj()->GetText(row, col, &bstrVal.GetBSTR()));
     return (LPCTSTR)bstrVal;
+#endif
 }
 
 void PyIAcadTableImpl::SetText(int row, int col, const CString& val) const
 {
+#ifdef _IRXTARGET140
+    AcAxDocLock lock;
+    AcDbObjectPointer<AcDbTable> pTable(id(), AcDb::kForWrite);
+    PyThrowBadEs(pTable->setTextString(row, col, val));
+#else
     _bstr_t bstrval{ val };
     PyThrowBadHr(impObj()->SetText(row, col, bstrval));
+#endif
 }
 
 CString PyIAcadTableImpl::GetCellTextStyle(int row, int col) const
@@ -400,7 +413,7 @@ bool PyIAcadTableImpl::GetAutoScale(int row, int col) const
 
 void PyIAcadTableImpl::SetAutoScale(int row, int col, bool val) const
 {
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     PyThrowBadHr(impObj()->SetAutoScale(row, col, val ? VARIANT_TRUE : VARIANT_FALSE));
 #else
     VARIANT_BOOL vtval = val ? VARIANT_TRUE : VARIANT_FALSE;
@@ -579,7 +592,7 @@ boost::python::tuple PyIAcadTableImpl::Select(const AcGePoint3d& wpt, const AcGe
     PyThrowBadHr(AcGePoint3dToVariant(vtwpt.GetVARIANT(), wpt));
     PyThrowBadHr(AcGeVector3dToVariant(vtwvwVec.GetVARIANT(), wvwVec));
     PyThrowBadHr(AcGeVector3dToVariant(vtwvwxVec.GetVARIANT(), wvwxVec));
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     _variant_t paths; //ignore?
     PyThrowBadHr(impObj()->Select(vtwpt, vtwvwVec, vtwvwxVec, wxaper, wyaper, allowOutside ? VARIANT_TRUE : VARIANT_FALSE, &rtRow, &rtcol, &paths.GetVARIANT()));
 #else
@@ -603,7 +616,7 @@ boost::python::tuple PyIAcadTableImpl::SelectSubRegion(const AcGePoint3d& wpt1, 
     PyThrowBadHr(AcGePoint3dToVariant(vtwpt2.GetVARIANT(), wpt2));
     PyThrowBadHr(AcGeVector3dToVariant(vtwvwVec.GetVARIANT(), wvwVec));
     PyThrowBadHr(AcGeVector3dToVariant(vtwvwxVec.GetVARIANT(), wvwxVec));
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     _variant_t paths; //ignore?
     PyThrowBadHr(impObj()->SelectSubRegion(vtwpt1, vtwpt2, vtwvwVec, vtwvwxVec, (AcSelectType)seltype, bIncludeCurrent ? VARIANT_TRUE : VARIANT_FALSE, &rowMin, &rowMax, &colMin, &colMax, &paths.GetVARIANT()));
 #else
@@ -614,7 +627,7 @@ boost::python::tuple PyIAcadTableImpl::SelectSubRegion(const AcGePoint3d& wpt1, 
 
 void PyIAcadTableImpl::ReselectSubRegion() const
 {
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     _variant_t paths; //ignore?
     PyThrowBadHr(impObj()->ReselectSubRegion(&paths.GetVARIANT()));
 #else
@@ -706,14 +719,8 @@ AcValue PyIAcadTableImpl::GetCellValue(int row, int col) const
 #endif 
 }
 
-void PyIAcadTableImpl::SetCellValue(int row, int col, const AcValue& acVal) const
+static void AcValueToVariant(const AcValue& acVal, _variant_t& varVal)
 {
-    //TODO: TEST
-    _variant_t varVal = {};
-#ifdef _ARXTARGET
-    if (!acVal.get(varVal.GetVARIANT()))
-        PyThrowBadEs(eInvalidInput);
-#else
     switch (acVal.dataType())
     {
         case AcValue::kLong:
@@ -737,6 +744,16 @@ void PyIAcadTableImpl::SetCellValue(int row, int col, const AcValue& acVal) cons
         default:
             PyThrowBadEs(eInvalidInput);
     }
+}
+
+void PyIAcadTableImpl::SetCellValue(int row, int col, const AcValue& acVal) const
+{
+    _variant_t varVal = {};
+#ifdef _ARXTARGET
+    if (!acVal.get(varVal.GetVARIANT()))
+        PyThrowBadEs(eInvalidInput);
+#else
+    AcValueToVariant(acVal, varVal);
 #endif 
     PyThrowBadHr(impObj()->SetCellValue(row, col, varVal));
 }
@@ -754,7 +771,7 @@ void PyIAcadTableImpl::ResetCellValue(int row, int col) const
 
 bool PyIAcadTableImpl::IsEmpty(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -765,7 +782,7 @@ bool PyIAcadTableImpl::IsEmpty(int row, int col) const
 
 int PyIAcadTableImpl::CreateContent(int row, int col, int nIndex) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     int rtval = 0;
@@ -776,7 +793,7 @@ int PyIAcadTableImpl::CreateContent(int row, int col, int nIndex) const
 
 void PyIAcadTableImpl::MoveContent(int row, int col, int nFromIndex, int nToIndex) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->MoveContent(row, col, nFromIndex, nToIndex));
@@ -785,7 +802,7 @@ void PyIAcadTableImpl::MoveContent(int row, int col, int nFromIndex, int nToInde
 
 void PyIAcadTableImpl::DeleteContent(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->DeleteContent(row, col));
@@ -809,7 +826,7 @@ void PyIAcadTableImpl::SetSubSelection(int minRow, int maxRow, int minCol, int m
 
 AcValue PyIAcadTableImpl::GetValue(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _variant_t varVal;
@@ -839,38 +856,15 @@ AcValue PyIAcadTableImpl::GetValue(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetValue(int row, int col, int nContent, const AcValue& acVal) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
-    //TODO: TEST
     _variant_t varVal = {};
 #ifdef _ARXTARGET
     if (!acVal.get(varVal.GetVARIANT()))
         PyThrowBadEs(eInvalidInput);
 #else
-    switch (acVal.dataType())
-    {
-        case AcValue::kLong:
-        {
-            Adesk::Int32 val = acVal;
-            varVal = _variant_t(int32_t(val));
-        }
-        break;
-        case AcValue::kDouble:
-        {
-            double val = acVal;
-            varVal = _variant_t(val);
-        }
-        break;
-        case AcValue::kString:
-        {
-            const wchar_t* val = acVal;
-            varVal = _variant_t(val);
-        }
-        break;
-        default:
-            PyThrowBadEs(eInvalidInput);
-    }
+    AcValueToVariant(acVal, varVal);
 #endif 
     PyThrowBadHr(impObj()->SetValue(row, col, nContent, varVal));
 #endif 
@@ -878,7 +872,7 @@ void PyIAcadTableImpl::SetValue(int row, int col, int nContent, const AcValue& a
 
 void PyIAcadTableImpl::SetValueFromText(int row, int col, int nContent, const CString& val, PyAcParseOption nOption) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -888,7 +882,7 @@ void PyIAcadTableImpl::SetValueFromText(int row, int col, int nContent, const CS
 
 CString PyIAcadTableImpl::GetDataFormat(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -899,7 +893,7 @@ CString PyIAcadTableImpl::GetDataFormat(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetDataFormat(int row, int col, int nContent, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -909,7 +903,7 @@ void PyIAcadTableImpl::SetDataFormat(int row, int col, int nContent, const CStri
 
 CString PyIAcadTableImpl::GetTextString(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -920,7 +914,7 @@ CString PyIAcadTableImpl::GetTextString(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetTextString(int row, int col, int nContent, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -930,7 +924,7 @@ void PyIAcadTableImpl::SetTextString(int row, int col, int nContent, const CStri
 
 AcDbObjectId PyIAcadTableImpl::GetFieldId2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     LONG_PTR rtval = 0;
@@ -942,7 +936,7 @@ AcDbObjectId PyIAcadTableImpl::GetFieldId2(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetFieldId2(int row, int col, int nContent, const AcDbObjectId& val, PyAcCellOption nflag) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetFieldId2(row, col, nContent, val.asOldId(), (AcCellOption)nflag));
@@ -951,7 +945,7 @@ void PyIAcadTableImpl::SetFieldId2(int row, int col, int nContent, const AcDbObj
 
 AcDbObjectId PyIAcadTableImpl::GetBlockTableRecordId2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     LONG_PTR rtval = 0;
@@ -963,7 +957,7 @@ AcDbObjectId PyIAcadTableImpl::GetBlockTableRecordId2(int row, int col, int nCon
 
 void PyIAcadTableImpl::SetBlockTableRecordId2(int row, int col, int nContent, const AcDbObjectId& val, bool autoScale) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetBlockTableRecordId2(row, col, nContent, val.asOldId(), autoScale ? VARIANT_TRUE : VARIANT_FALSE));
@@ -972,7 +966,7 @@ void PyIAcadTableImpl::SetBlockTableRecordId2(int row, int col, int nContent, co
 
 CString PyIAcadTableImpl::GetBlockAttributeValue2(int row, int col, int nContent, const AcDbObjectId& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -983,7 +977,7 @@ CString PyIAcadTableImpl::GetBlockAttributeValue2(int row, int col, int nContent
 
 void PyIAcadTableImpl::SetBlockAttributeValue2(int row, int col, int nContent, const AcDbObjectId& id, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -993,7 +987,7 @@ void PyIAcadTableImpl::SetBlockAttributeValue2(int row, int col, int nContent, c
 
 AcValue PyIAcadTableImpl::GetCustomData(int row, int col, const CString& key) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _variant_t varVal;
@@ -1024,7 +1018,7 @@ AcValue PyIAcadTableImpl::GetCustomData(int row, int col, const CString& key) co
 
 void PyIAcadTableImpl::SetCustomData(int row, int col, const CString& key, const AcValue& acVal) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _variant_t varVal = {};
@@ -1063,7 +1057,7 @@ void PyIAcadTableImpl::SetCustomData(int row, int col, const CString& key, const
 
 CString PyIAcadTableImpl::GetCellStyle(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -1074,7 +1068,7 @@ CString PyIAcadTableImpl::GetCellStyle(int row, int col) const
 
 void PyIAcadTableImpl::SetCellStyle(int row, int col, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -1084,7 +1078,7 @@ void PyIAcadTableImpl::SetCellStyle(int row, int col, const CString& val) const
 
 PyIAcadAcCmColorPtr PyIAcadTableImpl::GetContentColor2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     IAcadAcCmColor* pColor = nullptr;
@@ -1095,7 +1089,7 @@ PyIAcadAcCmColorPtr PyIAcadTableImpl::GetContentColor2(int row, int col, int nCo
 
 void PyIAcadTableImpl::SetContentColor2(int row, int col, int nContent, const PyIAcadAcCmColorImpl& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetContentColor2(row, col, nContent, val.impObj()));
@@ -1104,7 +1098,7 @@ void PyIAcadTableImpl::SetContentColor2(int row, int col, int nContent, const Py
 
 boost::python::tuple PyIAcadTableImpl::GetDataType2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyAutoLockGIL lock;
@@ -1117,7 +1111,7 @@ boost::python::tuple PyIAcadTableImpl::GetDataType2(int row, int col, int nConte
 
 void PyIAcadTableImpl::SetDataType2(int row, int col, int nContent, PyAcValueDataType dataType, PyAcValueUnitType unitType) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetDataType2(row, col, nContent, (AcValueDataType)dataType, (AcValueUnitType)unitType));
@@ -1126,7 +1120,7 @@ void PyIAcadTableImpl::SetDataType2(int row, int col, int nContent, PyAcValueDat
 
 CString PyIAcadTableImpl::GetTextStyle2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -1137,7 +1131,7 @@ CString PyIAcadTableImpl::GetTextStyle2(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetTextStyle2(int row, int col, int nContent, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -1147,7 +1141,7 @@ void PyIAcadTableImpl::SetTextStyle2(int row, int col, int nContent, const CStri
 
 double PyIAcadTableImpl::GetTextHeight2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1158,7 +1152,7 @@ double PyIAcadTableImpl::GetTextHeight2(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetTextHeight2(int row, int col, int nContent, double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetTextHeight2(row, col, nContent, val));
@@ -1167,7 +1161,7 @@ void PyIAcadTableImpl::SetTextHeight2(int row, int col, int nContent, double val
 
 double PyIAcadTableImpl::GetRotation(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1178,7 +1172,7 @@ double PyIAcadTableImpl::GetRotation(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetRotation(int row, int col, int nContent, double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetRotation(row, col, nContent, val));
@@ -1187,7 +1181,7 @@ void PyIAcadTableImpl::SetRotation(int row, int col, int nContent, double val) c
 
 bool PyIAcadTableImpl::GetAutoScale2(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1198,7 +1192,7 @@ bool PyIAcadTableImpl::GetAutoScale2(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetAutoScale2(int row, int col, int nContent, bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetAutoScale2(row, col, nContent, val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1207,7 +1201,7 @@ void PyIAcadTableImpl::SetAutoScale2(int row, int col, int nContent, bool val) c
 
 double PyIAcadTableImpl::GetScale(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1218,7 +1212,7 @@ double PyIAcadTableImpl::GetScale(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetScale(int row, int col, int nContent, double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetScale(row, col, nContent, val));
@@ -1227,7 +1221,7 @@ void PyIAcadTableImpl::SetScale(int row, int col, int nContent, double val) cons
 
 void PyIAcadTableImpl::RemoveAllOverrides(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->RemoveAllOverrides(row, col));
@@ -1236,7 +1230,7 @@ void PyIAcadTableImpl::RemoveAllOverrides(int row, int col) const
 
 PyAcLineWeight PyIAcadTableImpl::GetGridLineWeight2(int row, int col, PyAcGridLineType lt) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcLineWeight rtVal = (AcLineWeight)PyAcLineWeight::pyacLnWt000;
@@ -1247,7 +1241,7 @@ PyAcLineWeight PyIAcadTableImpl::GetGridLineWeight2(int row, int col, PyAcGridLi
 
 void PyIAcadTableImpl::SetGridLineWeight2(int row, int col, PyAcGridLineType lt, PyAcLineWeight lw) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetGridLineWeight2(row, col, (AcGridLineType)lt, (AcLineWeight)lw));
@@ -1256,7 +1250,7 @@ void PyIAcadTableImpl::SetGridLineWeight2(int row, int col, PyAcGridLineType lt,
 
 AcDbObjectId PyIAcadTableImpl::GetGridLinetype(int row, int col, PyAcGridLineType lt) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     LONG_PTR rtval = 0;
@@ -1268,7 +1262,7 @@ AcDbObjectId PyIAcadTableImpl::GetGridLinetype(int row, int col, PyAcGridLineTyp
 
 void PyIAcadTableImpl::SetGridLinetype(int row, int col, PyAcGridLineType lt, const AcDbObjectId& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetGridLinetype(row, col, (AcGridLineType)lt, val.asOldId()));
@@ -1277,7 +1271,7 @@ void PyIAcadTableImpl::SetGridLinetype(int row, int col, PyAcGridLineType lt, co
 
 PyIAcadAcCmColorPtr PyIAcadTableImpl::GetGridColor2(int row, int col, PyAcGridLineType lt) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     IAcadAcCmColor* pColor = nullptr;
@@ -1288,7 +1282,7 @@ PyIAcadAcCmColorPtr PyIAcadTableImpl::GetGridColor2(int row, int col, PyAcGridLi
 
 void PyIAcadTableImpl::SetGridColor2(int row, int col, PyAcGridLineType lt, const PyIAcadAcCmColorImpl& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetGridColor2(row, col, (AcGridLineType)lt, val.impObj()));
@@ -1297,7 +1291,7 @@ void PyIAcadTableImpl::SetGridColor2(int row, int col, PyAcGridLineType lt, cons
 
 bool PyIAcadTableImpl::GetGridVisibility2(int row, int col, PyAcGridLineType lt) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1308,7 +1302,7 @@ bool PyIAcadTableImpl::GetGridVisibility2(int row, int col, PyAcGridLineType lt)
 
 void PyIAcadTableImpl::SetGridVisibility2(int row, int col, PyAcGridLineType lt, bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetGridVisibility2(row, col, (AcGridLineType)lt, val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1317,7 +1311,7 @@ void PyIAcadTableImpl::SetGridVisibility2(int row, int col, PyAcGridLineType lt,
 
 double PyIAcadTableImpl::GetGridDoubleLineSpacing(int row, int col, PyAcGridLineType lt) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1328,7 +1322,7 @@ double PyIAcadTableImpl::GetGridDoubleLineSpacing(int row, int col, PyAcGridLine
 
 void PyIAcadTableImpl::SetGridDoubleLineSpacing(int row, int col, PyAcGridLineType lt, double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetGridDoubleLineSpacing(row, col, (AcGridLineType)lt, val));
@@ -1337,7 +1331,7 @@ void PyIAcadTableImpl::SetGridDoubleLineSpacing(int row, int col, PyAcGridLineTy
 
 void PyIAcadTableImpl::SetEnableBreak(bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_EnableBreak(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1346,7 +1340,7 @@ void PyIAcadTableImpl::SetEnableBreak(bool val) const
 
 double PyIAcadTableImpl::GetBreakHeight(int nIndex) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1357,7 +1351,7 @@ double PyIAcadTableImpl::GetBreakHeight(int nIndex) const
 
 void PyIAcadTableImpl::SetBreakHeight(int nIndex, double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetBreakHeight(nIndex, val));
@@ -1366,7 +1360,7 @@ void PyIAcadTableImpl::SetBreakHeight(int nIndex, double val) const
 
 PyAcCellContentType PyIAcadTableImpl::GetContentType(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcCellContentType rtVal = (AcCellContentType)PyAcCellContentType::pyacCellContentTypeUnknown;
@@ -1377,7 +1371,7 @@ PyAcCellContentType PyIAcadTableImpl::GetContentType(int row, int col) const
 
 double PyIAcadTableImpl::GetMargin(int row, int col, PyAcCellMargin margin) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1388,7 +1382,7 @@ double PyIAcadTableImpl::GetMargin(int row, int col, PyAcCellMargin margin) cons
 
 void PyIAcadTableImpl::SetMargin(int row, int col, PyAcCellMargin margin, double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetMargin(row, col, (AcCellMargin)margin, val));
@@ -1397,7 +1391,7 @@ void PyIAcadTableImpl::SetMargin(int row, int col, PyAcCellMargin margin, double
 
 PyAcCellContentLayout PyIAcadTableImpl::GetContentLayout(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcCellContentLayout rtVal = (AcCellContentLayout)PyAcCellContentLayout::pyacCellContentLayoutFlow;
@@ -1408,7 +1402,7 @@ PyAcCellContentLayout PyIAcadTableImpl::GetContentLayout(int row, int col) const
 
 void PyIAcadTableImpl::SetContentLayout(int row, int col, PyAcCellContentLayout val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetContentLayout(row, col, (AcCellContentLayout)val));
@@ -1417,7 +1411,7 @@ void PyIAcadTableImpl::SetContentLayout(int row, int col, PyAcCellContentLayout 
 
 PyAcCellProperty PyIAcadTableImpl::GetOverride(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcCellProperty rtVal = (AcCellProperty)PyAcCellProperty::pyacInvalidCellProperty;
@@ -1428,7 +1422,7 @@ PyAcCellProperty PyIAcadTableImpl::GetOverride(int row, int col, int nContent) c
 
 void PyIAcadTableImpl::SetOverride(int row, int col, int nContent, PyAcCellProperty val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetOverride(row, col, nContent, (AcCellProperty)val));
@@ -1437,7 +1431,7 @@ void PyIAcadTableImpl::SetOverride(int row, int col, int nContent, PyAcCellPrope
 
 PyAcGridLineStyle PyIAcadTableImpl::GetGridLineStyle(int row, int col, PyAcGridLineType lt) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcGridLineStyle rtVal = (AcGridLineStyle)PyAcGridLineStyle::pyacGridLineStyleSingle;
@@ -1448,7 +1442,7 @@ PyAcGridLineStyle PyIAcadTableImpl::GetGridLineStyle(int row, int col, PyAcGridL
 
 void PyIAcadTableImpl::SetGridLineStyle(int row, int col, PyAcGridLineType lt, PyAcGridLineStyle val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->SetGridLineStyle(row, col, (AcGridLineType)lt, (AcGridLineStyle)val));
@@ -1457,7 +1451,7 @@ void PyIAcadTableImpl::SetGridLineStyle(int row, int col, PyAcGridLineType lt, P
 
 void PyIAcadTableImpl::InsertRowsAndInherit(int nIndex, int nInheritFrom, int nNumRows) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->InsertRowsAndInherit(nIndex, nInheritFrom, nNumRows));
@@ -1466,7 +1460,7 @@ void PyIAcadTableImpl::InsertRowsAndInherit(int nIndex, int nInheritFrom, int nN
 
 void PyIAcadTableImpl::InsertColumnsAndInherit(int nIndex, int nInheritFrom, int nNumCols) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->InsertColumnsAndInherit(nIndex, nInheritFrom, nNumCols));
@@ -1475,7 +1469,7 @@ void PyIAcadTableImpl::InsertColumnsAndInherit(int nIndex, int nInheritFrom, int
 
 bool PyIAcadTableImpl::GetHasFormula(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1486,7 +1480,7 @@ bool PyIAcadTableImpl::GetHasFormula(int row, int col, int nContent) const
 
 CString PyIAcadTableImpl::GetFormula(int row, int col, int nContent) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -1497,7 +1491,7 @@ CString PyIAcadTableImpl::GetFormula(int row, int col, int nContent) const
 
 void PyIAcadTableImpl::SetFormula(int row, int col, int nContent, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -1507,7 +1501,7 @@ void PyIAcadTableImpl::SetFormula(int row, int col, int nContent, const CString&
 
 bool PyIAcadTableImpl::IsContentEditable(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1518,7 +1512,7 @@ bool PyIAcadTableImpl::IsContentEditable(int row, int col) const
 
 bool PyIAcadTableImpl::IsFormatEditable(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1529,7 +1523,7 @@ bool PyIAcadTableImpl::IsFormatEditable(int row, int col) const
 
 PyAcCellState PyIAcadTableImpl::GetCellState(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcCellState rtVal = (AcCellState)PyAcCellState::pyacCellStateNone;
@@ -1545,7 +1539,7 @@ void PyIAcadTableImpl::SetCellState(int row, int col, PyAcCellState val) const
 
 void PyIAcadTableImpl::EnableMergeAll(int row, int col, bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->EnableMergeAll(row, col, val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1554,7 +1548,7 @@ void PyIAcadTableImpl::EnableMergeAll(int row, int col, bool val) const
 
 bool PyIAcadTableImpl::IsMergeAllEnabled(int row, int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1565,7 +1559,7 @@ bool PyIAcadTableImpl::IsMergeAllEnabled(int row, int col) const
 
 bool PyIAcadTableImpl::GetBreaksEnabled() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1576,7 +1570,7 @@ bool PyIAcadTableImpl::GetBreaksEnabled() const
 
 void PyIAcadTableImpl::SetBreaksEnabled(bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_BreaksEnabled(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1585,7 +1579,7 @@ void PyIAcadTableImpl::SetBreaksEnabled(bool val) const
 
 bool PyIAcadTableImpl::GetRepeatTopLabels() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1596,7 +1590,7 @@ bool PyIAcadTableImpl::GetRepeatTopLabels() const
 
 void PyIAcadTableImpl::SetRepeatTopLabels(bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_RepeatTopLabels(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1605,7 +1599,7 @@ void PyIAcadTableImpl::SetRepeatTopLabels(bool val) const
 
 bool PyIAcadTableImpl::GetRepeatBottomLabels() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1616,7 +1610,7 @@ bool PyIAcadTableImpl::GetRepeatBottomLabels() const
 
 void PyIAcadTableImpl::SetRepeatBottomLabels(bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_RepeatBottomLabels(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1625,7 +1619,7 @@ void PyIAcadTableImpl::SetRepeatBottomLabels(bool val) const
 
 PyAcTableFlowDirection PyIAcadTableImpl::GetTableBreakFlowDirection() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     AcTableFlowDirection rtVal = (AcTableFlowDirection)PyAcTableFlowDirection::pyacTableFlowDownOrUp;
@@ -1636,7 +1630,7 @@ PyAcTableFlowDirection PyIAcadTableImpl::GetTableBreakFlowDirection() const
 
 void PyIAcadTableImpl::SetTableBreakFlowDirection(PyAcTableFlowDirection val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_TableBreakFlowDirection((AcTableFlowDirection)val));
@@ -1645,7 +1639,7 @@ void PyIAcadTableImpl::SetTableBreakFlowDirection(PyAcTableFlowDirection val) co
 
 bool PyIAcadTableImpl::GetAllowManualPositions() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1656,7 +1650,7 @@ bool PyIAcadTableImpl::GetAllowManualPositions() const
 
 void PyIAcadTableImpl::SetAllowManualPositions(bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_AllowManualPositions(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1665,7 +1659,7 @@ void PyIAcadTableImpl::SetAllowManualPositions(bool val) const
 
 bool PyIAcadTableImpl::GetAllowManualHeights() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -1676,7 +1670,7 @@ bool PyIAcadTableImpl::GetAllowManualHeights() const
 
 void PyIAcadTableImpl::SetAllowManualHeights(bool val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_AllowManualHeights(val ? VARIANT_TRUE : VARIANT_FALSE));
@@ -1685,7 +1679,7 @@ void PyIAcadTableImpl::SetAllowManualHeights(bool val) const
 
 double PyIAcadTableImpl::GetTableBreakHeight() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1696,7 +1690,7 @@ double PyIAcadTableImpl::GetTableBreakHeight() const
 
 void PyIAcadTableImpl::SetTableBreakHeight(double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_TableBreakHeight(val));
@@ -1705,7 +1699,7 @@ void PyIAcadTableImpl::SetTableBreakHeight(double val) const
 
 double PyIAcadTableImpl::GetBreakSpacing() const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     double rtval = 0.0;
@@ -1716,7 +1710,7 @@ double PyIAcadTableImpl::GetBreakSpacing() const
 
 void PyIAcadTableImpl::SetBreakSpacing(double val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_BreakSpacing(val));
@@ -1725,7 +1719,7 @@ void PyIAcadTableImpl::SetBreakSpacing(double val) const
 
 CString PyIAcadTableImpl::GetColumnName(int col) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrVal;
@@ -1736,7 +1730,7 @@ CString PyIAcadTableImpl::GetColumnName(int col) const
 
 void PyIAcadTableImpl::SetColumnName(int col, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };
@@ -1746,7 +1740,7 @@ void PyIAcadTableImpl::SetColumnName(int col, const CString& val) const
 
 void PyIAcadTableImpl::SetToolTip(int row, int col, const CString& val) const
 {
-#ifdef _GRXTARGET250
+#ifdef _GRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     _bstr_t bstrval{ val };

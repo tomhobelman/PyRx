@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "PyDbSymbolTableRecord.h"
-#include "PyDbEntity.h"
 #include "PyDbObjectContext.h"
 #include "PyGsView.h"
+#include "PyDbEnts.h"
 
 #include <wx/mstream.h>
 using namespace boost::python;
@@ -10,6 +10,11 @@ using namespace boost::python;
 #if defined(_BRXTARGET) && _BRXTARGET >= 250
 #include "AcDb/AcDbEvalGraph.h"
 #endif
+
+#if defined(_BRXTARGET)
+#include "AcConstraints3d.h"
+#endif
+
 //---------------------------------------------------------------------------------------- -
 // PyDbSymbolTableRecord  wrapper
 void makePyDbSymbolTableRecordWrapper()
@@ -17,7 +22,8 @@ void makePyDbSymbolTableRecordWrapper()
     PyDocString DS("SymbolTableRecord");
     class_<PyDbSymbolTableRecord, bases<PyDbObject>>("SymbolTableRecord", boost::python::no_init)
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
         .def("getName", &PyDbSymbolTableRecord::getName, DS.ARGS(9062))
         .def("setName", &PyDbSymbolTableRecord::setName, DS.ARGS({ "name: str" }, 9068))
         .def("isDependent", &PyDbSymbolTableRecord::isDependent, DS.ARGS(9064))
@@ -38,13 +44,18 @@ PyDbSymbolTableRecord::PyDbSymbolTableRecord(AcDbSymbolTableRecord* ptr, bool au
 {
 }
 
+PyDbSymbolTableRecord::PyDbSymbolTableRecord(const PyDbObjectId& id)
+    : PyDbObject(openAcDbObject<AcDbSymbolTableRecord>(id), false)
+{
+}
+
 PyDbSymbolTableRecord::PyDbSymbolTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbObject(openAcDbObject<AcDbSymbolTableRecord>(id, mode), false)
 {
 }
 
-PyDbSymbolTableRecord::PyDbSymbolTableRecord(const PyDbObjectId& id)
-    : PyDbSymbolTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbSymbolTableRecord::PyDbSymbolTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbObject(openAcDbObject<AcDbSymbolTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -74,7 +85,7 @@ bool PyDbSymbolTableRecord::isResolved() const
 
 bool PyDbSymbolTableRecord::isRenamable() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isRenamable();
@@ -125,12 +136,18 @@ AcDbSymbolTableRecord* PyDbSymbolTableRecord::impObj(const std::source_location&
 // PyDbDimStyleTableRecord 
 void makePyDbDimStyleTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("DimStyleTableRecord");
     class_<PyDbDimStyleTableRecord, bases<PyDbSymbolTableRecord>>("DimStyleTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
-
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 4030)))
         .def("arrowId", &PyDbDimStyleTableRecord::arrowId, DS.ARGS({ "val: PyDb.DimArrowFlags" }))
         .def("dimadec", &PyDbDimStyleTableRecord::dimadec, DS.ARGS())
         .def("dimalt", &PyDbDimStyleTableRecord::dimalt, DS.ARGS())
@@ -312,13 +329,18 @@ PyDbDimStyleTableRecord::PyDbDimStyleTableRecord(AcDbDimStyleTableRecord* ptr, b
 {
 }
 
+PyDbDimStyleTableRecord::PyDbDimStyleTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbDimStyleTableRecord>(id), false)
+{
+}
+
 PyDbDimStyleTableRecord::PyDbDimStyleTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbDimStyleTableRecord>(id, mode), false)
 {
 }
 
-PyDbDimStyleTableRecord::PyDbDimStyleTableRecord(const PyDbObjectId& id)
-    : PyDbDimStyleTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbDimStyleTableRecord::PyDbDimStyleTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbDimStyleTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -854,7 +876,7 @@ void PyDbDimStyleTableRecord::setDimfxlen(double v) const
 
 bool PyDbDimStyleTableRecord::isModifiedForRecompute() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isModifiedForRecompute();
@@ -1180,7 +1202,8 @@ void makePyDbAbstractViewTableRecordWrapper()
     PyDocString DS("AbstractViewTableRecord");
     class_<PyDbAbstractViewTableRecord, bases<PyDbSymbolTableRecord>>("AbstractViewTableRecord", boost::python::no_init)
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" }, 1349)))
         .def("centerPoint", &PyDbAbstractViewTableRecord::centerPoint, DS.ARGS(1356))
         .def("setCenterPoint", &PyDbAbstractViewTableRecord::setCenterPoint, DS.ARGS({ "val : PyGe.Point2d" }, 1375))
         .def("height", &PyDbAbstractViewTableRecord::height, DS.ARGS(1364))
@@ -1254,13 +1277,18 @@ PyDbAbstractViewTableRecord::PyDbAbstractViewTableRecord(AcDbAbstractViewTableRe
 {
 }
 
+PyDbAbstractViewTableRecord::PyDbAbstractViewTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbAbstractViewTableRecord>(id), false)
+{
+}
+
 PyDbAbstractViewTableRecord::PyDbAbstractViewTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbAbstractViewTableRecord>(id, mode), false)
 {
 }
 
-PyDbAbstractViewTableRecord::PyDbAbstractViewTableRecord(const PyDbObjectId& id)
-    : PyDbAbstractViewTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbAbstractViewTableRecord::PyDbAbstractViewTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbAbstractViewTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -1481,7 +1509,7 @@ void PyDbAbstractViewTableRecord::setSun1(PyDbObjectId& retId, PyDbObject& pSun)
 
 void PyDbAbstractViewTableRecord::setSun2(PyDbObjectId& retId, PyDbObject& pSun, bool eraseOldSun) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setSun(retId.m_id, pSun.impObj(), eraseOldSun));
@@ -1581,6 +1609,12 @@ AcDbAbstractViewTableRecord* PyDbAbstractViewTableRecord::impObj(const std::sour
 // PyDbViewportTableRecord
 void makePyDbViewportTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     constexpr const std::string_view setPreviousBackgroundOverloads = "Overloads:\n"
         "- id: PyDb.ObjectId\n"
         "- id: PyDb.ObjectId, stype: PyGi.DrawableType, bForcedSwitch: bool\n";
@@ -1589,7 +1623,8 @@ void makePyDbViewportTableRecordWrapper()
     class_<PyDbViewportTableRecord, bases<PyDbAbstractViewTableRecord>>("ViewportTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 9958)))
         .def("number", &PyDbViewportTableRecord::number, DS.ARGS(9976))
         .def("lowerLeftCorner", &PyDbViewportTableRecord::lowerLeftCorner, DS.ARGS(9975))
         .def("setLowerLeftCorner", &PyDbViewportTableRecord::setLowerLeftCorner, DS.ARGS({ "val : PyGe.Point2d" }, 9993))
@@ -1658,13 +1693,18 @@ PyDbViewportTableRecord::PyDbViewportTableRecord(AcDbViewportTableRecord* ptr, b
 {
 }
 
+PyDbViewportTableRecord::PyDbViewportTableRecord(const PyDbObjectId& id)
+    : PyDbAbstractViewTableRecord(openAcDbObject<AcDbViewportTableRecord>(id), false)
+{
+}
+
 PyDbViewportTableRecord::PyDbViewportTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbAbstractViewTableRecord(openAcDbObject<AcDbViewportTableRecord>(id, mode), false)
 {
 }
 
-PyDbViewportTableRecord::PyDbViewportTableRecord(const PyDbObjectId& id)
-    : PyDbViewportTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbViewportTableRecord::PyDbViewportTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbAbstractViewTableRecord(openAcDbObject<AcDbViewportTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -1845,7 +1885,7 @@ void PyDbViewportTableRecord::setUcsPerViewport(bool ucsvp) const
 
 bool PyDbViewportTableRecord::isGridBoundToLimits() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isGridBoundToLimits();
@@ -1854,7 +1894,7 @@ bool PyDbViewportTableRecord::isGridBoundToLimits() const
 
 void PyDbViewportTableRecord::setGridBoundToLimits(bool enabled) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setGridBoundToLimits(enabled);
@@ -1863,7 +1903,7 @@ void PyDbViewportTableRecord::setGridBoundToLimits(bool enabled) const
 
 bool PyDbViewportTableRecord::isGridAdaptive() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isGridAdaptive();
@@ -1872,7 +1912,7 @@ bool PyDbViewportTableRecord::isGridAdaptive() const
 
 void PyDbViewportTableRecord::setGridAdaptive(bool enabled) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setGridAdaptive(enabled);
@@ -1881,7 +1921,7 @@ void PyDbViewportTableRecord::setGridAdaptive(bool enabled) const
 
 bool PyDbViewportTableRecord::isGridSubdivisionRestricted() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isGridSubdivisionRestricted();
@@ -1890,7 +1930,7 @@ bool PyDbViewportTableRecord::isGridSubdivisionRestricted() const
 
 void PyDbViewportTableRecord::setGridSubdivisionRestricted(bool enabled) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setGridSubdivisionRestricted(enabled);
@@ -1899,7 +1939,7 @@ void PyDbViewportTableRecord::setGridSubdivisionRestricted(bool enabled) const
 
 bool PyDbViewportTableRecord::isGridFollow() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->isGridFollow();
@@ -1908,7 +1948,7 @@ bool PyDbViewportTableRecord::isGridFollow() const
 
 void PyDbViewportTableRecord::setGridFollow(bool enabled) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setGridFollow(enabled);
@@ -1917,7 +1957,7 @@ void PyDbViewportTableRecord::setGridFollow(bool enabled) const
 
 Adesk::Int16 PyDbViewportTableRecord::gridMajor() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->gridMajor();
@@ -1926,7 +1966,7 @@ Adesk::Int16 PyDbViewportTableRecord::gridMajor() const
 
 void PyDbViewportTableRecord::setGridMajor(Adesk::Int16 value) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setGridMajor(value);
@@ -1940,7 +1980,7 @@ void PyDbViewportTableRecord::setBackground(const PyDbObjectId& backgroundId) co
 
 PyDbObjectId PyDbViewportTableRecord::previousBackground1() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->previousBackground());
@@ -1949,7 +1989,7 @@ PyDbObjectId PyDbViewportTableRecord::previousBackground1() const
 
 PyDbObjectId PyDbViewportTableRecord::previousBackground2(AcGiDrawable::DrawableType type) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->previousBackground(type));
@@ -1958,7 +1998,7 @@ PyDbObjectId PyDbViewportTableRecord::previousBackground2(AcGiDrawable::Drawable
 
 void PyDbViewportTableRecord::setPreviousBackground1(PyDbObjectId& backgroundId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPreviousBackground(backgroundId.m_id));
@@ -1967,7 +2007,7 @@ void PyDbViewportTableRecord::setPreviousBackground1(PyDbObjectId& backgroundId)
 
 void PyDbViewportTableRecord::setPreviousBackground2(PyDbObjectId& backgroundId, AcGiDrawable::DrawableType type, bool bForcedSwitch) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setPreviousBackground(backgroundId.m_id, type, bForcedSwitch));
@@ -1976,7 +2016,7 @@ void PyDbViewportTableRecord::setPreviousBackground2(PyDbObjectId& backgroundId,
 
 bool PyDbViewportTableRecord::previousBackgroundForcedSwitch(void) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->previousBackgroundForcedSwitch();
@@ -2015,11 +2055,18 @@ AcDbViewportTableRecord* PyDbViewportTableRecord::impObj(const std::source_locat
 // PyDbViewTableRecord
 void makePyDbViewTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("ViewTableRecord");
     class_<PyDbViewTableRecord, bases<PyDbAbstractViewTableRecord>>("ViewTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 10223)))
         .def("annotationScale", &PyDbViewTableRecord::annotationScale, DS.ARGS(10225))
         .def("setAnnotationScale", &PyDbViewTableRecord::setAnnotationScale, DS.ARGS({ "val: PyDb.AnnotationScale" }, 10238))
         .def("setParametersFromViewport", &PyDbViewTableRecord::setParametersFromViewport, DS.ARGS({ "id: PyDb.ObjectId" }, 10246))
@@ -2061,13 +2108,18 @@ PyDbViewTableRecord::PyDbViewTableRecord(AcDbViewTableRecord* ptr, bool autoDele
 {
 }
 
+PyDbViewTableRecord::PyDbViewTableRecord(const PyDbObjectId& id)
+    : PyDbAbstractViewTableRecord(openAcDbObject<AcDbViewTableRecord>(id), false)
+{
+}
+
 PyDbViewTableRecord::PyDbViewTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbAbstractViewTableRecord(openAcDbObject<AcDbViewTableRecord>(id, mode), false)
 {
 }
 
-PyDbViewTableRecord::PyDbViewTableRecord(const PyDbObjectId& id)
-    : PyDbViewTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbViewTableRecord::PyDbViewTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbAbstractViewTableRecord(openAcDbObject<AcDbViewTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -2098,7 +2150,7 @@ void PyDbViewTableRecord::disassociateUcsFromView() const
 
 std::string PyDbViewTableRecord::getCategoryName() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getCategoryName(str.buf));
     return wstr_to_utf8(str.buf);
@@ -2116,7 +2168,7 @@ void PyDbViewTableRecord::setCategoryName(const std::string& categoryName) const
 
 std::string PyDbViewTableRecord::getLayerState() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     PyThrowBadEs(impObj()->getLayerState(str.buf));
     return wstr_to_utf8(str.buf);
@@ -2166,7 +2218,7 @@ void PyDbViewTableRecord::setIsCameraPlottable(bool plottable) const
 
 PyDbObjectId PyDbViewTableRecord::liveSection() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->liveSection());
@@ -2175,7 +2227,7 @@ PyDbObjectId PyDbViewTableRecord::liveSection() const
 
 void PyDbViewTableRecord::setLiveSection(const PyDbObjectId& liveSectionId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setLiveSection(liveSectionId.m_id));
@@ -2184,7 +2236,7 @@ void PyDbViewTableRecord::setLiveSection(const PyDbObjectId& liveSectionId) cons
 
 PyDbObjectId PyDbViewTableRecord::camera() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyDbObjectId(impObj()->camera());
@@ -2193,7 +2245,7 @@ PyDbObjectId PyDbViewTableRecord::camera() const
 
 void PyDbViewTableRecord::setCamera(const PyDbObjectId& cameraId) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setCamera(cameraId.m_id));
@@ -2222,7 +2274,7 @@ void PyDbViewTableRecord::setSun1(PyDbObjectId& retId, PyDbObject& pSun) const
 
 void PyDbViewTableRecord::setSun2(PyDbObjectId& retId, PyDbObject& pSun, bool eraseOldSun) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setSun(retId.m_id, pSun.impObj(), eraseOldSun));
@@ -2267,7 +2319,7 @@ void makePyDbSortentsTableWrapper()
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
         "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
 
-    PyDocString DS("PyDb.SortentsTable");
+    PyDocString DS("SortentsTable");
     class_<PyDbSortentsTable, bases<PyDbObject>>("SortentsTable")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
@@ -2336,7 +2388,7 @@ PyDbHandle PyDbSortentsTable::getSortHandle(const PyDbObjectId& id) const
 
 void PyDbSortentsTable::remove(const PyDbObjectId& id) const
 {
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadEs(impObj()->remove(id.m_id));
@@ -2449,10 +2501,51 @@ AcDbSortentsTable* PyDbSortentsTable::impObj(const std::source_location& src /*=
     return static_cast<AcDbSortentsTable*>(m_pyImp.get());
 }
 
+//-----------------------------------------------------------------------------------------
+//btr_Iterator
+struct btr_Iterator
+{
+    std::shared_ptr<AcDbBlockTableRecordIterator> pbtriter;
+
+    explicit btr_Iterator(const PyDbBlockTableRecord& btr)
+    {
+        AcDbBlockTableRecordIterator* _piter = nullptr;
+        if (auto es = btr.impObj()->newIterator(_piter); es == eOk)
+            pbtriter.reset(_piter);
+        else
+            PyThrowBadEs(es);
+    }
+
+    PyDbObjectId next() const
+    {
+        if (!pbtriter || pbtriter->done())
+        {
+            PyErr_SetString(PyExc_StopIteration, "End of Record");
+            boost::python::throw_error_already_set();
+        }
+        PyDbObjectId id;
+        PyThrowBadEs(pbtriter->getEntityId(id.m_id));
+        pbtriter->step();
+        return id;
+    }
+
+    btr_Iterator& iter() { return *this; }
+};
+
 //---------------------------------------------------------------------------------------- -
 //PyDbBlockTableRecord wrapper
 void makePyDbBlockTableRecordWrapper()
 {
+    class_<btr_Iterator>("BlockTableRecordIterator", no_init)
+        .def("__iter__", &btr_Iterator::iter, return_internal_reference<>())
+        .def("__next__", &btr_Iterator::next);
+
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     constexpr const std::string_view objectIdsOverloads = "Overloads:\n"
         "desc: PyRx.RxClass=PyDb.Entity\n"
         "descList: list[PyRx.RxClass]\n";
@@ -2461,12 +2554,18 @@ void makePyDbBlockTableRecordWrapper()
     class_<PyDbBlockTableRecord, bases<PyDbSymbolTableRecord>>("BlockTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 2541)))
         .def("appendAcDbEntity", &PyDbBlockTableRecord::appendAcDbEntity, DS.ARGS({ "entity : PyDb.Entity" }, 2553))
         .def("appendAcDbEntities", &PyDbBlockTableRecord::appendAcDbEntities, DS.ARGS({ "entities : Collection[PyDb.Entity]" }, 2553))
         .def("objectIds", &PyDbBlockTableRecord::objectIds)
         .def("objectIds", &PyDbBlockTableRecord::objectIdsOfType)
         .def("objectIds", &PyDbBlockTableRecord::objectIdsOfTypeList, DS.OVRL(objectIdsOverloads))
+        .def("objectIdArray", &PyDbBlockTableRecord::objectIdArray1)
+        .def("objectIdArray", &PyDbBlockTableRecord::objectIdArray2)
+        .def("objectIdArray", &PyDbBlockTableRecord::objectIdArray3, DS.OVRL(objectIdsOverloads))
+        .def("visibleObjectIds", &PyDbBlockTableRecord::visibleObjectIds, DS.ARGS())
+        .def("visibleObjectIdArray", &PyDbBlockTableRecord::visibleObjectIdArray, DS.ARGS())
         .def("comments", &PyDbBlockTableRecord::comments, DS.ARGS(2558))
         .def("setComments", &PyDbBlockTableRecord::setComments, DS.ARGS({ "val : str" }, 2585))
         .def("pathName", &PyDbBlockTableRecord::pathName, DS.ARGS(2581))
@@ -2505,11 +2604,14 @@ void makePyDbBlockTableRecordWrapper()
         .def("addAnnoScalestoBlkRefs", &PyDbBlockTableRecord::addAnnoScalestoBlkRefs, DS.ARGS({ "scale : bool" }, 2552))
         .def("getSortentsTable", &PyDbBlockTableRecord::getSortentsTable1)
         .def("getSortentsTable", &PyDbBlockTableRecord::getSortentsTable2, DS.ARGS({ "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead", "createIfNecessary:bool = False" }, 2568))
-        .def("__iter__", range(&PyDbBlockTableRecord::begin, &PyDbBlockTableRecord::end))
+        .def("getBlockReferences", &PyDbBlockTableRecord::getBlockReferences1)
+        .def("getBlockReferences", &PyDbBlockTableRecord::getBlockReferences2, DS.ARGS({ "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" }))
+        .def("effectiveName", &PyDbBlockTableRecord::effectiveName, DS.ARGS())
         .def("className", &PyDbBlockTableRecord::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbBlockTableRecord::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbBlockTableRecord::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
         .def("cast", &PyDbBlockTableRecord::cast, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cast")
+        .def("__iter__", +[](const PyDbBlockTableRecord& self) {return btr_Iterator(self); })
         ;
 }
 
@@ -2546,13 +2648,18 @@ PyDbBlockTableRecord::PyDbBlockTableRecord(AcDbBlockTableRecord* ptr, bool autoD
 {
 }
 
+PyDbBlockTableRecord::PyDbBlockTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbBlockTableRecord>(id), false)
+{
+}
+
 PyDbBlockTableRecord::PyDbBlockTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbBlockTableRecord>(id, mode), false)
 {
 }
 
-PyDbBlockTableRecord::PyDbBlockTableRecord(const PyDbObjectId& id)
-    : PyDbBlockTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbBlockTableRecord::PyDbBlockTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbBlockTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -2579,13 +2686,11 @@ boost::python::list PyDbBlockTableRecord::appendAcDbEntities(const boost::python
 
 boost::python::list PyDbBlockTableRecord::objectIds() const
 {
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    PyThrowBadEs(es);
+    PyDbObjectId id;
     PyAutoLockGIL lock;
     boost::python::list pyList;
-    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
-    if (es != eOk)
-        return pyList;
-
-    PyDbObjectId id;
     for (iter->start(); !iter->done(); iter->step())
     {
         if (iter->getEntityId(id.m_id) == eOk)
@@ -2600,9 +2705,7 @@ boost::python::list PyDbBlockTableRecord::objectIdsOfType(const PyRxClass& _clas
     boost::python::list pyList;
     const auto _desc = _class.impObj();
     auto [es, iter] = makeBlockTableRecordIterator(*impObj());
-    if (es != eOk)
-        return pyList;
-
+    PyThrowBadEs(es);
     PyDbObjectId id;
     for (iter->start(); !iter->done(); iter->step())
     {
@@ -2618,9 +2721,7 @@ boost::python::list PyDbBlockTableRecord::objectIdsOfTypeList(const boost::pytho
     boost::python::list pyList;
 
     auto [es, iter] = makeBlockTableRecordIterator(*impObj());
-    if (es != eOk)
-        return pyList;
-
+    PyThrowBadEs(es);
     std::unordered_set<AcRxClass*> _set;
     for (auto& item : py_list_to_std_vector<PyRxClass>(_classes))
         _set.insert(item.impObj());
@@ -2632,12 +2733,94 @@ boost::python::list PyDbBlockTableRecord::objectIdsOfTypeList(const boost::pytho
             pyList.append(id);
     }
     return pyList;
+}
 
+PyDbObjectIdArray PyDbBlockTableRecord::objectIdArray1() const
+{
+    PyDbObjectIdArray pyList;
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    PyThrowBadEs(es);
+    PyDbObjectId id;
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        if (iter->getEntityId(id.m_id) == eOk)
+            pyList.emplace_back(id);
+    }
+    return pyList;
+}
+
+PyDbObjectIdArray PyDbBlockTableRecord::objectIdArray2(const PyRxClass& _class) const
+{
+    PyDbObjectIdArray pyList;
+    const auto _desc = _class.impObj();
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    PyThrowBadEs(es);
+    PyDbObjectId id;
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        if (const auto es = iter->getEntityId(id.m_id); es == eOk && id.m_id.objectClass()->isDerivedFrom(_desc))
+            pyList.emplace_back(id);
+    }
+    return pyList;
+}
+
+PyDbObjectIdArray PyDbBlockTableRecord::objectIdArray3(const boost::python::list& _classes) const
+{
+    PyDbObjectIdArray pyList;
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    PyThrowBadEs(es);
+    std::unordered_set<AcRxClass*> _set;
+    for (auto& item : py_list_to_std_vector<PyRxClass>(_classes))
+        _set.insert(item.impObj());
+    PyDbObjectId id;
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        if (const auto es = iter->getEntityId(id.m_id); es == eOk && _set.contains(id.m_id.objectClass()))
+            pyList.emplace_back(id);
+    }
+    return pyList;
+}
+
+boost::python::list PyDbBlockTableRecord::visibleObjectIds() const
+{
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    PyThrowBadEs(es);
+    PyDbObjectId id;
+    PyAutoLockGIL lock;
+    boost::python::list pyList;
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        if (iter->getEntityId(id.m_id) == eOk)
+        {
+            AcDbEntityPointer ptr(id.m_id);
+            if (ptr->visibility() == AcDb::kVisible)
+                pyList.append(id);
+        }
+    }
+    return pyList;
+}
+
+PyDbObjectIdArray PyDbBlockTableRecord::visibleObjectIdArray() const
+{
+    PyDbObjectIdArray pyList;
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    PyThrowBadEs(es);
+    PyDbObjectId id;
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        if (iter->getEntityId(id.m_id) == eOk)
+        {
+            AcDbEntityPointer ptr(id.m_id);
+            if (ptr->visibility() == AcDb::kVisible)
+                pyList.emplace_back(id);
+        }
+    }
+    return pyList;
 }
 
 std::string PyDbBlockTableRecord::comments() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     impObj()->comments(str.buf);
     return wstr_to_utf8(str.buf);
@@ -2655,7 +2838,7 @@ void PyDbBlockTableRecord::setComments(const std::string& pString) const
 
 std::string PyDbBlockTableRecord::pathName() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr str;
     impObj()->pathName(str.buf);
     return wstr_to_utf8(str.buf);
@@ -2698,7 +2881,19 @@ void PyDbBlockTableRecord::openBlockEnd(PyDbBlockEnd& pBlockBegin, AcDb::OpenMod
 
 bool PyDbBlockTableRecord::hasAttributeDefinitions() const
 {
-    return impObj()->hasAttributeDefinitions();
+    auto [es, iter] = makeBlockTableRecordIterator(*impObj());
+    if (es != eOk)
+        return false;
+    AcDbObjectId id;
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        if (iter->getEntityId(id) == eOk)
+        {
+            if (id.objectClass()->isDerivedFrom(AcDbAttributeDefinition::desc()))
+                return true;
+        }
+    }
+    return false;
 }
 
 bool PyDbBlockTableRecord::hasPreviewIcon() const
@@ -2706,39 +2901,40 @@ bool PyDbBlockTableRecord::hasPreviewIcon() const
     return impObj()->hasPreviewIcon();
 }
 
-//TODO remove hack
 static void addBITMAPFILEHEADER(AcDbBlockTableRecord::PreviewIcon& ico)
 {
-    //BITMAPFILEHEADER
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x36);//offset BITMAPFILEHEADER + BITMAPINFO
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x0);//0 file size? ico.length()ok
-    ico.insertAt(0, 0x0);
-    ico.insertAt(0, 0x4D);
-    ico.insertAt(0, 0x42);//BM0
+    //win32
+    const DWORD dibSize = static_cast<DWORD>(ico.length());
+
+    BITMAPFILEHEADER hdr{};
+    hdr.bfType = 0x4D42; // 'BM'
+    hdr.bfSize = sizeof(BITMAPFILEHEADER) + dibSize;
+    hdr.bfReserved1 = 0;
+    hdr.bfReserved2 = 0;
+    hdr.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+    // Prepend header byte-for-byte (reverse because insertAt(0))
+    const BYTE* p = reinterpret_cast<const BYTE*>(&hdr);
+    for (int i = sizeof(BITMAPFILEHEADER) - 1; i >= 0; --i)
+        ico.insertAt(0, p[i]);
 }
 
 boost::python::object PyDbBlockTableRecord::getPreviewIcon() const
 {
     PyAutoLockGIL lock;
+    if (impObj()->hasPreviewIcon() == false)
+        PyThrowBadEs(Acad::eInvalidPreviewImage);
     AcArray<Adesk::UInt8> previewIcon;
-    previewIcon.setLogicalLength(2048);
     PyThrowBadEs(impObj()->getPreviewIcon(previewIcon));
     addBITMAPFILEHEADER(previewIcon);
     wxMemoryInputStream stream(previewIcon.asArrayPtr(), previewIcon.length());
     wxImage img(stream);
-    wxBitmap* bmp = new wxBitmap(img);
-    if (!bmp->IsOk())
+    if (img.IsOk() == false)
         PyThrowBadEs(Acad::eInvalidPreviewImage);
-    return boost::python::object(boost::python::handle<>(wxPyConstructObject(bmp, wxT("wxBitmap"), true)));
+    wxBitmap bmp(img);
+    if (bmp.IsOk() == false)
+        PyThrowBadEs(Acad::eInvalidPreviewImage);
+    return boost::python::object(boost::python::handle<>(wxPyConstructObject(new wxBitmap(bmp), wxT("wxBitmap"), true)));
 }
 
 void PyDbBlockTableRecord::clearPreviewIcon() const
@@ -2769,7 +2965,7 @@ bool PyDbBlockTableRecord::isFromOverlayReference() const
 
 void PyDbBlockTableRecord::setIsFromOverlayReference(bool bIsOverlay) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setIsFromOverlayReference(bIsOverlay));
@@ -2810,6 +3006,35 @@ boost::python::list PyDbBlockTableRecord::getErasedBlockReferenceIds() const
     AcDbObjectIdArray ids;
     impObj()->getErasedBlockReferenceIds(ids);
     return ObjectIdArrayToPyList(ids);
+}
+
+boost::python::list PyDbBlockTableRecord::getBlockReferences1() const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pylist;
+    auto [es, iter] = makeBlockRefIterator(*impObj());
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        AcDbBlockReference* pref = nullptr;
+        PyThrowBadEs(iter->getBlockReference(pref, AcDb::OpenMode::kForRead));
+        pylist.append(PyDbBlockReference{ pref , false });
+    }
+    return pylist;
+}
+
+boost::python::list PyDbBlockTableRecord::getBlockReferences2(AcDb::OpenMode mode) const
+{
+    PyAutoLockGIL lock;
+    boost::python::list pylist;
+    auto [es, iter] = makeBlockRefIterator(*impObj());
+    PyThrowBadEs(es);
+    for (iter->start(); !iter->done(); iter->step())
+    {
+        AcDbBlockReference* pref = nullptr;
+        PyThrowBadEs(iter->getBlockReference(pref, mode));
+        pylist.append(PyDbBlockReference{ pref , false });
+    }
+    return pylist;
 }
 
 PyDbDatabase PyDbBlockTableRecord::xrefDatabase(bool incUnres) const
@@ -2895,6 +3120,46 @@ PyDbSortentsTable PyDbBlockTableRecord::getSortentsTable2(AcDb::OpenMode openMod
     return PyDbSortentsTable(ptr, false);
 }
 
+std::string PyDbBlockTableRecord::effectiveName() const
+{
+    AcString efname;
+    if (impObj()->isAnonymous())
+    {
+#if defined (_BRXTARGET) && (_BRXTARGET >= 260)
+
+        auto efid = acdbEffectiveBlockTableRecord(impObj()->objectId());
+        AcDbBlockTableRecordPointer efrec(efid);
+        PyThrowBadEs(efrec.openStatus());
+        PyThrowBadEs(efrec->getName(efname));
+        return wstr_to_utf8(efname);
+#elif defined (_BRXTARGET) && (_BRXTARGET <= 250)
+        if (AcDbObjectIdArray refids; impObj()->getBlockReferenceIds(refids) == eOk && refids.length() != 0)
+        {
+            if (efname = acdbEffectiveBlockRefName(refids.at(0)); !efname.isEmpty())
+                return wstr_to_utf8(efname);
+        }
+#endif
+        AcResBufPtr rb(impObj()->xData(L"AcDbBlockRepBTag"));
+        for (resbuf* pTail = rb.get(); pTail != nullptr; pTail = pTail->rbnext)
+        {
+            if (pTail->restype == AcDb::kDxfXdHandle)
+            {
+                AcDbHandle hnd(pTail->resval.rstring);
+                if (AcDbObjectId id; impObj()->database()->getAcDbObjectId(id, false, hnd) == eOk && id.isValid())
+                {
+                    if (AcDbBlockTableRecordPointer btr(id); btr.openStatus() == eOk)
+                    {
+                        if (btr->getName(efname) == eOk)
+                            return wstr_to_utf8(efname);
+                    }
+                }
+            }
+        }
+    }
+    PyThrowBadEs(impObj()->getName(efname));
+    return wstr_to_utf8(efname);
+}
+
 std::string PyDbBlockTableRecord::className()
 {
     return  "AcDbBlockTableRecord";
@@ -2923,40 +3188,13 @@ AcDbBlockTableRecord* PyDbBlockTableRecord::impObj(const std::source_location& s
     return static_cast<AcDbBlockTableRecord*>(m_pyImp.get());
 }
 
-void PyDbBlockTableRecord::filliterator()
-{
-    const auto [es, iter] = makeBlockTableRecordIterator(*impObj());
-    if (es == eOk)
-    {
-        PyDbObjectId id;
-        m_iterable.clear();
-        for (iter->start(); !iter->done(); iter->step())
-        {
-            if (iter->getEntityId(id.m_id) == eOk)
-                m_iterable.push_back(id);
-        }
-    }
-    PyThrowBadEs(es);
-}
-
-std::vector<PyDbObjectId>::iterator PyDbBlockTableRecord::begin()
-{
-    return m_iterable.begin();
-}
-
-std::vector<PyDbObjectId>::iterator PyDbBlockTableRecord::end()
-{
-    filliterator();
-    return m_iterable.end();
-}
-
 //---------------------------------------------------------------------------------------- -
 // PyDbDynBlockTableRecord
 void makePyDbDynBlockTableRecordWrapper()
 {
     PyDocString DS("DynBlockTableRecord");
     class_<PyAcDbDynBlockTableRecord>("DynBlockTableRecord", no_init)
-        .def(init<const PyDbObjectId&>(DS.ARGS({ "val : PyDb.ObjectId" })))
+        .def(init<const PyDbObjectId&>(DS.ARGS({ "val : PyDb.ObjectId" }, 4219)))
         .def("isDynamicBlock", &PyAcDbDynBlockTableRecord::isDynamicBlock, DS.ARGS(4223))
         .def("blockTableRecordId", &PyAcDbDynBlockTableRecord::blockTableRecordId, DS.ARGS(4221))
         .def("getAnonymousBlockIds", &PyAcDbDynBlockTableRecord::getAnonymousBlockIds, DS.ARGS(4222))
@@ -3039,15 +3277,127 @@ AcDbDynBlockTableRecord* PyAcDbDynBlockTableRecord::impObj(const std::source_loc
 #endif
 }
 
+#if defined(_ARXTARGET)
+//---------------------------------------------------------------------------------------- -
+// PyXRefLayerPropertyOverride
+void makeXRefLayerPropertyOverride()
+{
+    constexpr const std::string_view hasXRefLayerOverride = "Overloads:\n"
+        "- pRef: PyDb.BlockReference\n"
+        "- hostLayerId: PyDb.ObjectId, prop: PyDb.XRefLayerPropertyOverrideType\n";
+
+    constexpr const std::string_view hasAnyXRefLayerOverrides = "Overloads:\n"
+        "- hostLayerId: PyDb.ObjectId\n"
+        "- hostDb: PyDb.Database\n";
+
+    constexpr const std::string_view removeXRefLayerOverrideOverride = "Overloads:\n"
+        "- hostLayerId: PyDb.ObjectId, prop: PyDb.XRefLayerPropertyOverrideType\n"
+        "- hostDb: PyDb.Database, prop: PyDb.XRefLayerPropertyOverrideType\n";
+
+    constexpr const std::string_view removeXRefLayerOverridesOverride = "Overloads:\n"
+        "- hostLayerId: PyDb.ObjectId\n"
+        "- hostDb: PyDb.Database\n";
+
+    PyDocString DS("XRefLayerPropertyOverride");
+    class_<PyXRefLayerPropertyOverride>("XRefLayerPropertyOverride")
+        .def("hasXRefLayerOverride", &PyXRefLayerPropertyOverride::hasXRefLayerOverride1)
+        .def("hasXRefLayerOverride", &PyXRefLayerPropertyOverride::hasXRefLayerOverride2, DS.SOVRL(hasXRefLayerOverride)).staticmethod("hasXRefLayerOverride")
+        .def("hasAnyXRefLayerOverrides", &PyXRefLayerPropertyOverride::hasAnyXRefLayerOverrides1)
+        .def("hasAnyXRefLayerOverrides", &PyXRefLayerPropertyOverride::hasAnyXRefLayerOverrides2, DS.SOVRL(hasAnyXRefLayerOverrides)).staticmethod("hasAnyXRefLayerOverrides")
+        .def("addXRefLayerOverride", &PyXRefLayerPropertyOverride::addXRefLayerOverride, DS.SARGS({ "hostLayerId: PyDb.ObjectId" , "property: PyDb.XRefLayerPropertyOverrideType" })).staticmethod("addXRefLayerOverride")
+        .def("removeXRefLayerOverride", &PyXRefLayerPropertyOverride::removeXRefLayerOverride1)
+        .def("removeXRefLayerOverride", &PyXRefLayerPropertyOverride::removeXRefLayerOverride2, DS.SOVRL(removeXRefLayerOverrideOverride)).staticmethod("removeXRefLayerOverride")
+        .def("removeXRefLayerOverrides", &PyXRefLayerPropertyOverride::removeXRefLayerOverrides1)
+        .def("removeXRefLayerOverrides", &PyXRefLayerPropertyOverride::removeXRefLayerOverrides2, DS.SOVRL(removeXRefLayerOverridesOverride)).staticmethod("removeXRefLayerOverrides")
+        .def("enableXRefLayerPropertyOverrideRecording", &PyXRefLayerPropertyOverride::enableXRefLayerPropertyOverrideRecording, DS.SARGS()).staticmethod("enableXRefLayerPropertyOverrideRecording")
+        .def("disableXRefLayerPropertyOverrideRecording", &PyXRefLayerPropertyOverride::disableXRefLayerPropertyOverrideRecording, DS.SARGS()).staticmethod("disableXRefLayerPropertyOverrideRecording")
+        .def("isXRefLayerPropertyOverrideRecordingEnabled", &PyXRefLayerPropertyOverride::isXRefLayerPropertyOverrideRecordingEnabled, DS.SARGS()).staticmethod("isXRefLayerPropertyOverrideRecordingEnabled")
+        .def("className", &PyXRefLayerPropertyOverride::className, DS.SARGS()).staticmethod("className")
+        ;
+}
+
+bool PyXRefLayerPropertyOverride::hasAnyXRefLayerOverrides1(const PyDbObjectId& hostLayerId)
+{
+    return AcXRefLayerPropertyOverride::hasAnyXRefLayerOverrides(hostLayerId.m_id);
+}
+
+bool PyXRefLayerPropertyOverride::hasAnyXRefLayerOverrides2(const PyDbDatabase& pHostDb)
+{
+    return AcXRefLayerPropertyOverride::hasAnyXRefLayerOverrides(pHostDb.impObj());
+}
+
+bool PyXRefLayerPropertyOverride::hasXRefLayerOverride1(const PyDbObjectId& hostLayerId, AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType property)
+{
+    return AcXRefLayerPropertyOverride::hasXRefLayerOverride(hostLayerId.m_id, property);
+}
+
+bool PyXRefLayerPropertyOverride::hasXRefLayerOverride2(const PyDbBlockReference& pRef)
+{
+    return AcXRefLayerPropertyOverride::hasXRefLayerOverride(pRef.impObj());
+}
+
+void PyXRefLayerPropertyOverride::addXRefLayerOverride(const PyDbObjectId& hostLayerId, AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType property)
+{
+    PyThrowBadEs(AcXRefLayerPropertyOverride::addXRefLayerOverride(hostLayerId.m_id, property));
+}
+
+void PyXRefLayerPropertyOverride::removeXRefLayerOverride1(const PyDbObjectId& hostLayerId, AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType property)
+{
+    PyThrowBadEs(AcXRefLayerPropertyOverride::removeXRefLayerOverride(hostLayerId.m_id, property));
+}
+
+void PyXRefLayerPropertyOverride::removeXRefLayerOverride2(const PyDbDatabase& pHostDb, AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType property)
+{
+    PyThrowBadEs(AcXRefLayerPropertyOverride::removeXRefLayerOverride(pHostDb.impObj(), property));
+}
+
+void PyXRefLayerPropertyOverride::removeXRefLayerOverrides1(const PyDbObjectId& hostLayerId)
+{
+    PyThrowBadEs(AcXRefLayerPropertyOverride::removeXRefLayerOverrides(hostLayerId.m_id));
+}
+
+void PyXRefLayerPropertyOverride::removeXRefLayerOverrides2(const PyDbDatabase& pHostDb)
+{
+    PyThrowBadEs(AcXRefLayerPropertyOverride::removeXRefLayerOverrides(pHostDb.impObj()));
+}
+
+void PyXRefLayerPropertyOverride::enableXRefLayerPropertyOverrideRecording()
+{
+    AcXRefLayerPropertyOverride::enableXRefLayerPropertyOverrideRecording();
+}
+
+void PyXRefLayerPropertyOverride::disableXRefLayerPropertyOverrideRecording()
+{
+    AcXRefLayerPropertyOverride::disableXRefLayerPropertyOverrideRecording();
+}
+
+bool PyXRefLayerPropertyOverride::isXRefLayerPropertyOverrideRecordingEnabled()
+{
+    return AcXRefLayerPropertyOverride::isXRefLayerPropertyOverrideRecordingEnabled();
+}
+
+std::string PyXRefLayerPropertyOverride::className()
+{
+    return "AcXRefLayerPropertyOverride";
+}
+#endif //_ARXTARGET
+
 //---------------------------------------------------------------------------------------- -
 //AcDbLayerTableRecord wrapper
 void makePyDbLayerTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("LayerTableRecord");
     class_<PyDbLayerTableRecord, bases<PyDbSymbolTableRecord>>("LayerTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 5773)))
         .def("isFrozen", &PyDbLayerTableRecord::isFrozen, DS.ARGS(5781))
         .def("setIsFrozen", &PyDbLayerTableRecord::setIsFrozen, DS.ARGS({ "frozen: bool" }, 5802))
         .def("isOff", &PyDbLayerTableRecord::isOff, DS.ARGS(5785))
@@ -3059,7 +3409,7 @@ void makePyDbLayerTableRecordWrapper()
         .def("color", &PyDbLayerTableRecord::color1)
         .def("color", &PyDbLayerTableRecord::color2, DS.ARGS({ "vpid: PyDb.ObjectId=PyDb.ObjectId.kNull" }, 5775))
         .def("setColor", &PyDbLayerTableRecord::setColor1)
-        .def("setColor", &PyDbLayerTableRecord::setColor2, DS.ARGS({ "clr: PyDb.AcCmColor", "vpid: PyDb.ObjectId=PyDb.ObjectId.kNull" }, 5800))
+        .def("setColor", &PyDbLayerTableRecord::setColor2, DS.ARGS({ "clr: PyDb.Color", "vpid: PyDb.ObjectId=PyDb.ObjectId.kNull" }, 5800))
         .def("entityColor", &PyDbLayerTableRecord::entityColor, DS.ARGS(5778))
         .def("transparency", &PyDbLayerTableRecord::transparency1)
         .def("transparency", &PyDbLayerTableRecord::transparency2, DS.ARGS({ "vpid: PyDb.ObjectId=PyDb.ObjectId.kNull" }, 5815))
@@ -3119,13 +3469,18 @@ PyDbLayerTableRecord::PyDbLayerTableRecord(AcDbLayerTableRecord* ptr, bool autoD
 {
 }
 
+PyDbLayerTableRecord::PyDbLayerTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbLayerTableRecord>(id), false)
+{
+}
+
 PyDbLayerTableRecord::PyDbLayerTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbLayerTableRecord>(id, mode), false)
 {
 }
 
-PyDbLayerTableRecord::PyDbLayerTableRecord(const PyDbObjectId& id)
-    : PyDbLayerTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbLayerTableRecord::PyDbLayerTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbLayerTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -3268,7 +3623,7 @@ PyDbObjectId PyDbLayerTableRecord::linetypeObjectId() const
 
 void PyDbLayerTableRecord::setLinetypeObjectId(const PyDbObjectId& id) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     impObj()->setLinetypeObjectId(id.m_id);
 #else
     return PyThrowBadEs(impObj()->setLinetypeObjectId(id.m_id));
@@ -3435,11 +3790,18 @@ AcDbLayerTableRecord* PyDbLayerTableRecord::impObj(const std::source_location& s
 // PyDbTextStyleTableRecord
 void makePyDbTextStyleTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("TextStyleTableRecord");
     class_<PyDbTextStyleTableRecord, bases<PyDbSymbolTableRecord>>("TextStyleTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 9691)))
         .def("isShapeFile", &PyDbTextStyleTableRecord::isShapeFile, DS.ARGS(9698))
         .def("setIsShapeFile", &PyDbTextStyleTableRecord::setIsShapeFile, DS.ARGS({ "val : bool" }, 9706))
         .def("isVertical", &PyDbTextStyleTableRecord::isVertical, DS.ARGS(9699))
@@ -3477,13 +3839,18 @@ PyDbTextStyleTableRecord::PyDbTextStyleTableRecord(AcDbTextStyleTableRecord* ptr
 {
 }
 
+PyDbTextStyleTableRecord::PyDbTextStyleTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbTextStyleTableRecord>(id), false)
+{
+}
+
 PyDbTextStyleTableRecord::PyDbTextStyleTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbTextStyleTableRecord>(id, mode), false)
 {
 }
 
-PyDbTextStyleTableRecord::PyDbTextStyleTableRecord(const PyDbObjectId& id)
-    : PyDbTextStyleTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbTextStyleTableRecord::PyDbTextStyleTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbTextStyleTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -3559,7 +3926,7 @@ void PyDbTextStyleTableRecord::setPriorSize(double priorSize) const
 
 std::string PyDbTextStyleTableRecord::fileName() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     RxAutoOutStr path;
     PyThrowBadEs(impObj()->fileName(path.buf));
     return wstr_to_utf8(path.buf);
@@ -3644,11 +4011,18 @@ AcDbTextStyleTableRecord* PyDbTextStyleTableRecord::impObj(const std::source_loc
 // PyDbUCSTableRecord
 void makePyDbUCSTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("UCSTableRecord");
     class_<PyDbUCSTableRecord, bases<PyDbSymbolTableRecord>>("UCSTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 9813)))
         .def("origin", &PyDbUCSTableRecord::origin, DS.ARGS(9815))
         .def("setOrigin", &PyDbUCSTableRecord::setOrigin, DS.ARGS({ "val : PyGe.Point3d" }, 9816))
         .def("xAxis", &PyDbUCSTableRecord::xAxis, DS.ARGS(9822))
@@ -3674,13 +4048,18 @@ PyDbUCSTableRecord::PyDbUCSTableRecord(AcDbUCSTableRecord* ptr, bool autoDelete)
 {
 }
 
+PyDbUCSTableRecord::PyDbUCSTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbUCSTableRecord>(id), false)
+{
+}
+
 PyDbUCSTableRecord::PyDbUCSTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbUCSTableRecord>(id, mode), false)
 {
 }
 
-PyDbUCSTableRecord::PyDbUCSTableRecord(const PyDbObjectId& id)
-    : PyDbUCSTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbUCSTableRecord::PyDbUCSTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbUCSTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -3716,7 +4095,7 @@ void PyDbUCSTableRecord::setYAxis(const AcGeVector3d& yAxis) const
 
 AcGePoint3d PyDbUCSTableRecord::ucsBaseOrigin(AcDb::OrthographicView view) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->ucsBaseOrigin(view);
@@ -3725,7 +4104,7 @@ AcGePoint3d PyDbUCSTableRecord::ucsBaseOrigin(AcDb::OrthographicView view) const
 
 void PyDbUCSTableRecord::setUcsBaseOrigin(const AcGePoint3d& origin, AcDb::OrthographicView view) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return PyThrowBadEs(impObj()->setUcsBaseOrigin(origin, view));
@@ -3764,11 +4143,18 @@ AcDbUCSTableRecord* PyDbUCSTableRecord::impObj(const std::source_location& src /
 // PyDbRegAppTableRecord
 void makePyDbRegAppTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("RegAppTableRecord");
     class_<PyDbRegAppTableRecord, bases<PyDbSymbolTableRecord>>("RegAppTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 8145)))
         .def("className", &PyDbRegAppTableRecord::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbRegAppTableRecord::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbRegAppTableRecord::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -3786,13 +4172,18 @@ PyDbRegAppTableRecord::PyDbRegAppTableRecord(AcDbRegAppTableRecord* ptr, bool au
 {
 }
 
+PyDbRegAppTableRecord::PyDbRegAppTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbRegAppTableRecord>(id), false)
+{
+}
+
 PyDbRegAppTableRecord::PyDbRegAppTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbRegAppTableRecord>(id, mode), false)
 {
 }
 
-PyDbRegAppTableRecord::PyDbRegAppTableRecord(const PyDbObjectId& id)
-    : PyDbRegAppTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbRegAppTableRecord::PyDbRegAppTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbRegAppTableRecord>(id, mode, erased), false)
 {
 }
 
@@ -3828,11 +4219,18 @@ AcDbRegAppTableRecord* PyDbRegAppTableRecord::impObj(const std::source_location&
 // PyDbLinetypeTableRecord
 void makePyDbLinetypeTableRecordWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("LinetypeTableRecord");
     class_<PyDbLinetypeTableRecord, bases<PyDbSymbolTableRecord>>("LinetypeTableRecord")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>())
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 6032)))
         .def("comments", &PyDbLinetypeTableRecord::comments, DS.ARGS())
         .def("setComments", &PyDbLinetypeTableRecord::setComments, DS.ARGS({ "val: str" }))
         .def("patternLength", &PyDbLinetypeTableRecord::patternLength, DS.ARGS())
@@ -3876,13 +4274,18 @@ PyDbLinetypeTableRecord::PyDbLinetypeTableRecord(AcDbLinetypeTableRecord* ptr, b
 {
 }
 
+PyDbLinetypeTableRecord::PyDbLinetypeTableRecord(const PyDbObjectId& id)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbLinetypeTableRecord>(id), false)
+{
+}
+
 PyDbLinetypeTableRecord::PyDbLinetypeTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode)
     : PyDbSymbolTableRecord(openAcDbObject<AcDbLinetypeTableRecord>(id, mode), false)
 {
 }
 
-PyDbLinetypeTableRecord::PyDbLinetypeTableRecord(const PyDbObjectId& id)
-    : PyDbLinetypeTableRecord(id, AcDb::OpenMode::kForRead)
+PyDbLinetypeTableRecord::PyDbLinetypeTableRecord(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased)
+    : PyDbSymbolTableRecord(openAcDbObject<AcDbLinetypeTableRecord>(id, mode, erased), false)
 {
 }
 

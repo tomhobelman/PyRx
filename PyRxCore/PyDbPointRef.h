@@ -28,7 +28,6 @@ void makePyDbOsnapPointRefWrapper();
 
 class PyDbOsnapPointRef : public PyDbPointRef
 {
-#if !defined(_BRXTARGET250)
 public:
     PyDbOsnapPointRef();
     PyDbOsnapPointRef(const AcGePoint3d& refPt);
@@ -37,16 +36,19 @@ public:
     virtual ~PyDbOsnapPointRef() override = default;
 
     AcDbPointRef::OsnapType osnapType() const;
-    void                    setOsnapType(AcDbPointRef::OsnapType osnType);
-    void                    setIdPath(PyDbObjectId& id, AcDb::SubentType type, Adesk::GsMarker gsMarker);
-    void                    setPoint(const AcGePoint3d& pt);
+    void                    setOsnapType(AcDbPointRef::OsnapType osnType) const;
+    void                    setIdPath(PyDbObjectId& id, AcDb::SubentType type, Adesk::GsMarker gsMarker) const;
+    void                    setIntIdPath(PyDbObjectId& id, AcDb::SubentType type, Adesk::GsMarker gsMarker) const;
+    void                    setPoint(const AcGePoint3d& pt) const;
     AcGePoint3d             point() const;
+    double                  nearPointParam() const;
+    void                    setNearPointParam(double newVal) const;
 
     static PyRxClass        desc();
     static std::string      className();
 public:
     AcDbOsnapPointRef* impObj(const std::source_location& src = std::source_location::current()) const;
-#endif
 };
+
 #pragma pack (pop)
 

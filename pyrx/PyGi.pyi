@@ -1,10 +1,15 @@
 from __future__ import annotations
-from typing import ClassVar, Self, Any, overload
+
+from typing import Any, ClassVar, Self, overload
+
+import wx
+
 from pyrx import Db as PyDb
 from pyrx import Ge as PyGe
 from pyrx import Gi as PyGi
 from pyrx import Rx as PyRx
 from pyrx.doc_utils.boost_meta import _BoostPythonEnum
+
 eAcGiRegenTypeInvalid: RegenType  # 0
 kAcGiArcChord: ArcType  # 2
 kAcGiArcSector: ArcType  # 1
@@ -20,6 +25,12 @@ kAcGiFillNever: FillType  # 2
 kAcGiForExplode: RegenType  # 5
 kAcGiHideOrShadeCommand: RegenType  # 3
 kAcGiHighlight: TransientDrawingMode  # 3
+kAcGiHighlightCustom: HighlightStyle  # 1
+kAcGiHighlightDashedAndThicken: HighlightStyle  # 2
+kAcGiHighlightDim: HighlightStyle  # 3
+kAcGiHighlightGlow: HighlightStyle  # 5
+kAcGiHighlightNone: HighlightStyle  # 0
+kAcGiHighlightThickDim: HighlightStyle  # 4
 kAcGiInvisible: Visibility  # 0
 kAcGiMain: TransientDrawingMode  # 0
 kAcGiNoOrientation: OrientationType  # 0
@@ -99,10 +110,12 @@ kTransparencyOff: TransparencyMode  # 0
 kTwoDistantLights: DefaultLightingType  # 1
 kViewport: GiDrawableType  # 9
 kWebLight: GiDrawableType  # 10
+
 class ArcType(_BoostPythonEnum):
     kAcGiArcSimple: ClassVar[Self]  # 0
     kAcGiArcSector: ClassVar[Self]  # 1
     kAcGiArcChord: ClassVar[Self]  # 2
+
 class CommonDraw(PyRx.RxObject):
     def __init__(self) -> None:
         """
@@ -143,7 +156,7 @@ class CommonDraw(PyRx.RxObject):
     def regenType(self, /) -> RegenType:
         """
         Returns the current elaboration mode. The current elaboration modes of type AcGiRegenType
-        are:  kAcGiStandardDisplay The display you normally see is being generated (REGEN).
+        are: kAcGiStandardDisplay The display you normally see is being generated (REGEN).
         kAcGiHideOrShadeCommand The HIDE or SHADE command is being executed. kAcGRenderCommand The
         RENDER command is being executed. kAcGiSaveWorldDrawForProxy The graphics will be going
         into the entity's graphics metafile in case the entity is a proxy when next loaded, so
@@ -159,10 +172,12 @@ class CommonDraw(PyRx.RxObject):
         user control of, and access to, the attribute (color, layer, linetype, etc.) settings of
         the current geometry. For a description of this object, see class AcGiSubEntityTraits.
         """
+
 class DefaultLightingType(_BoostPythonEnum):
     kOneDistantLight: ClassVar[Self]  # 0
     kTwoDistantLights: ClassVar[Self]  # 1
     kBackLighting: ClassVar[Self]  # 2
+
 class DrawFlags(_BoostPythonEnum):
     kNoDrawFlags: ClassVar[Self]  # 0
     kDrawHatchGroup: ClassVar[Self]  # 2
@@ -178,6 +193,7 @@ class DrawFlags(_BoostPythonEnum):
     kDrawNoForceByLayer: ClassVar[Self]  # 2048
     kDrawIsInWCS: ClassVar[Self]  # 4096
     kDrawNoImageFrame: ClassVar[Self]  # 8192
+
 class Drawable(PyRx.RxObject):
     def __init__(self) -> None:
         """
@@ -268,6 +284,7 @@ class Drawable(PyRx.RxObject):
         Adesk::kFalse indicates that the 3D GS must call viewportDraw() in order to obtain the
         complete geometry and attribute set for this drawable.
         """
+
 class DrawableOverrule(PyRx.Overrule):
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
@@ -283,6 +300,7 @@ class DrawableOverrule(PyRx.Overrule):
     def viewportDraw(self, /) -> None: ...
     def viewportDrawLogicalFlags(self, /) -> int: ...
     def worldDraw(self, /) -> bool: ...
+
 class DrawableTraits(PyGi.SubEntityTraits):
     def __init__(self) -> None:
         """
@@ -314,9 +332,11 @@ class DrawableTraits(PyGi.SubEntityTraits):
         you need not implement this method since and implementation is supplied which delegates to
         the setXXX methods in AcGiSubEntityTraits.
         """
+
 class FillType(_BoostPythonEnum):
     kAcGiFillAlways: ClassVar[Self]  # 1
     kAcGiFillNever: ClassVar[Self]  # 2
+
 class Geometry(PyRx.RxObject):
     def __init__(self) -> None:
         """
@@ -325,9 +345,23 @@ class Geometry(PyRx.RxObject):
         """
     def __reduce__(self, /) -> Any: ...
     @overload
-    def circle(self, center: PyGe.Point3d, radius: float, normal: PyGe.Vector3d, /) -> bool: ...
+    def circle(self, center: PyGe.Point3d, radius: float, normal: PyGe.Vector3d, /) -> bool:
+        """
+        Displays a circle primitive with center at center and a radius of radius. The circle is on
+        the plane defined by the normal vector normal and the point center. A return value of
+        Adesk::kFalse (that is, 0) indicates that the primitive has been successfully stored in the
+        graphics database. A return value of Adesk::kTrue indicates that the operation has been
+        terminated and the application wants to get control back as soon as possible.
+        """
     @overload
-    def circle(self, p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d, /) -> bool: ...
+    def circle(self, p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d, /) -> bool:
+        """
+        Displays a circle primitive with center at center and a radius of radius. The circle is on
+        the plane defined by the normal vector normal and the point center. A return value of
+        Adesk::kFalse (that is, 0) indicates that the primitive has been successfully stored in the
+        graphics database. A return value of Adesk::kTrue indicates that the operation has been
+        terminated and the application wants to get control back as soon as possible.
+        """
     @overload
     def circle(self, *args) -> bool:
         """
@@ -338,13 +372,68 @@ class Geometry(PyRx.RxObject):
         terminated and the application wants to get control back as soon as possible.
         """
     @overload
-    def circularArc(self, center: PyGe.Point3d, radius: float, normal: PyGe.Vector3d, startVector: PyGe.Vector3d, sweepAngle: float, /) -> bool: ...
+    def circularArc(
+        self,
+        center: PyGe.Point3d,
+        radius: float,
+        normal: PyGe.Vector3d,
+        startVector: PyGe.Vector3d,
+        sweepAngle: float,
+        /,
+    ) -> bool:
+        """
+        Displays an arc primitive defined by the arc's center of curvature center, the radius of
+        curvature radius, the containment plane's normal vector normal, the vector from the center
+        of curvature to the arc start point startVector, the angle that the arc spans sweepAngle,
+        and the arc type arcType. A return value of Adesk::kFalse (that is, 0) indicates that the
+        primitive has been successfully stored in the graphics database. A return value of
+        Adesk::kTrue indicates that the operation has been terminated and the application wants to
+        get control back as soon as possible.
+        """
     @overload
-    def circularArc(self, center: PyGe.Point3d, radius: float, normal: PyGe.Vector3d, startVector: PyGe.Vector3d, sweepAngle: float, arcType: PyGi.ArcType, /) -> bool: ...
+    def circularArc(
+        self,
+        center: PyGe.Point3d,
+        radius: float,
+        normal: PyGe.Vector3d,
+        startVector: PyGe.Vector3d,
+        sweepAngle: float,
+        arcType: PyGi.ArcType,
+        /,
+    ) -> bool:
+        """
+        Displays an arc primitive defined by the arc's center of curvature center, the radius of
+        curvature radius, the containment plane's normal vector normal, the vector from the center
+        of curvature to the arc start point startVector, the angle that the arc spans sweepAngle,
+        and the arc type arcType. A return value of Adesk::kFalse (that is, 0) indicates that the
+        primitive has been successfully stored in the graphics database. A return value of
+        Adesk::kTrue indicates that the operation has been terminated and the application wants to
+        get control back as soon as possible.
+        """
     @overload
-    def circularArc(self, p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d, /) -> bool: ...
+    def circularArc(self, p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d, /) -> bool:
+        """
+        Displays an arc primitive defined by the arc's center of curvature center, the radius of
+        curvature radius, the containment plane's normal vector normal, the vector from the center
+        of curvature to the arc start point startVector, the angle that the arc spans sweepAngle,
+        and the arc type arcType. A return value of Adesk::kFalse (that is, 0) indicates that the
+        primitive has been successfully stored in the graphics database. A return value of
+        Adesk::kTrue indicates that the operation has been terminated and the application wants to
+        get control back as soon as possible.
+        """
     @overload
-    def circularArc(self, p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d, arcType: PyGe.ArcType, /) -> bool: ...
+    def circularArc(
+        self, p1: PyGe.Point3d, p2: PyGe.Point3d, p3: PyGe.Point3d, arcType: PyGe.ArcType, /
+    ) -> bool:
+        """
+        Displays an arc primitive defined by the arc's center of curvature center, the radius of
+        curvature radius, the containment plane's normal vector normal, the vector from the center
+        of curvature to the arc start point startVector, the angle that the arc spans sweepAngle,
+        and the arc type arcType. A return value of Adesk::kFalse (that is, 0) indicates that the
+        primitive has been successfully stored in the graphics database. A return value of
+        Adesk::kTrue indicates that the operation has been terminated and the application wants to
+        get control back as soon as possible.
+        """
     @overload
     def circularArc(self, *args) -> bool:
         """
@@ -360,7 +449,7 @@ class Geometry(PyRx.RxObject):
     def className() -> str: ...
     @staticmethod
     def desc() -> PyRx.RxClass: ...
-    def draw(self, drawable : PyGi.Drawable, /) -> bool:
+    def draw(self, drawable: PyGi.Drawable, /) -> bool:
         """
         Instructs the graphics system to regenerate pDrawable as a component of this object. For
         example, a Block Definition (AcDbBlockTableRecord) uses it to draw its contained objects.
@@ -373,11 +462,22 @@ class Geometry(PyRx.RxObject):
         is returned, call viewportDraw() once for each viewport. Returning false to the caller
         indicates that you did not process the request.
         """
-    def edge(self, edgeList : list[PyGe.Curve2d], /) -> bool:
+    def edge(self, edgeList: list[PyGe.Curve2d], /) -> bool:
         """
         Define the boundary of the fill.
         """
-    def ellipticalArc(self, center:PyGe.Point3d, norm:PyGe.Vector3d, majAxisLen:float, minAxisLen:float, startDeg:float, endDeg:float, tilt:float, arcType:ArcType=kAcGiArcSimple, /) -> bool:
+    def ellipticalArc(
+        self,
+        center: PyGe.Point3d,
+        norm: PyGe.Vector3d,
+        majAxisLen: float,
+        minAxisLen: float,
+        startDeg: float,
+        endDeg: float,
+        tilt: float,
+        arcType: ArcType = kAcGiArcSimple,
+        /,
+    ) -> bool:
         """
         This method draws an elliptical arc or full ellipse, filled or unfilled.
         """
@@ -385,7 +485,7 @@ class Geometry(PyRx.RxObject):
         """
         This gets the net block insert transform; that is, the model-to-world coordinate transform.
         The main purpose of the BLOCK entity is to transform an entity--whether to stretch, rotate,
-        or move it.  It is possible that during the current worldDraw(), the entity is in one or
+        or move it. It is possible that during the current worldDraw(), the entity is in one or
         more BLOCKs. In this case, to determine the end result of the entity being transformed by
         one or more BLOCKs, use the net block insert transform (model-to-world coordinate
         transform) on your entity's model coordinate geometry. This will determine the location in
@@ -396,22 +496,60 @@ class Geometry(PyRx.RxObject):
         This gets the inverse of the net block insert transform. This can transform an entity's
         world coordinate representation back into the original model coordinates.
         """
-    def pline(self, p1 : PyDb.Polyline, fromIndex : int=0, numSegs : int=0, /) -> bool:
+    @overload
+    def image(
+        self, image: wx.Image, position: PyGe.Point3d, u: PyGe.Vector3d, v: PyGe.Vector3d, /
+    ) -> bool:
+        """
+        This method uses the basic transparent image parameters provided to determine where and
+        what size image to paint. It will stretch the image if its size is not equal to specified
+        size.
+        """
+    @overload
+    def image(
+        self,
+        image: PyGi.PixelBGRA32Array,
+        width: int,
+        height: int,
+        position: PyGe.Point3d,
+        u: PyGe.Vector3d,
+        v: PyGe.Vector3d,
+        /,
+    ) -> bool:
+        """
+        This method uses the basic transparent image parameters provided to determine where and
+        what size image to paint. It will stretch the image if its size is not equal to specified
+        size.
+        """
+    @overload
+    def image(self, *args) -> bool:
+        """
+        This method uses the basic transparent image parameters provided to determine where and
+        what size image to paint. It will stretch the image if its size is not equal to specified
+        size.
+        """
+    def pline(self, p1: PyDb.Polyline, fromIndex: int = 0, numSegs: int = 0, /) -> bool:
         """
         This function uses the AcDbPolylinelwBuf as the template for the geometry it draws. It
         generates display geometry that duplicates the geometry of the polyline's segments.
         """
-    def polygon(self, vertexList : list[PyGe.Point3d], /) -> bool:
+    def polygon(self, vertexList: list[PyGe.Point3d], /) -> bool:
         """
         Draws a filled or unfilled polygon, depending on AcGiSubEntityTraits::fillType(). An edge
         between the last vertex and the first vertex is automatically created in order to generate
         a closed polygon. The caller is responsible for the memory used by the pVertexList array.
         """
-    def polyline(self, vertexList : list[PyGe.Point3d], normal : PyGe.Vector3d=PyGe.Vector3d.kZAxis, marker : int=-1, /) -> bool:
+    def polyline(
+        self,
+        vertexList: list[PyGe.Point3d],
+        normal: PyGe.Vector3d = PyGe.Vector3d.kZAxis,
+        marker: int = -1,
+        /,
+    ) -> bool:
         """
         Walks down the list of vertex points pVertexList drawing line segments from point to point
         (hence the requirement for a minimum of two points). If a thickness is currently specified
-        it will be applied to the segments of this polyline.  The caller is responsible for the
+        it will be applied to the segments of this polyline. The caller is responsible for the
         memory used by the pVertexList array. The lBaseSubEntMarker argument has been added to
         allow the caller to specify sequential sub-entity markers for the segments of the polyline.
         If lBaseSubEntMarker'n' is greater than zero then the segments of the polyline will be
@@ -422,31 +560,37 @@ class Geometry(PyRx.RxObject):
         The method must be called to restore the model transform after a call to
         pushModelTransform(). Returns Adesk::kTrue if successful; otherwise, returns Adesk::kFalse.
         """
-    def pushModelTransform(self, val : PyGe.Vector3d|PyGe.Matrix3d, /) -> bool:
+    def pushModelTransform(self, val: PyGe.Vector3d | PyGe.Matrix3d, /) -> bool:
         """
         This function pushes a new transform onto the transform stack. It generates the input
         matrix using the arbitrary axis algorithm and the supplied vector. When you have finished
         with the transform, you must call popModelTransform() to leave the pipe in the same state
         as before. Returns Adesk::kTrue if successful; otherwise, returns Adesk::kFalse.
         """
-    def pushOrientationTransform(self,  behavior : PyGi.AcGiOrientationTransformBehavior, /) -> PyGe.Matrix3d:
+    def pushOrientationTransform(
+        self, behavior: PyGi.AcGiOrientationTransformBehavior, /
+    ) -> PyGe.Matrix3d:
         """
         This method places orientation transform behavior onto the current transform stack
         """
-    def pushPositionTransform(self, behavior : PyGi.AcGiPositionTransformBehavior,  offset : PyGe.Point2d|PyGe.Point2d, /) -> PyGe.Matrix3d:
+    def pushPositionTransform(
+        self, behavior: PyGi.AcGiPositionTransformBehavior, offset: PyGe.Point2d | PyGe.Point2d, /
+    ) -> PyGe.Matrix3d:
         """
         This method places position transform behavior onto the current transform stack.This method
         ignores z for position if behavior implies a 2D coordinate system, such as
         kAcGiViewportPosition, kAcGiScreenPosition , kAcGiScreenLocalOriginPosition, or
         kAcGiWorldWithScreenOffsetPosition .
         """
-    def pushScaleTransform(self, behavior : PyGi.AcGiScaleTransformBehavior,  extents : PyGe.Point2d|PyGe.Point2d, /) -> PyGe.Matrix3d:
+    def pushScaleTransform(
+        self, behavior: PyGi.AcGiScaleTransformBehavior, extents: PyGe.Point2d | PyGe.Point2d, /
+    ) -> PyGe.Matrix3d:
         """
         This method places scale transform behavior onto the current transform stack.This method
         ignores z for scale if behavior implies a 2D coordinate system, such as kAcGiViewportScale,
         kAcGiScreenScale, kAcGiViewportLocalOriginScale, or kAcGiScreenLocalOriginScale.
         """
-    def ray(self, p1 : PyGe.Point3d, p2 : PyGe.Point3d, /) -> bool:
+    def ray(self, p1: PyGe.Point3d, p2: PyGe.Point3d, /) -> bool:
         """
         This function displays a ray that starts at raysStartingPoint and passes through
         aDifferentRayPoint. A return value of Adesk::kFalse (that is, 0) indicates that the
@@ -454,11 +598,21 @@ class Geometry(PyRx.RxObject):
         Adesk::kTrue indicates that the operation has been terminated and the application wants to
         get control back as soon as possible.
         """
-    def rowOfDots(self, count : int, start: PyGe.Point3d, step : PyGe.Vector3d, /) -> bool:
+    def rowOfDots(self, count: int, start: PyGe.Point3d, step: PyGe.Vector3d, /) -> bool:
         """
         This method draws a row of dots.
         """
-    def text(self, pos : PyGe.Point3d, normal : PyGe.Vector3d, direction : PyGe.Vector3d, height : float, width : float, oblique : float, msg : str, /) -> bool:
+    def text(
+        self,
+        pos: PyGe.Point3d,
+        normal: PyGe.Vector3d,
+        direction: PyGe.Vector3d,
+        height: float,
+        width: float,
+        oblique: float,
+        msg: str,
+        /,
+    ) -> bool:
         """
         This method uses the current AcGiTextStyle when generating the text graphics primitive.
         When worldDraw() is first entered, the AcGiTextStyle is set to the STANDARD text style
@@ -468,18 +622,18 @@ class Geometry(PyRx.RxObject):
         the X axis, and the normal is the Z axis. The obliquing angle for oblique is the angular
         slant from vertical of each character, much the way italic text is angled. A copy of the
         text string is used in pMsg, so the calling application is responsible for the memory of
-        the string passed in.  WarningThe direction and normal vectors must be mutually
+        the string passed in. WarningThe direction and normal vectors must be mutually
         perpendicular or the results will be unpredictable. Here is an example of some text drawing
-        code:  Adesk::Boolean someEntity::worldDraw(AcGiWorldDraw *pWd){    // Position this text
-        to start at 'origin', draw parallel    // to the XY-plane at an upward slant of 45 degrees.
-        //    AcGePoint3d origin(2.0, 2.0, 3.0);    AcGeVector3d direction(1.0, 1.0, 0.0);
-        AcGeVector3d normal(0.0, 0.0, 1.0);    pWd->geometry().text(origin, normal, direction, 1.0,
-        1.0, 0.0, "some text");    return Adesk:kTrue;}A return value of Adesk::kFalse (that is, 0)
-        indicates that the primitive has been successfully stored in the graphics database. A
-        return value of Adesk::kTrue indicates that the operation has been terminated and the
-        application wants to get control back as soon as possible.
+        code: Adesk::Boolean someEntity::worldDraw(AcGiWorldDraw *pWd){ // Position this text to
+        start at 'origin', draw parallel // to the XY-plane at an upward slant of 45 degrees. //
+        AcGePoint3d origin(2.0, 2.0, 3.0); AcGeVector3d direction(1.0, 1.0, 0.0); AcGeVector3d
+        normal(0.0, 0.0, 1.0); pWd->geometry().text(origin, normal, direction, 1.0, 1.0, 0.0, 'some
+        text'); return Adesk:kTrue;}A return value of Adesk::kFalse (that is, 0) indicates that the
+        primitive has been successfully stored in the graphics database. A return value of
+        Adesk::kTrue indicates that the operation has been terminated and the application wants to
+        get control back as soon as possible.
         """
-    def worldLine(self, p1 : PyGe.Point3d, p2 : PyGe.Point3d, /) -> bool:
+    def worldLine(self, p1: PyGe.Point3d, p2: PyGe.Point3d, /) -> bool:
         """
         This function draws a line between the two points in the pnts array. The points must be in
         world coordinates. A return value of Adesk::kFalse (that is, 0) indicates that the
@@ -487,13 +641,14 @@ class Geometry(PyRx.RxObject):
         Adesk::kTrue indicates that the operation has been terminated, and the application wants to
         get control back as soon as possible.
         """
-    def xline(self, p1 : PyGe.Point3d, p2 : PyGe.Point3d, /) -> bool:
+    def xline(self, p1: PyGe.Point3d, p2: PyGe.Point3d, /) -> bool:
         """
         An xline passing oneXlinePoint and a DifferentXlinePoint is displayed. A return value of
         Adesk::kFalse (that is, 0) indicates that the primitive has been successfully stored in the
         graphics database. A return value of Adesk::kTrue indicates that the operation has been
         terminated and the application wants to get control back as soon as possible.
         """
+
 class GiAttributesFlags(_BoostPythonEnum):
     kDrawableNone: ClassVar[Self]  # 0
     kDrawableIsAnEntity: ClassVar[Self]  # 1
@@ -514,6 +669,7 @@ class GiAttributesFlags(_BoostPythonEnum):
     kDrawableNotAllowLCS: ClassVar[Self]  # 32768
     kDrawableMergeControlOff: ClassVar[Self]  # 65536
     kThreadedWorldDrawViewportDraw: ClassVar[Self]  # 131072
+
 class GiDrawableType(_BoostPythonEnum):
     kGeometry: ClassVar[Self]  # 0
     kDistantLight: ClassVar[Self]  # 1
@@ -528,6 +684,7 @@ class GiDrawableType(_BoostPythonEnum):
     kWebLight: ClassVar[Self]  # 10
     kSkyBackground: ClassVar[Self]  # 11
     kImageBasedLightingBackground: ClassVar[Self]  # 12
+
 class GiGraphicsKernel:
     def __init__(self) -> None:
         """
@@ -542,6 +699,7 @@ class GiGraphicsKernel:
         This method returns the kernel descriptor for the graphics kernel. A given kernel only has
         one descriptor, but it's possible for multiple kernels to have the same descriptor.
         """
+
 class GiKernelDescriptor:
     def __init__(self) -> None:
         """
@@ -556,20 +714,46 @@ class GiKernelDescriptor:
         This used by a consumer of an AcGsGraphicsKernel to determine which features are supported
         by the kernel.
         """
+
+class HighlightStyle(_BoostPythonEnum):
+    kAcGiHighlightNone: ClassVar[Self]  # 0
+    kAcGiHighlightCustom: ClassVar[Self]  # 1
+    kAcGiHighlightDashedAndThicken: ClassVar[Self]  # 2
+    kAcGiHighlightDim: ClassVar[Self]  # 3
+    kAcGiHighlightThickDim: ClassVar[Self]  # 4
+    kAcGiHighlightGlow: ClassVar[Self]  # 5
+
 class OrientationTransformBehavior(_BoostPythonEnum):
     kAcGiWorldOrientation: ClassVar[Self]  # 0
     kAcGiScreenOrientation: ClassVar[Self]  # 1
     kAcGiZAxisOrientation: ClassVar[Self]  # 2
+
 class OrientationType(_BoostPythonEnum):
     kAcGiCounterClockwise: ClassVar[Self]  # -1
     kAcGiNoOrientation: ClassVar[Self]  # 0
     kAcGiClockwise: ClassVar[Self]  # 1
+
+class PixelBGRA32Array:
+    def __contains__(self, /) -> bool: ...
+    def __delitem__(self, /) -> None: ...
+    def __getitem__(self, /) -> object: ...
+    def __init__(self, /) -> None: ...
+    def __iter__(self, /) -> object: ...
+    def __len__(self, /) -> int: ...
+    def __reduce__(self, /) -> Any: ...
+    def __setitem__(self, /) -> None: ...
+    def append(self, /) -> None: ...
+    @staticmethod
+    def createFromWxImage(image: wx.Image, alpha: int = 255, /) -> PixelBGRA32Array: ...
+    def extend(self, /) -> None: ...
+
 class PositionTransformBehavior(_BoostPythonEnum):
     kAcGiWorldPosition: ClassVar[Self]  # 0
     kAcGiViewportPosition: ClassVar[Self]  # 1
     kAcGiScreenPosition: ClassVar[Self]  # 2
     kAcGiScreenLocalOriginPosition: ClassVar[Self]  # 3
     kAcGiWorldWithScreenOffsetPosition: ClassVar[Self]  # 4
+
 class RegenType(_BoostPythonEnum):
     eAcGiRegenTypeInvalid: ClassVar[Self]  # 0
     kAcGiStandardDisplay: ClassVar[Self]  # 2
@@ -577,20 +761,24 @@ class RegenType(_BoostPythonEnum):
     kAcGiShadedDisplay: ClassVar[Self]  # 4
     kAcGiForExplode: ClassVar[Self]  # 5
     kAcGiSaveWorldDrawForProxy: ClassVar[Self]  # 6
+
 class ScaleTransformBehavior(_BoostPythonEnum):
     kAcGiWorldScale: ClassVar[Self]  # 0
     kAcGiViewportScale: ClassVar[Self]  # 1
     kAcGiScreenScale: ClassVar[Self]  # 2
     kAcGiViewportLocalOriginScale: ClassVar[Self]  # 3
     kAcGiScreenLocalOriginScale: ClassVar[Self]  # 4
+
 class SelectionFlags(_BoostPythonEnum):
     kNoSelectionFlags: ClassVar[Self]  # 0
     kSelectionIgnore: ClassVar[Self]  # 1
+
 class ShadowFlags(_BoostPythonEnum):
     kNoDrawFlags: ClassVar[Self]  # 0
     kShadowsDoesNotCast: ClassVar[Self]  # 1
     kShadowsDoesNotReceive: ClassVar[Self]  # 2
     kShadowsIgnore: ClassVar[Self]  # 3
+
 class SubEntityTraits(PyRx.RxObject):
     def __init__(self) -> None:
         """
@@ -630,10 +818,12 @@ class SubEntityTraits(PyRx.RxObject):
     def setFillType(self, val: PyGi.FillType, /) -> None: ...
     def setLayer(self, id: PyDb.ObjectId, /) -> None: ...
     def setLineType(self, id: PyDb.ObjectId, /) -> None: ...
-    def setLineTypeScale(self, val: float=1.0, /) -> None: ...
+    def setLineTypeScale(self, val: float = 1.0, /) -> None: ...
     def setLineWeight(self, val: PyDb.LineWeight, /) -> None: ...
     def setMaterial(self, id: PyDb.ObjectId, /) -> None: ...
-    def setPlotStyleName(self, val: PyDb.PlotStyleNameType, id: PyDb.ObjectId=None, /) -> None: ...
+    def setPlotStyleName(
+        self, val: PyDb.PlotStyleNameType, id: PyDb.ObjectId = ..., /
+    ) -> None: ...
     def setSectionable(self, val: bool, /) -> None: ...
     def setSelectionGeom(self, val: bool, /) -> None: ...
     def setSelectionMarker(self, val: int, /) -> None: ...
@@ -647,6 +837,7 @@ class SubEntityTraits(PyRx.RxObject):
     def transparency(self, /) -> PyDb.Transparency: ...
     def trueColor(self, /) -> PyDb.EntityColor: ...
     def visualStyle(self, /) -> PyDb.ObjectId: ...
+
 class TransientDrawingMode(_BoostPythonEnum):
     kAcGiMain: ClassVar[Self]  # 0
     kAcGiSprite: ClassVar[Self]  # 1
@@ -655,6 +846,7 @@ class TransientDrawingMode(_BoostPythonEnum):
     kAcGiDirectTopmost: ClassVar[Self]  # 4
     kAcGiContrast: ClassVar[Self]  # 5
     kAcGiDrawingModeCount: ClassVar[Self]  # 6
+
 class TransientManager:
     def __init__(self, /) -> None: ...
     def __reduce__(self, /) -> Any: ...
@@ -665,13 +857,22 @@ class TransientManager:
         specify a drawing mode, subDrawingMode or viewportNumber; these properties of the child
         transient will be the same as parent transient
         """
-    def addTransient(self, drawable: PyGi.Drawable, mode: PyGi.TransientDrawingMode, subDrawingMode: int, viewportNumbers: list[int], /) -> bool:
+    def addTransient(
+        self,
+        drawable: PyGi.Drawable,
+        mode: PyGi.TransientDrawingMode,
+        subDrawingMode: int,
+        viewportNumbers: list[int],
+        /,
+    ) -> bool:
         """
         This function adds a transient to a list of viewports. Returns true if successful.
         """
     @staticmethod
     def current() -> TransientManager: ...
-    def eraseChildTransient(self, drawable: PyGi.Drawable, parentDrawable: PyGi.Drawable, /) -> bool:
+    def eraseChildTransient(
+        self, drawable: PyGi.Drawable, parentDrawable: PyGi.Drawable, /
+    ) -> bool:
         """
         This function erases a child transient from specified parent transient. Returns true if
         successful.
@@ -681,19 +882,25 @@ class TransientManager:
         This function erases a transient from a list of viewports. Returns true if successful. This
         function erases a specified drawable which has been added by addTransient().
         """
-    def eraseTransients(self, mode: PyGi.TransientDrawingMode, subDrawingMode: int, viewportNumbers: list[int], /) -> bool:
+    def eraseTransients(
+        self, mode: PyGi.TransientDrawingMode, subDrawingMode: int, viewportNumbers: list[int], /
+    ) -> bool:
         """
         This function erases all transients in the specified subDrawingMode from a list of
         viewports. Returns true if successful.
         """
-    def getFreeSubDrawingMode(self, mode: PyGi.TransientDrawingMode, subDrawingMode: int, viewportNumbers: list[int], /) -> tuple[int,int]:
+    def getFreeSubDrawingMode(
+        self, mode: PyGi.TransientDrawingMode, subDrawingMode: int, viewportNumbers: list[int], /
+    ) -> tuple[int, int]:
         """
         Get the free draw order in a certain transient drawing mode. Returns 0 if the input draw
         order is not free and transient manager also could not get a free draw order. Returns 1 if
         the inputting draw order is available. Returns 2 if the inputting draw order is
         unavailable, but transient manager could return a free draw order.
         """
-    def updateChildTransient(self, drawable: PyGi.Drawable, parentDrawable: PyGi.Drawable, /) -> None:
+    def updateChildTransient(
+        self, drawable: PyGi.Drawable, parentDrawable: PyGi.Drawable, /
+    ) -> None:
         """
         This function only updates a child transient of the specified parent transient. This means
         partial updates of parent drawable.
@@ -702,10 +909,12 @@ class TransientManager:
         """
         Update a transient via the transient manager.
         """
+
 class TransparencyMode(_BoostPythonEnum):
     kTransparencyOff: ClassVar[Self]  # 0
     kTransparency1Bit: ClassVar[Self]  # 1
     kTransparency8Bit: ClassVar[Self]  # 2
+
 class ViewportDraw(PyGi.CommonDraw):
     def __init__(self) -> None:
         """
@@ -735,6 +944,7 @@ class ViewportDraw(PyGi.CommonDraw):
         the user to generate geometry (polylines, arcs, meshes, etc.). For a description of this
         object, see class AcGiViewportGeometry.
         """
+
 class ViewportGeometry(PyGi.Geometry):
     def __init__(self) -> None:
         """
@@ -758,10 +968,12 @@ class ViewportGeometry(PyGi.Geometry):
         method is acceptable, provided the application knows that the AcRxClass object pointed to
         by the returned pointer was created by an ObjectARX application that will not be unloaded.
         """
+
 class Visibility(_BoostPythonEnum):
     kAcGiInvisible: ClassVar[Self]  # 0
     kAcGiVisible: ClassVar[Self]  # 1
     kAcGiSilhouette: ClassVar[Self]  # 2
+
 class WorldDraw(PyGi.CommonDraw):
     def __init__(self) -> None:
         """
@@ -791,6 +1003,7 @@ class WorldDraw(PyGi.CommonDraw):
         the user to generate geometry (polylines, arcs, meshes, etc.). For a description of this
         object, see class AcGiWorldGeometry.
         """
+
 class WorldGeometry(PyGi.Geometry):
     def __init__(self) -> None:
         """

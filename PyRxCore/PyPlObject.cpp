@@ -7,9 +7,6 @@
 
 using namespace boost::python;
 
-#if defined(_BRXTARGET250)
-//
-#else
 //-----------------------------------------------------------------------------------------
 //AcPlPlotFactory
 void makeAcPlPlotFactoryWrapper()
@@ -68,16 +65,16 @@ void makePyPlPlotEngineWrapper()
 {
     PyDocString DS("PlotEngine");
     class_<PyPlPlotEngine>("PlotEngine", boost::python::no_init)
-        .def("beginPlot", &PyPlPlotEngine::beginPlot)
-        .def("endPlot", &PyPlPlotEngine::endPlot)
-        .def("beginDocument", &PyPlPlotEngine::beginDocument)
-        .def("endDocument", &PyPlPlotEngine::endDocument)
-        .def("beginPage", &PyPlPlotEngine::beginPage)
-        .def("endPage", &PyPlPlotEngine::endPage)
-        .def("beginGenerateGraphics", &PyPlPlotEngine::beginGenerateGraphics)
-        .def("endGenerateGraphics", &PyPlPlotEngine::endGenerateGraphics)
-        .def("destroy", &PyPlPlotEngine::destroy)
-        .def("isBackgroundPackaging", &PyPlPlotEngine::isBackgroundPackaging)
+        .def("beginPlot", &PyPlPlotEngine::beginPlot, DS.ARGS({ "dlgRef: PyPl.PlotProgressDialog" }))
+        .def("endPlot", &PyPlPlotEngine::endPlot, DS.ARGS())
+        .def("beginDocument", &PyPlPlotEngine::beginDocument, DS.ARGS({ "plotInfo:PyPl.PlotInfo", "docName:str", "plotToFile:bool", "fileName:str" }))
+        .def("endDocument", &PyPlPlotEngine::endDocument, DS.ARGS())
+        .def("beginPage", &PyPlPlotEngine::beginPage, DS.ARGS({ "pageInfo:PyPl.PlotPageInfo","plotInfo:PyPl.PlotInfo","lastPage:bool" }))
+        .def("endPage", &PyPlPlotEngine::endPage, DS.ARGS())
+        .def("beginGenerateGraphics", &PyPlPlotEngine::beginGenerateGraphics, DS.ARGS())
+        .def("endGenerateGraphics", &PyPlPlotEngine::endGenerateGraphics, DS.ARGS())
+        .def("destroy", &PyPlPlotEngine::destroy, DS.ARGS())
+        .def("isBackgroundPackaging", &PyPlPlotEngine::isBackgroundPackaging, DS.ARGS())
         .def("className", &PyPlPlotEngine::className, DS.SARGS()).staticmethod("className")
         ;
 }
@@ -98,42 +95,42 @@ PyPlPlotEngine::PyPlPlotEngine(AcPlPlotEngine* ptr)
 {
 }
 
-void PyPlPlotEngine::beginPlot(PyPlPlotProgressDialog& pPlotProgress)
+void PyPlPlotEngine::beginPlot(PyPlPlotProgressDialog& pPlotProgress) const
 {
     PyThrowBadEs(impObj()->beginPlot(pPlotProgress.impObj()));
 }
 
-void PyPlPlotEngine::endPlot()
+void PyPlPlotEngine::endPlot() const
 {
     PyThrowBadEs(impObj()->endPlot());
 }
 
-void PyPlPlotEngine::beginDocument(PyPlPlotInfo& plotInfo, const std::string& pDocname, Adesk::Int32 nCopies, bool bPlotToFile, const std::string& pFileName)
+void PyPlPlotEngine::beginDocument(PyPlPlotInfo& plotInfo, const std::string& pDocname, Adesk::Int32 nCopies, bool bPlotToFile, const std::string& pFileName) const
 {
     PyThrowBadEs(impObj()->beginDocument(*plotInfo.impObj(), utf8_to_wstr(pDocname).c_str(), NULL, nCopies, bPlotToFile, utf8_to_wstr(pFileName).c_str()));
 }
 
-void PyPlPlotEngine::endDocument()
+void PyPlPlotEngine::endDocument() const
 {
     PyThrowBadEs(impObj()->endDocument());
 }
 
-void PyPlPlotEngine::beginPage(PyPlPlotPageInfo& pageInfo, PyPlPlotInfo& plotInfo, bool bLastPage)
+void PyPlPlotEngine::beginPage(PyPlPlotPageInfo& pageInfo, PyPlPlotInfo& plotInfo, bool bLastPage) const
 {
     PyThrowBadEs(impObj()->beginPage(*pageInfo.impObj(), *plotInfo.impObj(), bLastPage));
 }
 
-void PyPlPlotEngine::endPage()
+void PyPlPlotEngine::endPage() const
 {
     PyThrowBadEs(impObj()->endPage());
 }
 
-void PyPlPlotEngine::beginGenerateGraphics()
+void PyPlPlotEngine::beginGenerateGraphics() const
 {
     PyThrowBadEs(impObj()->beginGenerateGraphics());
 }
 
-void PyPlPlotEngine::endGenerateGraphics()
+void PyPlPlotEngine::endGenerateGraphics() const
 {
     PyThrowBadEs(impObj()->endGenerateGraphics());
 }
@@ -200,60 +197,61 @@ void makePyPlDSDDataWrapper()
 {
     PyDocString DS("DSDData");
     class_<PyPlDSDData, bases<PyPlObject>>("DSDData")
-        .def("projectPath", &PyPlDSDData::projectPath)
-        .def("setProjectPath", &PyPlDSDData::setProjectPath)
-        .def("destinationName", &PyPlDSDData::destinationName)
-        .def("setDestinationName", &PyPlDSDData::setDestinationName)
-        .def("getDSDEntries", &PyPlDSDData::getDSDEntries)
-        .def("setDSDEntries", &PyPlDSDData::setDSDEntries)
-        .def("getPrecisionEntries", &PyPlDSDData::getPrecisionEntries)
-        .def("setPrecisionEntries", &PyPlDSDData::setPrecisionEntries)
-        .def("numberOfDSDEntries", &PyPlDSDData::numberOfDSDEntries)
-        .def("sheetType", &PyPlDSDData::sheetType)
-        .def("setSheetType", &PyPlDSDData::setSheetType)
-        .def("password", &PyPlDSDData::password)
-        .def("setPassword", &PyPlDSDData::setPassword)
-        .def("getUnrecognizedData", &PyPlDSDData::getUnrecognizedData)
-        .def("setUnrecognizedData", &PyPlDSDData::setUnrecognizedData1)
-        .def("setUnrecognizedData", &PyPlDSDData::setUnrecognizedData2)
-        .def("majorVersion", &PyPlDSDData::majorVersion)
-        .def("setMajorVersion", &PyPlDSDData::setMajorVersion)
-        .def("minorVersion", &PyPlDSDData::minorVersion)
-        .def("setMinorVersion", &PyPlDSDData::setMinorVersion)
-        .def("sheetSetName", &PyPlDSDData::sheetSetName)
-        .def("setSheetSetName", &PyPlDSDData::setSheetSetName)
-        .def("noOfCopies", &PyPlDSDData::noOfCopies)
-        .def("setNoOfCopies", &PyPlDSDData::setNoOfCopies)
-        .def("setIsSheetSet", &PyPlDSDData::setIsSheetSet)
-        .def("isSheetSet", &PyPlDSDData::isSheetSet)
-        .def("isHomogeneous", &PyPlDSDData::isHomogeneous)
-        .def("setIsHomogeneous", &PyPlDSDData::setIsHomogeneous)
-        .def("plotStampOn", &PyPlDSDData::plotStampOn)
-        .def("setPlotStampOn", &PyPlDSDData::setPlotStampOn)
-        .def("viewFile", &PyPlDSDData::viewFile)
-        .def("setViewFile", &PyPlDSDData::setViewFile)
-        .def("selectionSetName", &PyPlDSDData::selectionSetName)
-        .def("setSelectionSetName", &PyPlDSDData::setSelectionSetName)
-        .def("categoryName", &PyPlDSDData::categoryName)
-        .def("setCategoryName", &PyPlDSDData::setCategoryName)
-        .def("logFilePath", &PyPlDSDData::logFilePath)
-        .def("setLogFilePath", &PyPlDSDData::setLogFilePath)
-        .def("get3dDwfOptions", &PyPlDSDData::get3dDwfOptions)
-        .def("set3dDwfOptions", &PyPlDSDData::set3dDwfOptions)
-        .def("includeLayerInfo", &PyPlDSDData::includeLayerInfo)
-        .def("setIncludeLayerInfo", &PyPlDSDData::setIncludeLayerInfo)
-        .def("lineMerge", &PyPlDSDData::lineMerge)
-        .def("setLineMerge", &PyPlDSDData::setLineMerge)
-        .def("currentPrecision", &PyPlDSDData::currentPrecision)
-        .def("setCurrentPrecision", &PyPlDSDData::setCurrentPrecision)
-        .def("promptForDwfName", &PyPlDSDData::promptForDwfName)
-        .def("setPromptForDwfName", &PyPlDSDData::setPromptForDwfName)
-        .def("pwdProtectPublishedDWF", &PyPlDSDData::pwdProtectPublishedDWF)
-        .def("setPwdProtectPublishedDWF", &PyPlDSDData::setPwdProtectPublishedDWF)
-        .def("promptForPassword", &PyPlDSDData::promptForPassword)
-        .def("setPromptForPassword", &PyPlDSDData::setPromptForPassword)
-        .def("initializeLayouts", &PyPlDSDData::initializeLayouts)
-        .def("setInitializeLayouts", &PyPlDSDData::setInitializeLayouts)
+        .def(init<>(DS.ARGS(14764)))
+        .def("projectPath", &PyPlDSDData::projectPath, DS.ARGS())
+        .def("setProjectPath", &PyPlDSDData::setProjectPath, DS.ARGS({ "path: str" }))
+        .def("destinationName", &PyPlDSDData::destinationName, DS.ARGS())
+        .def("setDestinationName", &PyPlDSDData::setDestinationName, DS.ARGS({ "val: str" }))
+        .def("getDSDEntries", &PyPlDSDData::getDSDEntries, DS.ARGS())
+        .def("setDSDEntries", &PyPlDSDData::setDSDEntries, DS.ARGS({ "entries: list[PyPl.DSDEntry]" }))
+        .def("getPrecisionEntries", &PyPlDSDData::getPrecisionEntries, DS.ARGS())
+        .def("setPrecisionEntries", &PyPlDSDData::setPrecisionEntries, DS.ARGS({ "val:list[PyPl.PrecisionEntry]" }))
+        .def("numberOfDSDEntries", &PyPlDSDData::numberOfDSDEntries, DS.ARGS())
+        .def("sheetType", &PyPlDSDData::sheetType, DS.ARGS())
+        .def("setSheetType", &PyPlDSDData::setSheetType, DS.ARGS({ "val:PyPl.SheetType" }))
+        .def("password", &PyPlDSDData::password, DS.ARGS())
+        .def("setPassword", &PyPlDSDData::setPassword, DS.ARGS({ "val:str" }))
+        .def("getUnrecognizedData", &PyPlDSDData::getUnrecognizedData, DS.ARGS())
+        .def("setUnrecognizedData", &PyPlDSDData::setUnrecognizedData1, DS.ARGS({ "sectionName:str","sectionData:str" }))
+        .def("setUnrecognizedData", &PyPlDSDData::setUnrecognizedData2, DS.ARGS({ "sectionName:list[str]","sectionData:list[str]" }))
+        .def("majorVersion", &PyPlDSDData::majorVersion, DS.ARGS())
+        .def("setMajorVersion", &PyPlDSDData::setMajorVersion, DS.ARGS({ "val:int" }))
+        .def("minorVersion", &PyPlDSDData::minorVersion, DS.ARGS())
+        .def("setMinorVersion", &PyPlDSDData::setMinorVersion, DS.ARGS({ "val:int" }))
+        .def("sheetSetName", &PyPlDSDData::sheetSetName, DS.ARGS())
+        .def("setSheetSetName", &PyPlDSDData::setSheetSetName, DS.ARGS({ "val:str" }))
+        .def("noOfCopies", &PyPlDSDData::noOfCopies, DS.ARGS())
+        .def("setNoOfCopies", &PyPlDSDData::setNoOfCopies, DS.ARGS({ "val:int" }))
+        .def("setIsSheetSet", &PyPlDSDData::setIsSheetSet, DS.ARGS({ "val:bool" }))
+        .def("isSheetSet", &PyPlDSDData::isSheetSet, DS.ARGS())
+        .def("isHomogeneous", &PyPlDSDData::isHomogeneous, DS.ARGS())
+        .def("setIsHomogeneous", &PyPlDSDData::setIsHomogeneous, DS.ARGS({ "val:bool" }))
+        .def("plotStampOn", &PyPlDSDData::plotStampOn, DS.ARGS())
+        .def("setPlotStampOn", &PyPlDSDData::setPlotStampOn, DS.ARGS({ "val:bool" }))
+        .def("viewFile", &PyPlDSDData::viewFile, DS.ARGS())
+        .def("setViewFile", &PyPlDSDData::setViewFile, DS.ARGS({ "val:bool" }))
+        .def("selectionSetName", &PyPlDSDData::selectionSetName, DS.ARGS())
+        .def("setSelectionSetName", &PyPlDSDData::setSelectionSetName, DS.ARGS({ "val:str" }))
+        .def("categoryName", &PyPlDSDData::categoryName, DS.ARGS())
+        .def("setCategoryName", &PyPlDSDData::setCategoryName, DS.ARGS({ "val:str" }))
+        .def("logFilePath", &PyPlDSDData::logFilePath, DS.ARGS())
+        .def("setLogFilePath", &PyPlDSDData::setLogFilePath, DS.ARGS({ "val:str" }))
+        .def("get3dDwfOptions", &PyPlDSDData::get3dDwfOptions, DS.ARGS())
+        .def("set3dDwfOptions", &PyPlDSDData::set3dDwfOptions, DS.ARGS({ "groupByXrefHierarchy:bool", "publishWithMaterials:bool" }))
+        .def("includeLayerInfo", &PyPlDSDData::includeLayerInfo, DS.ARGS())
+        .def("setIncludeLayerInfo", &PyPlDSDData::setIncludeLayerInfo, DS.ARGS({ "val:bool" }))
+        .def("lineMerge", &PyPlDSDData::lineMerge, DS.ARGS())
+        .def("setLineMerge", &PyPlDSDData::setLineMerge, DS.ARGS({ "val:bool" }))
+        .def("currentPrecision", &PyPlDSDData::currentPrecision, DS.ARGS())
+        .def("setCurrentPrecision", &PyPlDSDData::setCurrentPrecision, DS.ARGS({ "val:str" }))
+        .def("promptForDwfName", &PyPlDSDData::promptForDwfName, DS.ARGS())
+        .def("setPromptForDwfName", &PyPlDSDData::setPromptForDwfName, DS.ARGS({ "val:bool" }))
+        .def("pwdProtectPublishedDWF", &PyPlDSDData::pwdProtectPublishedDWF, DS.ARGS())
+        .def("setPwdProtectPublishedDWF", &PyPlDSDData::setPwdProtectPublishedDWF, DS.ARGS({ "val:bool" }))
+        .def("promptForPassword", &PyPlDSDData::promptForPassword, DS.ARGS())
+        .def("setPromptForPassword", &PyPlDSDData::setPromptForPassword, DS.ARGS({ "val:bool" }))
+        .def("initializeLayouts", &PyPlDSDData::initializeLayouts, DS.ARGS())
+        .def("setInitializeLayouts", &PyPlDSDData::setInitializeLayouts, DS.ARGS({ "val:bool" }))
         .def("desc", &PyPlDSDData::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlDSDData::className, DS.SARGS()).staticmethod("className")
         ;
@@ -274,7 +272,7 @@ std::string PyPlDSDData::projectPath() const
     return wstr_to_utf8(impObj()->projectPath());
 }
 
-void PyPlDSDData::setProjectPath(const std::string& pVal)
+void PyPlDSDData::setProjectPath(const std::string& pVal) const
 {
     impObj()->setProjectPath(utf8_to_wstr(pVal).c_str());
 }
@@ -284,7 +282,7 @@ std::string PyPlDSDData::destinationName() const
     return wstr_to_utf8(impObj()->destinationName());
 }
 
-void PyPlDSDData::setDestinationName(const std::string& pVal)
+void PyPlDSDData::setDestinationName(const std::string& pVal) const
 {
     impObj()->setDestinationName(utf8_to_wstr(pVal).c_str());
 }
@@ -300,7 +298,7 @@ boost::python::list PyPlDSDData::getDSDEntries() const
     return pyList;
 }
 
-void PyPlDSDData::setDSDEntries(const boost::python::list& val)
+void PyPlDSDData::setDSDEntries(const boost::python::list& val) const
 {
     AcPlDSDEntries arr;
     const auto& vec = py_list_to_std_vector<PyPlDSDEntry>(val);
@@ -311,6 +309,9 @@ void PyPlDSDData::setDSDEntries(const boost::python::list& val)
 
 boost::python::list PyPlDSDData::getPrecisionEntries() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     PyAutoLockGIL lock;
     boost::python::list pyList;
     AcPlPrecisionEntries entries;
@@ -318,15 +319,20 @@ boost::python::list PyPlDSDData::getPrecisionEntries() const
     for (const auto& entry : entries)
         pyList.append(PyPlPrecisionEntry(entry));
     return pyList;
+#endif
 }
 
-void PyPlDSDData::setPrecisionEntries(const boost::python::list& val)
+void PyPlDSDData::setPrecisionEntries(const boost::python::list& val) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     AcPlPrecisionEntries entries;
     const auto& vec = py_list_to_std_vector<PyPlPrecisionEntry>(val);
     for (const auto& entry : vec)
         entries.append(*entry.impObj());
     impObj()->setPrecisionEntries(entries);
+#endif
 }
 
 int PyPlDSDData::numberOfDSDEntries() const
@@ -334,7 +340,7 @@ int PyPlDSDData::numberOfDSDEntries() const
     return impObj()->numberOfDSDEntries();
 }
 
-PyPlDSDEntry PyPlDSDData::DSDEntryAt(int idx)
+PyPlDSDEntry PyPlDSDData::DSDEntryAt(int idx) const
 {
     return PyPlDSDEntry(impObj()->DSDEntryAt(idx));
 }
@@ -344,7 +350,7 @@ AcPlDSDEntry::SheetType PyPlDSDData::sheetType() const
     return impObj()->sheetType();
 }
 
-void PyPlDSDData::setSheetType(AcPlDSDEntry::SheetType val)
+void PyPlDSDData::setSheetType(AcPlDSDEntry::SheetType val) const
 {
     return impObj()->setSheetType(val);
 }
@@ -354,30 +360,44 @@ std::string PyPlDSDData::password() const
     return wstr_to_utf8(impObj()->password());
 }
 
-void PyPlDSDData::setPassword(const std::string& pVal)
+void PyPlDSDData::setPassword(const std::string& pVal) const
 {
     impObj()->setPassword(utf8_to_wstr(pVal).c_str());
 }
 
-void PyPlDSDData::getUnrecognizedData(boost::python::list& sectionArray, boost::python::list& dataArray) const
+boost::python::tuple PyPlDSDData::getUnrecognizedData() const
 {
+    PyAutoLockGIL lock;
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+    // AcArray<ACHAR*> _sectionArray;
+    // AcArray<ACHAR*> _dataArray;//leak?
+#else
     AcStringArray _sectionArray;
     AcStringArray _dataArray;
+    boost::python::list sectionArray;
+    boost::python::list dataArray;
     impObj()->getUnrecognizedData(_sectionArray, _dataArray);
     for (const auto& item : _sectionArray)
         sectionArray.append(wstr_to_utf8(item));
     for (const auto& item : _dataArray)
         dataArray.append(wstr_to_utf8(item));
+    return boost::python::make_tuple(sectionArray, dataArray);
+#endif
 }
 
-void PyPlDSDData::setUnrecognizedData1(const std::string& pSectionName, const std::string& pSectionData)
+void PyPlDSDData::setUnrecognizedData1(const std::string& pSectionName, const std::string& pSectionData) const
 {
     impObj()->setUnrecognizedData(utf8_to_wstr(pSectionName).c_str(), utf8_to_wstr(pSectionData).c_str());
 }
 
-void PyPlDSDData::setUnrecognizedData2(const boost::python::list& sectionArray, const boost::python::list& dataArray)
+void PyPlDSDData::setUnrecognizedData2(const boost::python::list& sectionArray, const boost::python::list& dataArray) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     impObj()->setUnrecognizedData(PyListToAcStringArray(sectionArray), PyListToAcStringArray(dataArray));
+#endif
 }
 
 unsigned int PyPlDSDData::majorVersion() const
@@ -385,7 +405,7 @@ unsigned int PyPlDSDData::majorVersion() const
     return impObj()->majorVersion();
 }
 
-void PyPlDSDData::setMajorVersion(unsigned int majorVersion)
+void PyPlDSDData::setMajorVersion(unsigned int majorVersion) const
 {
     return impObj()->setMajorVersion(majorVersion);
 }
@@ -395,7 +415,7 @@ unsigned int PyPlDSDData::minorVersion() const
     return impObj()->minorVersion();
 }
 
-void PyPlDSDData::setMinorVersion(unsigned int minorVersion)
+void PyPlDSDData::setMinorVersion(unsigned int minorVersion) const
 {
     return impObj()->setMinorVersion(minorVersion);
 }
@@ -405,7 +425,7 @@ std::string PyPlDSDData::sheetSetName() const
     return wstr_to_utf8(impObj()->sheetSetName());
 }
 
-void PyPlDSDData::setSheetSetName(const std::string& pSheetSetName)
+void PyPlDSDData::setSheetSetName(const std::string& pSheetSetName) const
 {
     return impObj()->setSheetSetName(utf8_to_wstr(pSheetSetName).c_str());
 }
@@ -415,12 +435,12 @@ unsigned int PyPlDSDData::noOfCopies() const
     return impObj()->noOfCopies();
 }
 
-void PyPlDSDData::setNoOfCopies(unsigned int copies)
+void PyPlDSDData::setNoOfCopies(unsigned int copies) const
 {
     return impObj()->setNoOfCopies(copies);
 }
 
-void PyPlDSDData::setIsSheetSet(bool bSheetSet)
+void PyPlDSDData::setIsSheetSet(bool bSheetSet) const
 {
     return impObj()->setIsSheetSet(bSheetSet);
 }
@@ -435,7 +455,7 @@ bool PyPlDSDData::isHomogeneous() const
     return impObj()->isHomogeneous();
 }
 
-void PyPlDSDData::setIsHomogeneous(bool bHomogeneous)
+void PyPlDSDData::setIsHomogeneous(bool bHomogeneous) const
 {
     return impObj()->setIsHomogeneous(bHomogeneous);
 }
@@ -445,19 +465,27 @@ bool PyPlDSDData::plotStampOn() const
     return impObj()->plotStampOn();
 }
 
-void PyPlDSDData::setPlotStampOn(bool bOn)
+void PyPlDSDData::setPlotStampOn(bool bOn) const
 {
     return impObj()->setPlotStampOn(bOn);
 }
 
 bool PyPlDSDData::viewFile() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->viewFile();
+#endif
 }
 
-void PyPlDSDData::setViewFile(bool bViewFile)
+void PyPlDSDData::setViewFile(bool bViewFile) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setViewFile(bViewFile);
+#endif
 }
 
 std::string PyPlDSDData::selectionSetName() const
@@ -465,7 +493,7 @@ std::string PyPlDSDData::selectionSetName() const
     return wstr_to_utf8(impObj()->selectionSetName());
 }
 
-void PyPlDSDData::setSelectionSetName(const std::string& pSelSetName)
+void PyPlDSDData::setSelectionSetName(const std::string& pSelSetName) const
 {
     return impObj()->setSelectionSetName(utf8_to_wstr(pSelSetName).c_str());
 }
@@ -475,7 +503,7 @@ std::string PyPlDSDData::categoryName() const
     return wstr_to_utf8(impObj()->categoryName());
 }
 
-void PyPlDSDData::setCategoryName(const std::string& pCategoryName)
+void PyPlDSDData::setCategoryName(const std::string& pCategoryName) const
 {
     return impObj()->setCategoryName(utf8_to_wstr(pCategoryName).c_str());
 }
@@ -485,7 +513,7 @@ std::string PyPlDSDData::logFilePath() const
     return wstr_to_utf8(impObj()->logFilePath());
 }
 
-void PyPlDSDData::setLogFilePath(const std::string& pLogFilePath)
+void PyPlDSDData::setLogFilePath(const std::string& pLogFilePath) const
 {
     return impObj()->setLogFilePath(utf8_to_wstr(pLogFilePath).c_str());
 }
@@ -497,7 +525,7 @@ boost::python::tuple PyPlDSDData::get3dDwfOptions() const
     return boost::python::make_tuple(opt.bGroupByXrefHierarchy, opt.bPublishWithMaterials);
 }
 
-void PyPlDSDData::set3dDwfOptions(bool bGroupByXrefHierarchy, bool bPublishWithMaterials)
+void PyPlDSDData::set3dDwfOptions(bool bGroupByXrefHierarchy, bool bPublishWithMaterials) const
 {
     AcPl3dDwfOptions opt = { bGroupByXrefHierarchy ,bPublishWithMaterials };
     impObj()->set3dDwfOptions(opt);
@@ -505,91 +533,127 @@ void PyPlDSDData::set3dDwfOptions(bool bGroupByXrefHierarchy, bool bPublishWithM
 
 bool PyPlDSDData::includeLayerInfo() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->includeLayerInfo();
+#endif
 }
 
-void PyPlDSDData::setIncludeLayerInfo(bool bOn)
+void PyPlDSDData::setIncludeLayerInfo(bool bOn) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setIncludeLayerInfo(bOn);
+#endif
 }
 
 bool PyPlDSDData::lineMerge() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->lineMerge();
+#endif
 }
 
-void PyPlDSDData::setLineMerge(bool bOn)
+void PyPlDSDData::setLineMerge(bool bOn) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setLineMerge(bOn);
+#endif
 }
 
 std::string PyPlDSDData::currentPrecision() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return wstr_to_utf8(impObj()->currentPrecision());
+#endif
 }
 
-void PyPlDSDData::setCurrentPrecision(const std::string& pCurrentPrecision)
+void PyPlDSDData::setCurrentPrecision(const std::string& pCurrentPrecision) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setCurrentPrecision(utf8_to_wstr(pCurrentPrecision).c_str());
+#endif
 }
 
 bool PyPlDSDData::promptForDwfName() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->promptForDwfName();
+#endif
 }
 
-void PyPlDSDData::setPromptForDwfName(bool bPromptForDwfName)
+void PyPlDSDData::setPromptForDwfName(bool bPromptForDwfName) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setPromptForDwfName(bPromptForDwfName);
+#endif
 }
 
 bool PyPlDSDData::pwdProtectPublishedDWF() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->pwdProtectPublishedDWF();
+#endif
 }
 
-void PyPlDSDData::setPwdProtectPublishedDWF(bool bPwdProtectPublishedDWF)
+void PyPlDSDData::setPwdProtectPublishedDWF(bool bPwdProtectPublishedDWF) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setPwdProtectPublishedDWF(bPwdProtectPublishedDWF);
+#endif
 }
 
 bool PyPlDSDData::promptForPassword() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->promptForPassword();
+#endif
 }
 
-void PyPlDSDData::setPromptForPassword(bool bPromptForPassword)
+void PyPlDSDData::setPromptForPassword(bool bPromptForPassword) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setPromptForPassword(bPromptForPassword);
+#endif
 }
 
 bool PyPlDSDData::initializeLayouts() const
 {
-#if _ZRXTARGET <= 260 || _GRXTARGET == 240
-    throw PyNotimplementedByHost();
-#endif
-
-#ifdef _ARXTARGET
-#if _ARXTARGET <= 240
+#if defined(_ZRXTARGET250) || defined(_GRXTARGET250) || defined(_ARXTARGET240) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->initializeLayouts();
 #endif
-#endif
 }
 
-void PyPlDSDData::setInitializeLayouts(bool initLayouts)
+void PyPlDSDData::setInitializeLayouts(bool initLayouts) const
 {
-#if _ZRXTARGET <= 250 || _GRXTARGET == 240
-    throw PyNotimplementedByHost();
-#endif
-
-#ifdef _ARXTARGET
-#if _ARXTARGET <= 240
+#if defined(_ZRXTARGET250) || defined(_GRXTARGET250) || defined(_ARXTARGET240) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->setInitializeLayouts(initLayouts);
-#endif
 #endif
 }
 
@@ -617,23 +681,24 @@ void makePyPlDSDEntryWrapper()
 {
     PyDocString DS("DSDEntry");
     class_<PyPlDSDEntry, bases<PyPlObject>>("DSDEntry")
-        .def("dwgName", &PyPlDSDEntry::dwgName)
-        .def("setDwgName", &PyPlDSDEntry::setDwgName)
-        .def("layout", &PyPlDSDEntry::layout)
-        .def("setLayout", &PyPlDSDEntry::setLayout)
-        .def("title", &PyPlDSDEntry::title)
-        .def("setTitle", &PyPlDSDEntry::setTitle)
-        .def("NPS", &PyPlDSDEntry::NPS)
-        .def("setNPS", &PyPlDSDEntry::setNPS)
-        .def("NPSSourceDWG", &PyPlDSDEntry::NPSSourceDWG)
-        .def("setNPSSourceDWG", &PyPlDSDEntry::setNPSSourceDWG)
-        .def("has3dDwfSetup", &PyPlDSDEntry::has3dDwfSetup)
-        .def("setHas3dDwfSetup", &PyPlDSDEntry::setHas3dDwfSetup)
-        .def("setupType", &PyPlDSDEntry::setupType)
-        .def("setSetupType", &PyPlDSDEntry::setSetupType)
-        .def("orgSheetPath", &PyPlDSDEntry::orgSheetPath)
-        .def("traceSession", &PyPlDSDEntry::traceSession)
-        .def("setTraceSession", &PyPlDSDEntry::setTraceSession)
+        .def(init<>(DS.ARGS(14816)))
+        .def("dwgName", &PyPlDSDEntry::dwgName, DS.ARGS())
+        .def("setDwgName", &PyPlDSDEntry::setDwgName, DS.ARGS({ "val:str" }))
+        .def("layout", &PyPlDSDEntry::layout, DS.ARGS())
+        .def("setLayout", &PyPlDSDEntry::setLayout, DS.ARGS({ "val:str" }))
+        .def("title", &PyPlDSDEntry::title, DS.ARGS())
+        .def("setTitle", &PyPlDSDEntry::setTitle, DS.ARGS({ "val:str" }))
+        .def("NPS", &PyPlDSDEntry::NPS, DS.ARGS())
+        .def("setNPS", &PyPlDSDEntry::setNPS, DS.ARGS({ "val:str" }))
+        .def("NPSSourceDWG", &PyPlDSDEntry::NPSSourceDWG, DS.ARGS())
+        .def("setNPSSourceDWG", &PyPlDSDEntry::setNPSSourceDWG, DS.ARGS({ "val:str" }))
+        .def("has3dDwfSetup", &PyPlDSDEntry::has3dDwfSetup, DS.ARGS())
+        .def("setHas3dDwfSetup", &PyPlDSDEntry::setHas3dDwfSetup, DS.ARGS({ "val:bool" }))
+        .def("setupType", &PyPlDSDEntry::setupType, DS.ARGS())
+        .def("setSetupType", &PyPlDSDEntry::setSetupType, DS.ARGS({ "val:PyPl.SetupType" }))
+        .def("orgSheetPath", &PyPlDSDEntry::orgSheetPath, DS.ARGS())
+        .def("traceSession", &PyPlDSDEntry::traceSession, DS.ARGS())
+        .def("setTraceSession", &PyPlDSDEntry::setTraceSession, DS.ARGS({ "val:str" }))
         .def("desc", &PyPlDSDEntry::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlDSDEntry::className, DS.SARGS()).staticmethod("className")
         ;
@@ -646,8 +711,10 @@ void makePyPlDSDEntryWrapper()
         .value("kMultiDWFx", AcPlDSDEntry::SheetType::kMultiDWFx)
         .value("kSinglePDF", AcPlDSDEntry::SheetType::kSinglePDF)
         .value("kMultiPDF", AcPlDSDEntry::SheetType::kMultiPDF)
+#if !defined(_BRXTARGET260)
         .value("kSingleSVF", AcPlDSDEntry::SheetType::kSingleSVF)
         .value("kMultiSVF", AcPlDSDEntry::SheetType::kMultiSVF)
+#endif
         .export_values()
         ;
 
@@ -681,7 +748,7 @@ std::string PyPlDSDEntry::dwgName() const
     return wstr_to_utf8(impObj()->dwgName());
 }
 
-void PyPlDSDEntry::setDwgName(const std::string& pName)
+void PyPlDSDEntry::setDwgName(const std::string& pName) const
 {
     impObj()->setDwgName(utf8_to_wstr(pName).c_str());
 }
@@ -691,7 +758,7 @@ std::string PyPlDSDEntry::layout() const
     return wstr_to_utf8(impObj()->layout());
 }
 
-void PyPlDSDEntry::setLayout(const std::string& pLayoutName)
+void PyPlDSDEntry::setLayout(const std::string& pLayoutName) const
 {
     impObj()->setLayout(utf8_to_wstr(pLayoutName).c_str());
 }
@@ -701,7 +768,7 @@ std::string PyPlDSDEntry::title() const
     return wstr_to_utf8(impObj()->title());
 }
 
-void PyPlDSDEntry::setTitle(const std::string& pTitle)
+void PyPlDSDEntry::setTitle(const std::string& pTitle) const
 {
     impObj()->setLayout(utf8_to_wstr(pTitle).c_str());
 }
@@ -711,7 +778,7 @@ std::string PyPlDSDEntry::NPS() const
     return wstr_to_utf8(impObj()->NPS());
 }
 
-void PyPlDSDEntry::setNPS(const std::string& pNPSName)
+void PyPlDSDEntry::setNPS(const std::string& pNPSName) const
 {
     impObj()->setNPS(utf8_to_wstr(pNPSName).c_str());
 }
@@ -721,7 +788,7 @@ std::string PyPlDSDEntry::NPSSourceDWG() const
     return wstr_to_utf8(impObj()->NPSSourceDWG());
 }
 
-void PyPlDSDEntry::setNPSSourceDWG(const std::string& pNPWDWGName)
+void PyPlDSDEntry::setNPSSourceDWG(const std::string& pNPWDWGName) const
 {
     impObj()->setNPSSourceDWG(utf8_to_wstr(pNPWDWGName).c_str());
 }
@@ -731,7 +798,7 @@ bool PyPlDSDEntry::has3dDwfSetup() const
     return impObj()->has3dDwfSetup();
 }
 
-void PyPlDSDEntry::setHas3dDwfSetup(bool b3dDwfSetup)
+void PyPlDSDEntry::setHas3dDwfSetup(bool b3dDwfSetup) const
 {
     return impObj()->setHas3dDwfSetup(b3dDwfSetup);
 }
@@ -741,14 +808,14 @@ AcPlDSDEntry::SetupType PyPlDSDEntry::setupType() const
     return impObj()->setupType();
 }
 
-void PyPlDSDEntry::setSetupType(AcPlDSDEntry::SetupType eType)
+void PyPlDSDEntry::setSetupType(AcPlDSDEntry::SetupType eType) const
 {
     return impObj()->setSetupType(eType);
 }
 
 std::string PyPlDSDEntry::orgSheetPath() const
 {
-#if defined(_GRXTARGET) && (_GRXTARGET <= 250)
+#if defined(_GRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(impObj()->orgSheetPath());
@@ -757,20 +824,14 @@ std::string PyPlDSDEntry::orgSheetPath() const
 
 std::string PyPlDSDEntry::traceSession() const
 {
-#if _ZRXTARGET <= 260 || _GRXTARGET == 240
-    throw PyNotimplementedByHost();
-#endif
-
-#ifdef _ARXTARGET
-#if _ARXTARGET <= 240
+#if defined(_GRXTARGET250) || defined(_ZRXTARGET240) || defined(_BRXTARGET260) || defined(_ARXTARGET240)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(impObj()->traceSession());
 #endif
-#endif
 }
 
-void PyPlDSDEntry::setTraceSession(const std::string& pTraceSession)
+void PyPlDSDEntry::setTraceSession(const std::string& pTraceSession) const
 {
     impObj()->setNPSSourceDWG(utf8_to_wstr(pTraceSession).c_str());
 }
@@ -799,21 +860,22 @@ void makePyPlPlotInfoWrapper()
 {
     PyDocString DS("PlotInfo");
     class_<PyPlPlotInfo, bases<PyPlObject>>("PlotInfo")
-        .def("copyFrom", &PyPlPlotInfo::copyFrom)
-        .def("setLayout", &PyPlPlotInfo::setLayout)
-        .def("layout", &PyPlPlotInfo::layout)
-        .def("setOverrideSettings", &PyPlPlotInfo::setOverrideSettings)
-        .def("overrideSettings", &PyPlPlotInfo::overrideSettings)
-        .def("setDeviceOverride", &PyPlPlotInfo::setDeviceOverride)
-        .def("validatedSettings", &PyPlPlotInfo::validatedSettings)
-        .def("setValidatedSettings", &PyPlPlotInfo::setValidatedSettings)
-        .def("validatedConfig", &PyPlPlotInfo::validatedConfig)
-        .def("setValidatedConfig", &PyPlPlotInfo::setValidatedConfig)
-        .def("deviceOverride", &PyPlPlotInfo::deviceOverride)
-        .def("isCompatibleDocument", &PyPlPlotInfo::isCompatibleDocument)
-        .def("isValidated", &PyPlPlotInfo::isValidated)
-        .def("mergeStatus", &PyPlPlotInfo::mergeStatus)
-        .def("OrgFilePath", &PyPlPlotInfo::OrgFilePath)
+        .def(init<>(DS.ARGS(14949)))
+        .def("copyFrom", &PyPlPlotInfo::copyFrom, DS.ARGS({ "otherObject: PyRx.RxObject" }))
+        .def("setLayout", &PyPlPlotInfo::setLayout, DS.ARGS({ "id: PyDb.ObjectId" }))
+        .def("layout", &PyPlPlotInfo::layout, DS.ARGS())
+        .def("setOverrideSettings", &PyPlPlotInfo::setOverrideSettings, DS.ARGS({ "val:PyDb.PlotSettings" }))
+        .def("overrideSettings", &PyPlPlotInfo::overrideSettings, DS.ARGS())
+        .def("setDeviceOverride", &PyPlPlotInfo::setDeviceOverride, DS.ARGS({ "val:PyPl.PlotConfig" }))
+        .def("validatedSettings", &PyPlPlotInfo::validatedSettings, DS.ARGS())
+        .def("setValidatedSettings", &PyPlPlotInfo::setValidatedSettings, DS.ARGS({ "val:PyDb.PlotSettings" }))
+        .def("validatedConfig", &PyPlPlotInfo::validatedConfig, DS.ARGS())
+        .def("setValidatedConfig", &PyPlPlotInfo::setValidatedConfig, DS.ARGS({ "val:PyPl.PlotConfig" }))
+        .def("deviceOverride", &PyPlPlotInfo::deviceOverride, DS.ARGS())
+        .def("isCompatibleDocument", &PyPlPlotInfo::isCompatibleDocument, DS.ARGS({ "val:PyPl.PlotInfo" }))
+        .def("isValidated", &PyPlPlotInfo::isValidated, DS.ARGS())
+        .def("mergeStatus", &PyPlPlotInfo::mergeStatus, DS.ARGS())
+        .def("OrgFilePath", &PyPlPlotInfo::OrgFilePath, DS.ARGS())
         .def("desc", &PyPlPlotInfo::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlPlotInfo::className, DS.SARGS()).staticmethod("className")
         ;
@@ -829,17 +891,12 @@ PyPlPlotInfo::PyPlPlotInfo(AcPlPlotInfo* ptr, bool autoDelete)
 {
 }
 
-PyPlPlotInfo::PyPlPlotInfo(const AcPlPlotInfo& entry)
-    : PyPlPlotInfo(new AcPlPlotInfo(entry), true)
-{
-}
-
-void PyPlPlotInfo::copyFrom(const PyRxObject& pOther)
+void PyPlPlotInfo::copyFrom(const PyRxObject& pOther) const
 {
     PyThrowBadEs(impObj()->copyFrom(pOther.impObj()));
 }
 
-void PyPlPlotInfo::setLayout(PyDbObjectId& layoutId)
+void PyPlPlotInfo::setLayout(PyDbObjectId& layoutId) const
 {
     impObj()->setLayout(layoutId.m_id);
 }
@@ -849,7 +906,7 @@ PyDbObjectId PyPlPlotInfo::layout() const
     return PyDbObjectId(impObj()->layout());
 }
 
-void PyPlPlotInfo::setOverrideSettings(const PyDbPlotSettings& pOverrides)
+void PyPlPlotInfo::setOverrideSettings(const PyDbPlotSettings& pOverrides) const
 {
     impObj()->setOverrideSettings(pOverrides.impObj());
 }
@@ -859,7 +916,7 @@ PyDbPlotSettings PyPlPlotInfo::overrideSettings() const
     return PyDbPlotSettings(impObj()->overrideSettings());
 }
 
-void PyPlPlotInfo::setDeviceOverride(const PyPlPlotConfig& pconf)
+void PyPlPlotInfo::setDeviceOverride(const PyPlPlotConfig& pconf) const
 {
     impObj()->setDeviceOverride(pconf.impObj());
 }
@@ -869,7 +926,7 @@ PyDbPlotSettings PyPlPlotInfo::validatedSettings() const
     return PyDbPlotSettings(impObj()->validatedSettings());
 }
 
-void PyPlPlotInfo::setValidatedSettings(const PyDbPlotSettings& pValidatedSettings)
+void PyPlPlotInfo::setValidatedSettings(const PyDbPlotSettings& pValidatedSettings) const
 {
     impObj()->setOverrideSettings(pValidatedSettings.impObj());
 }
@@ -879,9 +936,13 @@ PyPlPlotConfig PyPlPlotInfo::validatedConfig() const
     return PyPlPlotConfig(impObj()->validatedConfig());
 }
 
-void PyPlPlotInfo::setValidatedConfig(const PyPlPlotConfig& pConfig)
+void PyPlPlotInfo::setValidatedConfig(const PyPlPlotConfig& pConfig) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     impObj()->setValidatedConfig(pConfig.impObj());
+#endif
 }
 
 PyPlPlotConfig PyPlPlotInfo::deviceOverride() const
@@ -891,7 +952,11 @@ PyPlPlotConfig PyPlPlotInfo::deviceOverride() const
 
 bool PyPlPlotInfo::isCompatibleDocument(const PyPlPlotInfo& pOtherInfo) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->isCompatibleDocument(pOtherInfo.impObj());
+#endif
 }
 
 bool PyPlPlotInfo::isValidated() const
@@ -904,10 +969,14 @@ unsigned long PyPlPlotInfo::mergeStatus() const
     return impObj()->mergeStatus();
 }
 
-std::string PyPlPlotInfo::OrgFilePath()
+std::string PyPlPlotInfo::OrgFilePath() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     AcString str = impObj()->OrgFilePath();
     return wstr_to_utf8(str);
+#endif
 }
 
 PyRxClass PyPlPlotInfo::desc()
@@ -934,20 +1003,20 @@ void makePyPlPlotConfigWrapper()
 {
     PyDocString DS("PlotConfig");
     class_<PyPlPlotConfig, bases<PyPlObject>>("PlotConfig", boost::python::no_init)
-        .def("getDescriptionFields", &PyPlPlotConfig::getDescriptionFields)
-        .def("deviceName", &PyPlPlotConfig::deviceName)
-        .def("fullPath", &PyPlPlotConfig::fullPath)
-        .def("maxDeviceDPI", &PyPlPlotConfig::maxDeviceDPI)
-        .def("deviceType", &PyPlPlotConfig::deviceType)
-        .def("getCanonicalMediaNameList", &PyPlPlotConfig::getCanonicalMediaNameList)
-        .def("getLocalMediaName", &PyPlPlotConfig::getLocalMediaName)
-        .def("getMediaBounds", &PyPlPlotConfig::getMediaBounds)
-        .def("refreshMediaNameList", &PyPlPlotConfig::refreshMediaNameList)
-        .def("isPlotToFile", &PyPlPlotConfig::isPlotToFile)
-        .def("setPlotToFile", &PyPlPlotConfig::setPlotToFile)
-        .def("getDefaultFileExtension", &PyPlPlotConfig::getDefaultFileExtension)
-        .def("plotToFileCapability", &PyPlPlotConfig::plotToFileCapability)
-        .def("saveToPC3", &PyPlPlotConfig::saveToPC3)
+        .def("getDescriptionFields", &PyPlPlotConfig::getDescriptionFields, DS.ARGS())
+        .def("deviceName", &PyPlPlotConfig::deviceName, DS.ARGS())
+        .def("fullPath", &PyPlPlotConfig::fullPath, DS.ARGS())
+        .def("maxDeviceDPI", &PyPlPlotConfig::maxDeviceDPI, DS.ARGS())
+        .def("deviceType", &PyPlPlotConfig::deviceType, DS.ARGS())
+        .def("getCanonicalMediaNameList", &PyPlPlotConfig::getCanonicalMediaNameList, DS.ARGS())
+        .def("getLocalMediaName", &PyPlPlotConfig::getLocalMediaName, DS.ARGS({ "canonicalMediaName:str" }))
+        .def("getMediaBounds", &PyPlPlotConfig::getMediaBounds, DS.ARGS({ "canonicalMediaName:str" }))
+        .def("refreshMediaNameList", &PyPlPlotConfig::refreshMediaNameList, DS.ARGS())
+        .def("isPlotToFile", &PyPlPlotConfig::isPlotToFile, DS.ARGS())
+        .def("setPlotToFile", &PyPlPlotConfig::setPlotToFile, DS.ARGS({ "val:bool" }))
+        .def("getDefaultFileExtension", &PyPlPlotConfig::getDefaultFileExtension, DS.ARGS())
+        .def("plotToFileCapability", &PyPlPlotConfig::plotToFileCapability, DS.ARGS())
+        .def("saveToPC3", &PyPlPlotConfig::saveToPC3, DS.ARGS({ "val:str" }))
         .def("desc", &PyPlPlotConfig::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlPlotConfig::className, DS.SARGS()).staticmethod("className")
         ;
@@ -1024,12 +1093,16 @@ std::string PyPlPlotConfig::getLocalMediaName(const std::string& pCanonicalMedia
     return pstr.str();
 }
 
-void PyPlPlotConfig::getMediaBounds(const std::string& pCanonicalMediaName, AcGePoint2d& pageSize, PyGeBoundBlock2d& printableArea) const
+boost::python::tuple PyPlPlotConfig::getMediaBounds(const std::string& pCanonicalMediaName) const
 {
-    impObj()->getMediaBounds(utf8_to_wstr(pCanonicalMediaName).c_str(), pageSize, *printableArea.impObj());
+    PyAutoLockGIL lock;
+    AcGePoint2d pageSize;
+    AcGeBoundBlock2d printableArea;
+    impObj()->getMediaBounds(utf8_to_wstr(pCanonicalMediaName).c_str(), pageSize, printableArea);
+    return boost::python::make_tuple(pageSize, PyGeBoundBlock2d(printableArea));
 }
 
-void PyPlPlotConfig::refreshMediaNameList()
+void PyPlPlotConfig::refreshMediaNameList() const
 {
     impObj()->refreshMediaNameList();
 }
@@ -1039,7 +1112,7 @@ bool PyPlPlotConfig::isPlotToFile() const
     return impObj()->isPlotToFile();
 }
 
-void PyPlPlotConfig::setPlotToFile(bool bPlotToFile)
+void PyPlPlotConfig::setPlotToFile(bool bPlotToFile) const
 {
     PyThrowBadEs(impObj()->setPlotToFile(bPlotToFile));
 }
@@ -1056,7 +1129,7 @@ AcPlPlotConfig::PlotToFileCapability PyPlPlotConfig::plotToFileCapability() cons
     return impObj()->plotToFileCapability();
 }
 
-bool PyPlPlotConfig::saveToPC3(const std::string& pPC3Name)
+bool PyPlPlotConfig::saveToPC3(const std::string& pPC3Name) const
 {
     return impObj()->saveToPC3(utf8_to_wstr(pPC3Name).c_str());
 }
@@ -1085,11 +1158,12 @@ void makePyPlPlotPageInfoWrapper()
 {
     PyDocString DS("PlotPageInfo");
     class_<PyPlPlotPageInfo, bases<PyPlObject>>("PlotPageInfo")
-        .def("entityCount", &PyPlPlotPageInfo::entityCount, DS.SARGS())
-        .def("rasterCount", &PyPlPlotPageInfo::rasterCount, DS.SARGS())
-        .def("oleObjectCount", &PyPlPlotPageInfo::oleObjectCount, DS.SARGS())
-        .def("gradientCount", &PyPlPlotPageInfo::gradientCount, DS.SARGS())
-        .def("shadedViewportType", &PyPlPlotPageInfo::shadedViewportType, DS.SARGS())
+        .def(init<>(DS.ARGS(15021)))
+        .def("entityCount", &PyPlPlotPageInfo::entityCount, DS.SARGS()).staticmethod("entityCount")
+        .def("rasterCount", &PyPlPlotPageInfo::rasterCount, DS.SARGS()).staticmethod("rasterCount")
+        .def("oleObjectCount", &PyPlPlotPageInfo::oleObjectCount, DS.SARGS()).staticmethod("oleObjectCount")
+        .def("gradientCount", &PyPlPlotPageInfo::gradientCount, DS.SARGS()).staticmethod("gradientCount")
+        .def("shadedViewportType", &PyPlPlotPageInfo::shadedViewportType, DS.SARGS()).staticmethod("shadedViewportType")
         .def("desc", &PyPlPlotPageInfo::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlPlotPageInfo::className, DS.SARGS()).staticmethod("className")
         ;
@@ -1159,31 +1233,32 @@ void makePyPlPlotInfoValidatorWrapper()
 {
     PyDocString DS("PlotInfoValidator");
     class_<PyPlPlotInfoValidator, bases<PyPlObject>>("PlotInfoValidator")
-        .def("validate", &PyPlPlotInfoValidator::validate)
-        .def("isCustomPossible", &PyPlPlotInfoValidator::isCustomPossible)
-        .def("matchingPolicy", &PyPlPlotInfoValidator::matchingPolicy)
-        .def("setMediaMatchingPolicy", &PyPlPlotInfoValidator::setMediaMatchingPolicy)
-        .def("setMediaGroupWeight", &PyPlPlotInfoValidator::setMediaGroupWeight)
-        .def("setDefMediaGroupWeight", &PyPlPlotInfoValidator::setDefMediaGroupWeight)
-        .def("mediaGroupWeight", &PyPlPlotInfoValidator::mediaGroupWeight)
-        .def("setSheetMediaGroupWeight", &PyPlPlotInfoValidator::setSheetMediaGroupWeight)
-        .def("setDefSheetMediaGroupWeight", &PyPlPlotInfoValidator::setDefSheetMediaGroupWeight)
-        .def("sheetMediaGroupWeight", &PyPlPlotInfoValidator::sheetMediaGroupWeight)
-        .def("setMediaBoundsWeight", &PyPlPlotInfoValidator::setMediaBoundsWeight)
-        .def("setDefMediaBoundsWeight", &PyPlPlotInfoValidator::setDefMediaBoundsWeight)
-        .def("mediaBoundsWeight", &PyPlPlotInfoValidator::mediaBoundsWeight)
-        .def("setPrintableBoundsWeight", &PyPlPlotInfoValidator::setPrintableBoundsWeight)
-        .def("setDefPrintableBoundsWeight", &PyPlPlotInfoValidator::setDefPrintableBoundsWeight)
-        .def("printableBoundsWeight", &PyPlPlotInfoValidator::printableBoundsWeight)
-        .def("setDimensionalWeight", &PyPlPlotInfoValidator::setDimensionalWeight)
-        .def("setDefDimensionalWeight", &PyPlPlotInfoValidator::setDefDimensionalWeight)
-        .def("dimensionalWeight", &PyPlPlotInfoValidator::dimensionalWeight)
-        .def("setSheetDimensionalWeight", &PyPlPlotInfoValidator::setSheetDimensionalWeight)
-        .def("setDefSheetDimensionalWeight", &PyPlPlotInfoValidator::setDefSheetDimensionalWeight)
-        .def("sheetDimensionalWeight", &PyPlPlotInfoValidator::sheetDimensionalWeight)
-        .def("setMediaMatchingThreshold", &PyPlPlotInfoValidator::setMediaMatchingThreshold)
-        .def("setDefMediaMatchingThreshold", &PyPlPlotInfoValidator::setDefMediaMatchingThreshold)
-        .def("mediaMatchingThreshold", &PyPlPlotInfoValidator::mediaMatchingThreshold)
+        .def(init<>(DS.ARGS(14950)))
+        .def("validate", &PyPlPlotInfoValidator::validate, DS.ARGS({ "valByRef:PyPl.PlotInfo" }))
+        .def("isCustomPossible", &PyPlPlotInfoValidator::isCustomPossible, DS.ARGS({ "valByRef:PyPl.PlotInfo" }))
+        .def("matchingPolicy", &PyPlPlotInfoValidator::matchingPolicy, DS.ARGS())
+        .def("setMediaMatchingPolicy", &PyPlPlotInfoValidator::setMediaMatchingPolicy, DS.ARGS({ "val:PyPl.MatchingPolicy" }))
+        .def("setMediaGroupWeight", &PyPlPlotInfoValidator::setMediaGroupWeight, DS.ARGS({ "val:int" }))
+        .def("setDefMediaGroupWeight", &PyPlPlotInfoValidator::setDefMediaGroupWeight, DS.ARGS({ "val:int" }))
+        .def("mediaGroupWeight", &PyPlPlotInfoValidator::mediaGroupWeight, DS.ARGS())
+        .def("setSheetMediaGroupWeight", &PyPlPlotInfoValidator::setSheetMediaGroupWeight, DS.ARGS({ "val:int" }))
+        .def("setDefSheetMediaGroupWeight", &PyPlPlotInfoValidator::setDefSheetMediaGroupWeight, DS.ARGS())
+        .def("sheetMediaGroupWeight", &PyPlPlotInfoValidator::sheetMediaGroupWeight, DS.ARGS())
+        .def("setMediaBoundsWeight", &PyPlPlotInfoValidator::setMediaBoundsWeight, DS.ARGS({ "val:int" }))
+        .def("setDefMediaBoundsWeight", &PyPlPlotInfoValidator::setDefMediaBoundsWeight, DS.ARGS())
+        .def("mediaBoundsWeight", &PyPlPlotInfoValidator::mediaBoundsWeight, DS.ARGS({ "val:int" }))
+        .def("setPrintableBoundsWeight", &PyPlPlotInfoValidator::setPrintableBoundsWeight, DS.ARGS({ "val:int" }))
+        .def("setDefPrintableBoundsWeight", &PyPlPlotInfoValidator::setDefPrintableBoundsWeight, DS.ARGS())
+        .def("printableBoundsWeight", &PyPlPlotInfoValidator::printableBoundsWeight, DS.ARGS())
+        .def("setDimensionalWeight", &PyPlPlotInfoValidator::setDimensionalWeight, DS.ARGS({ "val:int" }))
+        .def("setDefDimensionalWeight", &PyPlPlotInfoValidator::setDefDimensionalWeight, DS.ARGS())
+        .def("dimensionalWeight", &PyPlPlotInfoValidator::dimensionalWeight, DS.ARGS())
+        .def("setSheetDimensionalWeight", &PyPlPlotInfoValidator::setSheetDimensionalWeight, DS.ARGS({ "val:int" }))
+        .def("setDefSheetDimensionalWeight", &PyPlPlotInfoValidator::setDefSheetDimensionalWeight, DS.ARGS())
+        .def("sheetDimensionalWeight", &PyPlPlotInfoValidator::sheetDimensionalWeight, DS.ARGS())
+        .def("setMediaMatchingThreshold", &PyPlPlotInfoValidator::setMediaMatchingThreshold, DS.ARGS({ "val:int" }))
+        .def("setDefMediaMatchingThreshold", &PyPlPlotInfoValidator::setDefMediaMatchingThreshold, DS.ARGS())
+        .def("mediaMatchingThreshold", &PyPlPlotInfoValidator::mediaMatchingThreshold, DS.ARGS())
         .def("desc", &PyPlPlotInfoValidator::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlPlotInfoValidator::className, DS.SARGS()).staticmethod("className")
         ;
@@ -1214,7 +1289,6 @@ void makePyPlPlotInfoValidatorWrapper()
         .value("eDeviceLoadFailed", AcPlPlotInfoValidator::eCustomSizeResult::eDeviceLoadFailed)
         .export_values()
         ;
-
 }
 
 PyPlPlotInfoValidator::PyPlPlotInfoValidator()
@@ -1232,12 +1306,12 @@ PyPlPlotInfoValidator::PyPlPlotInfoValidator(const AcPlPlotInfoValidator* ptr)
 {
 }
 
-void PyPlPlotInfoValidator::validate(PyPlPlotInfo& info)
+void PyPlPlotInfoValidator::validate(PyPlPlotInfo& info) const
 {
     PyThrowBadEs(impObj()->validate(*info.impObj()));
 }
 
-AcPlPlotInfoValidator::eCustomSizeResult PyPlPlotInfoValidator::isCustomPossible(PyPlPlotInfo& info)
+AcPlPlotInfoValidator::eCustomSizeResult PyPlPlotInfoValidator::isCustomPossible(PyPlPlotInfo& info) const
 {
     return (AcPlPlotInfoValidator::eCustomSizeResult)impObj()->isCustomPossible(*info.impObj());
 }
@@ -1247,19 +1321,27 @@ AcPlPlotInfoValidator::MatchingPolicy PyPlPlotInfoValidator::matchingPolicy() co
     return impObj()->matchingPolicy();
 }
 
-void PyPlPlotInfoValidator::setMediaMatchingPolicy(AcPlPlotInfoValidator::MatchingPolicy policy)
+void PyPlPlotInfoValidator::setMediaMatchingPolicy(AcPlPlotInfoValidator::MatchingPolicy policy) const
 {
     impObj()->setMediaMatchingPolicy(policy);
 }
 
-void PyPlPlotInfoValidator::setMediaGroupWeight(unsigned int weight)
+void PyPlPlotInfoValidator::setMediaGroupWeight(unsigned int weight) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     impObj()->setMediaGroupWeight(weight);
+#endif
 }
 
-void PyPlPlotInfoValidator::setDefMediaGroupWeight()
+void PyPlPlotInfoValidator::setDefMediaGroupWeight() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     impObj()->setMediaGroupWeight();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::mediaGroupWeight() const
@@ -1267,14 +1349,22 @@ unsigned int PyPlPlotInfoValidator::mediaGroupWeight() const
     return impObj()->mediaGroupWeight();
 }
 
-void PyPlPlotInfoValidator::setSheetMediaGroupWeight(unsigned int weight)
+void PyPlPlotInfoValidator::setSheetMediaGroupWeight(unsigned int weight) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     impObj()->setSheetMediaGroupWeight(weight);
+#endif
 }
 
-void PyPlPlotInfoValidator::setDefSheetMediaGroupWeight()
+void PyPlPlotInfoValidator::setDefSheetMediaGroupWeight() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     impObj()->setSheetMediaGroupWeight();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::sheetMediaGroupWeight() const
@@ -1282,14 +1372,22 @@ unsigned int PyPlPlotInfoValidator::sheetMediaGroupWeight() const
     return impObj()->sheetMediaGroupWeight();
 }
 
-void PyPlPlotInfoValidator::setMediaBoundsWeight(unsigned int weight)
+void PyPlPlotInfoValidator::setMediaBoundsWeight(unsigned int weight) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setMediaBoundsWeight(weight);
+#endif
 }
 
-void PyPlPlotInfoValidator::setDefMediaBoundsWeight()
+void PyPlPlotInfoValidator::setDefMediaBoundsWeight() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setMediaBoundsWeight();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::mediaBoundsWeight() const
@@ -1297,14 +1395,22 @@ unsigned int PyPlPlotInfoValidator::mediaBoundsWeight() const
     return impObj()->mediaBoundsWeight();
 }
 
-void PyPlPlotInfoValidator::setPrintableBoundsWeight(unsigned int weight)
+void PyPlPlotInfoValidator::setPrintableBoundsWeight(unsigned int weight) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setPrintableBoundsWeight(weight);
+#endif
 }
 
-void PyPlPlotInfoValidator::setDefPrintableBoundsWeight()
+void PyPlPlotInfoValidator::setDefPrintableBoundsWeight() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setPrintableBoundsWeight();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::printableBoundsWeight() const
@@ -1312,14 +1418,22 @@ unsigned int PyPlPlotInfoValidator::printableBoundsWeight() const
     return impObj()->printableBoundsWeight();
 }
 
-void PyPlPlotInfoValidator::setDimensionalWeight(unsigned int weight)
+void PyPlPlotInfoValidator::setDimensionalWeight(unsigned int weight) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setDimensionalWeight(weight);
+#endif
 }
 
-void PyPlPlotInfoValidator::setDefDimensionalWeight()
+void PyPlPlotInfoValidator::setDefDimensionalWeight() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setDimensionalWeight();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::dimensionalWeight() const
@@ -1327,14 +1441,22 @@ unsigned int PyPlPlotInfoValidator::dimensionalWeight() const
     return impObj()->dimensionalWeight();
 }
 
-void PyPlPlotInfoValidator::setSheetDimensionalWeight(unsigned int weight)
+void PyPlPlotInfoValidator::setSheetDimensionalWeight(unsigned int weight) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setSheetDimensionalWeight(weight);
+#endif
 }
 
-void PyPlPlotInfoValidator::setDefSheetDimensionalWeight()
+void PyPlPlotInfoValidator::setDefSheetDimensionalWeight() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setSheetDimensionalWeight();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::sheetDimensionalWeight() const
@@ -1342,9 +1464,13 @@ unsigned int PyPlPlotInfoValidator::sheetDimensionalWeight() const
     return impObj()->sheetDimensionalWeight();
 }
 
-void PyPlPlotInfoValidator::setDefMediaMatchingThreshold()
+void PyPlPlotInfoValidator::setDefMediaMatchingThreshold() const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setMediaMatchingThreshold();
+#endif
 }
 
 unsigned int PyPlPlotInfoValidator::mediaMatchingThreshold() const
@@ -1352,9 +1478,13 @@ unsigned int PyPlPlotInfoValidator::mediaMatchingThreshold() const
     return impObj()->mediaMatchingThreshold();
 }
 
-void PyPlPlotInfoValidator::setMediaMatchingThreshold(unsigned int threshold)
+void PyPlPlotInfoValidator::setMediaMatchingThreshold(unsigned int threshold) const
 {
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
     return impObj()->setMediaMatchingThreshold(threshold);
+#endif
 }
 
 PyRxClass PyPlPlotInfoValidator::desc()
@@ -1377,27 +1507,28 @@ AcPlPlotInfoValidator* PyPlPlotInfoValidator::impObj(const std::source_location&
 
 //-----------------------------------------------------------------------------------------
 //PyPlPrecisionEntry
+#if !defined(_BRXTARGET260)
 void makePyPlPrecisionEntryWrapper()
 {
     PyDocString DS("PrecisionEntry");
     class_<PyPlPrecisionEntry, bases<PyPlObject>>("PrecisionEntry")
-        .def(init<>())
-        .def("title", &PyPlPrecisionEntry::title)
-        .def("setTitle", &PyPlPrecisionEntry::setTitle)
-        .def("description", &PyPlPrecisionEntry::description)
-        .def("setDescription", &PyPlPrecisionEntry::setDescription)
-        .def("unitType", &PyPlPrecisionEntry::unitType)
-        .def("setUnitType", &PyPlPrecisionEntry::setUnitType)
-        .def("unitScale", &PyPlPrecisionEntry::unitScale)
-        .def("setUnitScale", &PyPlPrecisionEntry::setUnitScale)
-        .def("desiredPrecision", &PyPlPrecisionEntry::desiredPrecision)
-        .def("setDesiredPrecision", &PyPlPrecisionEntry::setDesiredPrecision)
-        .def("gradientResolution", &PyPlPrecisionEntry::gradientResolution)
-        .def("setGradientResolution", &PyPlPrecisionEntry::setGradientResolution)
-        .def("colorResolution", &PyPlPrecisionEntry::colorResolution)
-        .def("setColorResolution", &PyPlPrecisionEntry::setColorResolution)
-        .def("monoResolution", &PyPlPrecisionEntry::monoResolution)
-        .def("setMonoResolution", &PyPlPrecisionEntry::setMonoResolution)
+        .def(init<>(DS.ARGS()))
+        .def("title", &PyPlPrecisionEntry::title, DS.ARGS())
+        .def("setTitle", &PyPlPrecisionEntry::setTitle, DS.ARGS({ "val:str" }))
+        .def("description", &PyPlPrecisionEntry::description, DS.ARGS())
+        .def("setDescription", &PyPlPrecisionEntry::setDescription, DS.ARGS({ "val:str" }))
+        .def("unitType", &PyPlPrecisionEntry::unitType, DS.ARGS())
+        .def("setUnitType", &PyPlPrecisionEntry::setUnitType, DS.ARGS({ "val:str" }))
+        .def("unitScale", &PyPlPrecisionEntry::unitScale, DS.ARGS())
+        .def("setUnitScale", &PyPlPrecisionEntry::setUnitScale, DS.ARGS({ "val:str" }))
+        .def("desiredPrecision", &PyPlPrecisionEntry::desiredPrecision, DS.ARGS())
+        .def("setDesiredPrecision", &PyPlPrecisionEntry::setDesiredPrecision, DS.ARGS({ "val:float" }))
+        .def("gradientResolution", &PyPlPrecisionEntry::gradientResolution, DS.ARGS())
+        .def("setGradientResolution", &PyPlPrecisionEntry::setGradientResolution, DS.ARGS({ "val:int" }))
+        .def("colorResolution", &PyPlPrecisionEntry::colorResolution, DS.ARGS())
+        .def("setColorResolution", &PyPlPrecisionEntry::setColorResolution, DS.ARGS({ "val:int" }))
+        .def("monoResolution", &PyPlPrecisionEntry::monoResolution, DS.ARGS())
+        .def("setMonoResolution", &PyPlPrecisionEntry::setMonoResolution, DS.ARGS({ "val:type" }))
         .def("desc", &PyPlPrecisionEntry::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlPrecisionEntry::className, DS.SARGS()).staticmethod("className")
         ;
@@ -1423,7 +1554,7 @@ const std::string PyPlPrecisionEntry::title() const
     return wstr_to_utf8(impObj()->title());
 }
 
-void PyPlPrecisionEntry::setTitle(const std::string& pTitle)
+void PyPlPrecisionEntry::setTitle(const std::string& pTitle) const
 {
     impObj()->setTitle(utf8_to_wstr(pTitle).c_str());
 }
@@ -1433,7 +1564,7 @@ const std::string PyPlPrecisionEntry::description() const
     return wstr_to_utf8(impObj()->description());
 }
 
-void PyPlPrecisionEntry::setDescription(const std::string& pDescription)
+void PyPlPrecisionEntry::setDescription(const std::string& pDescription) const
 {
     impObj()->setDescription(utf8_to_wstr(pDescription).c_str());
 }
@@ -1443,7 +1574,7 @@ const std::string PyPlPrecisionEntry::unitType() const
     return wstr_to_utf8(impObj()->unitType());
 }
 
-void PyPlPrecisionEntry::setUnitType(const std::string& pUnitType)
+void PyPlPrecisionEntry::setUnitType(const std::string& pUnitType) const
 {
     impObj()->setUnitType(utf8_to_wstr(pUnitType).c_str());
 }
@@ -1453,7 +1584,7 @@ const std::string PyPlPrecisionEntry::unitScale() const
     return wstr_to_utf8(impObj()->unitScale());
 }
 
-void PyPlPrecisionEntry::setUnitScale(const std::string& pUnitScale)
+void PyPlPrecisionEntry::setUnitScale(const std::string& pUnitScale) const
 {
     impObj()->setUnitScale(utf8_to_wstr(pUnitScale).c_str());
 }
@@ -1463,7 +1594,7 @@ double PyPlPrecisionEntry::desiredPrecision() const
     return impObj()->desiredPrecision();
 }
 
-void PyPlPrecisionEntry::setDesiredPrecision(double dDesiredPrecision)
+void PyPlPrecisionEntry::setDesiredPrecision(double dDesiredPrecision) const
 {
     return impObj()->setDesiredPrecision(dDesiredPrecision);
 }
@@ -1473,7 +1604,7 @@ int PyPlPrecisionEntry::gradientResolution() const
     return impObj()->gradientResolution();
 }
 
-void PyPlPrecisionEntry::setGradientResolution(int nGradientResolution)
+void PyPlPrecisionEntry::setGradientResolution(int nGradientResolution) const
 {
     return impObj()->setGradientResolution(nGradientResolution);
 }
@@ -1483,7 +1614,7 @@ int PyPlPrecisionEntry::colorResolution() const
     return impObj()->colorResolution();
 }
 
-void PyPlPrecisionEntry::setColorResolution(int nColorResolution)
+void PyPlPrecisionEntry::setColorResolution(int nColorResolution) const
 {
     return impObj()->setColorResolution(nColorResolution);
 }
@@ -1493,7 +1624,7 @@ int PyPlPrecisionEntry::monoResolution() const
     return impObj()->monoResolution();
 }
 
-void PyPlPrecisionEntry::setMonoResolution(int nMonoResolution)
+void PyPlPrecisionEntry::setMonoResolution(int nMonoResolution) const
 {
     return impObj()->setMonoResolution(nMonoResolution);
 }
@@ -1515,6 +1646,7 @@ AcPlPrecisionEntry* PyPlPrecisionEntry::impObj(const std::source_location& src /
     }
     return static_cast<AcPlPrecisionEntry*>(m_pyImp.get());
 }
+#endif
 
 //-----------------------------------------------------------------------------------------
 //PylPlotConfigInfo
@@ -1524,14 +1656,14 @@ void makePyPlPlotConfigInfoWrapper()
     class_<PyPlPlotConfigInfo, bases<PyPlObject>>("PlotConfigInfo")
         .def(init<>())
         .def(init<const std::string&, const std::string&, DeviceType>())
-        .def("fullPath", &PyPlPlotConfigInfo::fullPath)
-        .def("setFullPath", &PyPlPlotConfigInfo::setFullPath)
-        .def("deviceName", &PyPlPlotConfigInfo::deviceName)
-        .def("setDeviceName", &PyPlPlotConfigInfo::setDeviceName)
-        .def("deviceType", &PyPlPlotConfigInfo::deviceType)
-        .def("setDeviceType", &PyPlPlotConfigInfo::setDeviceType)
-        .def("deviceId", &PyPlPlotConfigInfo::deviceId)
-        .def("setDeviceId", &PyPlPlotConfigInfo::setDeviceId)
+        .def("fullPath", &PyPlPlotConfigInfo::fullPath, DS.ARGS())
+        .def("setFullPath", &PyPlPlotConfigInfo::setFullPath, DS.ARGS({ "val:str" }))
+        .def("deviceName", &PyPlPlotConfigInfo::deviceName, DS.ARGS())
+        .def("setDeviceName", &PyPlPlotConfigInfo::setDeviceName, DS.ARGS({ "val:str" }))
+        .def("deviceType", &PyPlPlotConfigInfo::deviceType, DS.ARGS())
+        .def("setDeviceType", &PyPlPlotConfigInfo::setDeviceType, DS.ARGS({ "val:PyPl.DeviceType" }))
+        .def("deviceId", &PyPlPlotConfigInfo::deviceId, DS.ARGS())
+        .def("setDeviceId", &PyPlPlotConfigInfo::setDeviceId, DS.ARGS({ "val:type" }))
         .def("desc", &PyPlPlotConfigInfo::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("className", &PyPlPlotConfigInfo::className, DS.SARGS()).staticmethod("className")
         ;
@@ -1562,7 +1694,7 @@ std::string PyPlPlotConfigInfo::fullPath() const
     return wstr_to_utf8(impObj()->fullPath());
 }
 
-void PyPlPlotConfigInfo::setFullPath(const std::string& pPath)
+void PyPlPlotConfigInfo::setFullPath(const std::string& pPath) const
 {
     impObj()->setFullPath(utf8_to_wstr(pPath).c_str());
 }
@@ -1582,23 +1714,23 @@ DeviceType PyPlPlotConfigInfo::deviceType() const
     return impObj()->deviceType();
 }
 
-void PyPlPlotConfigInfo::setDeviceType(DeviceType devType)
+void PyPlPlotConfigInfo::setDeviceType(DeviceType devType) const
 {
     impObj()->setDeviceType(devType);
 }
 
 std::string PyPlPlotConfigInfo::deviceId() const
 {
-#if defined(_GRXTARGET) && (_GRXTARGET <= 250)
+#if defined(_GRXTARGET) && (_GRXTARGET <= 260) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return wstr_to_utf8(impObj()->deviceId());
 #endif
 }
 
-void PyPlPlotConfigInfo::setDeviceId(const std::string& pDevId)
+void PyPlPlotConfigInfo::setDeviceId(const std::string& pDevId) const
 {
-#if defined(_GRXTARGET) && (_GRXTARGET <= 250)
+#if defined(_GRXTARGET) && (_GRXTARGET <= 260) || defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->setDeviceId(utf8_to_wstr(pDevId).c_str());
@@ -1622,4 +1754,3 @@ AcPlPlotConfigInfo* PyPlPlotConfigInfo::impObj(const std::source_location& src /
     }
     return static_cast<AcPlPlotConfigInfo*>(m_pyImp.get());
 }
-#endif

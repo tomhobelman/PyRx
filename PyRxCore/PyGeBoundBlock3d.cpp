@@ -6,19 +6,19 @@ using namespace boost::python;
 //PyGeBoundBlock3d
 void makePyGeBoundBlock3dWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
-        "- base: PyGe.Point3d, dir1: PyGe.Vector3d, dir2: PyGe.Vector3d,dir3: PyGe.Vector3d\n";
+        "- base: PyGe.Point3d, dir1: PyGe.Vector3d, dir2: PyGe.Vector3d, dir3: PyGe.Vector3d\n";
 
     constexpr const std::string_view setOverloads = "Overloads:\n"
         "- pt1: PyGe.Point3d, pt2: PyGe.Point3d\n"
-        "- base: PyGe.Point3d, dir1: PyGe.Vector3d, dir2: PyGe.Vector3d,dir3: PyGe.Vector3d\n";
+        "- base: PyGe.Point3d, dir1: PyGe.Vector3d, dir2: PyGe.Vector3d, dir3: PyGe.Vector3d\n";
 
     PyDocString DS("BoundBlock3d");
     class_<PyGeBoundBlock3d, bases<PyGeEntity3d>>("BoundBlock3d")
         .def(init<>())
-        .def(init<const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&, const AcGeVector3d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&, const AcGeVector3d&>(DS.CTOR(ctor, 11699)))
         .def("getMinPoint", &PyGeBoundBlock3d::getMinPoint, DS.ARGS())
         .def("getMaxPoint", &PyGeBoundBlock3d::getMaxPoint, DS.ARGS())
         .def("getBasePoint", &PyGeBoundBlock3d::getBasePoint, DS.ARGS())
@@ -40,7 +40,7 @@ void makePyGeBoundBlock3dWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGeBoundBlock3d::PyGeBoundBlock3d()
     :PyGeEntity3d(new AcGeBoundBlock3d())
 {
@@ -107,22 +107,22 @@ AcGeVector3d PyGeBoundBlock3d::getDirection3() const
     return dir3;
 }
 
-void PyGeBoundBlock3d::set1(const AcGePoint3d& point1, const AcGePoint3d& point2)
+void PyGeBoundBlock3d::set1(const AcGePoint3d& point1, const AcGePoint3d& point2) const
 {
     impObj()->set(point1, point2);
 }
 
-void PyGeBoundBlock3d::set2(const AcGePoint3d& base, const AcGeVector3d& dir1, const AcGeVector3d& dir2, const AcGeVector3d& dir3)
+void PyGeBoundBlock3d::set2(const AcGePoint3d& base, const AcGeVector3d& dir1, const AcGeVector3d& dir2, const AcGeVector3d& dir3) const
 {
     impObj()->set(base, dir1, dir2, dir3);
 }
 
-void PyGeBoundBlock3d::extend(const AcGePoint3d& point)
+void PyGeBoundBlock3d::extend(const AcGePoint3d& point) const
 {
     impObj()->extend(point);
 }
 
-void PyGeBoundBlock3d::swell(double distance)
+void PyGeBoundBlock3d::swell(double distance) const
 {
     impObj()->swell(distance);
 }
@@ -142,7 +142,7 @@ Adesk::Boolean PyGeBoundBlock3d::isBox() const
     return impObj()->isBox();
 }
 
-void PyGeBoundBlock3d::setToBox(Adesk::Boolean val)
+void PyGeBoundBlock3d::setToBox(Adesk::Boolean val) const
 {
     impObj()->setToBox(val);
 }

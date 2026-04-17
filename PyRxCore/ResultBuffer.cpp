@@ -111,18 +111,17 @@ resbuf* listToResbuf(const boost::python::object& bpl)
                         pTail->rbnext = makebin(tpl[1], code);
                         if (pTail->rbnext != nullptr)
                             pTail = pTail->rbnext;
+                        break;
                     }
-                    break;
                     case AcDb::kDwgHandle:
-#ifdef never
-                        //kDwgHandle  ads_name in a resbuf
+                    {
                         PyDbHandle hwnd = extract<PyDbHandle>(tpl[1]);
                         pTail->rbnext = acutNewRb(code);
                         hwnd.m_hnd.copyToOldType(pTail->rbnext->resval.ihandle);
                         if (pTail->rbnext != nullptr)
                             pTail = pTail->rbnext;
                         break;
-#endif
+                    }
                     case AcDb::kDwgHardOwnershipId:
                     case AcDb::kDwgSoftOwnershipId:
                     case AcDb::kDwgHardPointerId:
@@ -136,8 +135,9 @@ resbuf* listToResbuf(const boost::python::object& bpl)
                             if (pTail->rbnext != nullptr)
                                 pTail = pTail->rbnext;
                         }
-                        break;
                     }
+                    break;
+
                 }
             }
             else
@@ -243,8 +243,7 @@ resbuf* listToResbuf(const boost::python::object& bpl)
                         const PyEdSelectionSet ss = extract<PyEdSelectionSet>(tpl[1]);
                         {
                             const auto& adsn = ss.adsname();
-                            name[0] = adsn.m_data[0];
-                            name[1] = adsn.m_data[1];
+                            memcpy_s(name, sizeof(name), adsn.m_data.data(), sizeof(adsn.m_data));
                             pTail->rbnext = acutBuildList(code, name, 0);
                             if (pTail->rbnext != nullptr)
                                 pTail = pTail->rbnext;
@@ -253,7 +252,6 @@ resbuf* listToResbuf(const boost::python::object& bpl)
                     }
                     case RTENAME:
                     {
-
                         ads_name name = { 0L };
                         const PyDbObjectId id = extract<PyDbObjectId>(tpl[1]);
                         if (acdbGetAdsName(name, id.m_id) == eOk)
@@ -320,21 +318,20 @@ boost::python::list resbufToList(resbuf* pRb)
                     break;
                 }
                 case AcDb::kDwgHandle:
-#ifdef never
-                    //kDwgHandle  ads_name in a resbuf
-                    AcDbHandle hand;
-                    hand.copyFromOldType(pTail->resval.ihandle);
-                    list.append(boost::python::make_tuple(pTail->restype, PyDbHandle(hand)));
+                {
+                    PyDbHandle hand;
+                    hand.m_hnd.copyFromOldType(pTail->resval.ihandle);
+                    list.append(boost::python::make_tuple(pTail->restype, hand));
                     break;
-#endif
+                }
                 case AcDb::kDwgHardOwnershipId:
                 case AcDb::kDwgSoftOwnershipId:
                 case AcDb::kDwgHardPointerId:
                 case AcDb::kDwgSoftPointerId:
                 {
-                    AcDbObjectId id;
-                    acdbGetObjectId(id, pTail->resval.rlname);
-                    list.append(boost::python::make_tuple(pTail->restype, PyDbObjectId(id)));
+                    PyDbObjectId id;
+                    acdbGetObjectId(id.m_id, pTail->resval.rlname);
+                    list.append(boost::python::make_tuple(pTail->restype, id));
                     break;
                 }
             }
@@ -395,33 +392,24 @@ boost::python::list resbufToList(resbuf* pRb)
     return list;
 }
 
-resbuf* acGePoint3dArrayToResbuf(const AcGePoint3dArray& ptArray)
+resbuf* AcGePoint3dArrayToResbuf(const AcGePoint3dArray& ptArrayWCS)
 {
-    resbuf* ptList = NULL;        // overall list
-    resbuf* lastRb = NULL;        // place holder to end of list
-    resbuf* rb;
-    int len = ptArray.length();
-    for (int i = 0; i < len; i++)
+    resbuf* phead = nullptr;
+    resbuf* ptail = nullptr;
+    constexpr size_t memsize = sizeof(AcGePoint3d);
+    for (size_t idx = 0; idx < ptArrayWCS.length(); idx++)
     {
-        if ((rb = acutNewRb(RT3DPOINT)) == NULL)
+        if (idx == 0)
         {
-            acutRelRb(ptList);
-            return NULL;
-        }
-        const AcGePoint3d& p = ptArray.at(i);
-        rb->resval.rpoint[0] = p.x;
-        rb->resval.rpoint[1] = p.y;
-        rb->resval.rpoint[2] = p.z;
-        if (ptList == NULL)
-        {
-            ptList = rb;
-            lastRb = rb;
+            phead = acutNewRb(RT3DPOINT);
+            ptail = phead;
+            memcpy_s(ptail->resval.rpoint, memsize, asDblArray(ptArrayWCS[idx]), memsize);
         }
         else
         {
-            lastRb->rbnext = rb;
-            lastRb = rb;
+            ptail = ptail->rbnext = acutNewRb(RT3DPOINT);
+            memcpy_s(ptail->resval.rpoint, memsize, asDblArray(ptArrayWCS[idx]), memsize);
         }
     }
-    return ptList;
+    return phead;
 }

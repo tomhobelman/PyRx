@@ -19,7 +19,7 @@ void makePyDbEvalVariantWrapper()
         "- pnt2dval: PyGe.Point2d\n"
         "- pnt3dval: PyGe.Point3d\n";
 
-    PyDocString DS("PyDb.EvalVariant");
+    PyDocString DS("EvalVariant");
     class_<PyDbEvalVariant, bases<PyRxObject>>("EvalVariant")
         .def(init<>())
         .def(init<double>())
@@ -28,7 +28,7 @@ void makePyDbEvalVariantWrapper()
         .def(init<const std::string&>())
         .def(init<const PyDbObjectId&>())
         .def(init<const AcGePoint2d&>())
-        .def(init<const AcGePoint3d&>(DS.CTOR(ctords)))
+        .def(init<const AcGePoint3d&>(DS.CTOR(ctords, 4506)))
         .def("setDouble", &PyDbEvalVariant::setDouble, DS.ARGS({ "code: PyDb.DxfCode", "val: float" }))
         .def("setInt16", &PyDbEvalVariant::setInt16, DS.ARGS({ "code: PyDb.DxfCode", "val: int" }))
         .def("setInt32", &PyDbEvalVariant::setInt32, DS.ARGS({ "code: PyDb.DxfCode", "val: int" }))
@@ -50,12 +50,12 @@ void makePyDbEvalVariantWrapper()
         .def("toString", &PyDbEvalVariant::toString, DS.ARGS())
 
         //operators
-        .def("__eq__", &PyDbEvalVariant::operator==)
-        .def("__ne__", &PyDbEvalVariant::operator!=)
-        .def("__lt__", &PyDbEvalVariant::operator<)
-        .def("__gt__", &PyDbEvalVariant::operator>)
-        .def("__le__", &PyDbEvalVariant::operator<=)
-        .def("__ge__", &PyDbEvalVariant::operator>=)
+        .def("__eq__", &PyDbEvalVariant::operator==, DS.ARGS({ "other: PyDb.EvalVariant" }))
+        .def("__ne__", &PyDbEvalVariant::operator!=, DS.ARGS({ "other: PyDb.EvalVariant" }))
+        .def("__lt__", &PyDbEvalVariant::operator<, DS.ARGS({ "other: PyDb.EvalVariant" }))
+        .def("__gt__", &PyDbEvalVariant::operator>, DS.ARGS({ "other: PyDb.EvalVariant" }))
+        .def("__le__", &PyDbEvalVariant::operator<=, DS.ARGS({ "other: PyDb.EvalVariant" }))
+        .def("__ge__", &PyDbEvalVariant::operator>=, DS.ARGS({ "other: PyDb.EvalVariant" }))
 
         // to string
         .def("__str__", &PyDbEvalVariant::toString, DS.ARGS())
@@ -84,6 +84,12 @@ PyDbEvalVariant::PyDbEvalVariant(const std::string& szVal)
 PyDbEvalVariant::PyDbEvalVariant(Adesk::Int32 lVal)
     : PyRxObject(new AcDbEvalVariant(lVal), true, false)
 {
+    if (isInt16_t(lVal))
+    {
+        impObj()->clear();
+        impObj()->restype = AcDb::kDxfInt16;
+        impObj()->resval.rint = Adesk::Int16(lVal);
+    }
 }
 
 PyDbEvalVariant::PyDbEvalVariant(Adesk::Int32 lVal, bool isShort)
@@ -159,42 +165,42 @@ bool PyDbEvalVariant::operator!=(const PyDbEvalVariant& val) const
     return *impObj() != *val.impObj();
 }
 
-void PyDbEvalVariant::setDouble(AcDb::DxfCode groupcode, double value)
+void PyDbEvalVariant::setDouble(AcDb::DxfCode groupcode, double value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
     impObj()->resval.rreal = value;
 }
 
-void PyDbEvalVariant::setInt16(AcDb::DxfCode groupcode, short value)
+void PyDbEvalVariant::setInt16(AcDb::DxfCode groupcode, short value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
     impObj()->resval.rint = value;
 }
 
-void PyDbEvalVariant::setInt32(AcDb::DxfCode groupcode, Adesk::Int32 value)
+void PyDbEvalVariant::setInt32(AcDb::DxfCode groupcode, Adesk::Int32 value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
     impObj()->resval.rlong = value;
 }
 
-void PyDbEvalVariant::setString(AcDb::DxfCode groupcode, const std::string& value)
+void PyDbEvalVariant::setString(AcDb::DxfCode groupcode, const std::string& value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
     impObj()->resval.rstring = _wcsdup(utf8_to_wstr(value).c_str());
 }
 
-void PyDbEvalVariant::setObjectId(AcDb::DxfCode groupcode, const PyDbObjectId& value)
+void PyDbEvalVariant::setObjectId(AcDb::DxfCode groupcode, const PyDbObjectId& value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
     PyThrowBadEs(acdbGetAdsName(impObj()->resval.rlname, value.m_id));
 }
 
-void PyDbEvalVariant::setPoint3d(AcDb::DxfCode groupcode, const AcGePoint3d& value)
+void PyDbEvalVariant::setPoint3d(AcDb::DxfCode groupcode, const AcGePoint3d& value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
@@ -203,7 +209,7 @@ void PyDbEvalVariant::setPoint3d(AcDb::DxfCode groupcode, const AcGePoint3d& val
     impObj()->resval.rpoint[2] = value[2];
 }
 
-void PyDbEvalVariant::setPoint2d(AcDb::DxfCode groupcode, const AcGePoint2d& value)
+void PyDbEvalVariant::setPoint2d(AcDb::DxfCode groupcode, const AcGePoint2d& value) const
 {
     impObj()->clear();
     impObj()->restype = groupcode;
@@ -212,35 +218,35 @@ void PyDbEvalVariant::setPoint2d(AcDb::DxfCode groupcode, const AcGePoint2d& val
     impObj()->resval.rpoint[2] = 0.0;
 }
 
-double PyDbEvalVariant::getDouble()
+double PyDbEvalVariant::getDouble() const
 {
     double val = 0;
     PyThrowBadEs(impObj()->getValue(val));
     return val;
 }
 
-short PyDbEvalVariant::getInt16()
+short PyDbEvalVariant::getInt16() const
 {
     short val = 0;
     PyThrowBadEs(impObj()->getValue(val));
     return val;
 }
 
-Int32 PyDbEvalVariant::getInt32()
+Int32 PyDbEvalVariant::getInt32() const
 {
     Int32 val = 0;
     PyThrowBadEs(impObj()->getValue(val));
     return val;
 }
 
-std::string PyDbEvalVariant::getString()
+std::string PyDbEvalVariant::getString() const
 {
     AcString val;
     PyThrowBadEs(impObj()->getValue(val));
     return wstr_to_utf8(val);
 }
 
-PyDbObjectId PyDbEvalVariant::getObjectId()
+PyDbObjectId PyDbEvalVariant::getObjectId() const
 {
     PyDbObjectId val;
     if (impObj()->restype == RTENAME)
@@ -262,7 +268,7 @@ PyDbObjectId PyDbEvalVariant::getObjectId()
     return val;
 }
 
-AcGePoint2d PyDbEvalVariant::getPoint2d()
+AcGePoint2d PyDbEvalVariant::getPoint2d() const
 {
     AcGePoint2d val;
     if (impObj()->restype == RTPOINT)
@@ -274,19 +280,19 @@ AcGePoint2d PyDbEvalVariant::getPoint2d()
     throw PyErrorStatusException(eInvalidInput);
 }
 
-AcGePoint3d PyDbEvalVariant::getPoint3d()
+AcGePoint3d PyDbEvalVariant::getPoint3d() const
 {
     AcGePoint3d val;
     PyThrowBadEs(impObj()->getValue(val));
     return val;
 }
 
-void PyDbEvalVariant::clear()
+void PyDbEvalVariant::clear() const
 {
     impObj()->clear();
 }
 
-void PyDbEvalVariant::copyFrom(const PyRxObject& pOther)
+void PyDbEvalVariant::copyFrom(const PyRxObject& pOther) const
 {
     return PyThrowBadEs(impObj()->copyFrom(pOther.impObj()));
 }
@@ -301,7 +307,7 @@ int PyDbEvalVariant::getRbType() const
     return impObj()->restype;
 }
 
-std::string PyDbEvalVariant::toString()
+std::string PyDbEvalVariant::toString() const
 {
     std::string outstr;
     switch (impObj()->getType())
@@ -413,9 +419,9 @@ AcDbEvalVariant* PyDbEvalVariant::impObj(const std::source_location& src /*= std
 //PyDbDynBlockReferenceProperty
 void makePyDbDynBlockReferencePropertyWrapper()
 {
-    PyDocString DS("PyDb.DynBlockReferenceProperty");
+    PyDocString DS("DynBlockReferenceProperty");
     class_<PyDbDynBlockReferenceProperty>("DynBlockReferenceProperty")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.ARGS(4193)))
         .def("blockId", &PyDbDynBlockReferenceProperty::blockId, DS.ARGS(4197))
         .def("propertyName", &PyDbDynBlockReferenceProperty::propertyName, DS.ARGS(4200))
         .def("propertyType", &PyDbDynBlockReferenceProperty::propertyType, DS.ARGS(4201))
@@ -483,7 +489,7 @@ bool PyDbDynBlockReferenceProperty::show() const
 
 bool PyDbDynBlockReferenceProperty::visibleInCurrentVisibilityState() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->visibleInCurrentVisibilityState();
@@ -500,7 +506,7 @@ AcDbDynBlockReferenceProperty::UnitsType PyDbDynBlockReferenceProperty::unitsTyp
     return impObj()->unitsType();
 }
 
-boost::python::list PyDbDynBlockReferenceProperty::getAllowedValues()
+boost::python::list PyDbDynBlockReferenceProperty::getAllowedValues() const
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
@@ -516,7 +522,7 @@ PyDbEvalVariant PyDbDynBlockReferenceProperty::value() const
     return PyDbEvalVariant(impObj()->value());
 }
 
-void PyDbDynBlockReferenceProperty::setValue(const PyDbEvalVariant& value)
+void PyDbDynBlockReferenceProperty::setValue(const PyDbEvalVariant& value) const
 {
     return PyThrowBadEs(impObj()->setValue(*value.impObj()));
 }
@@ -547,7 +553,7 @@ constexpr const std::string_view ctords = "Overloads:\n"
 
 void makePyDbAcValueWrapper()
 {
-    PyDocString DS("PyDb.AcValue");
+    PyDocString DS("AcValue");
     class_<PyDbAcValue, bases<PyRxObject>>("AcValue")
         .def(init<>())
         .def(init<double>())
@@ -633,17 +639,17 @@ PyDbAcValue::PyDbAcValue(const AcValue& pt)
 {
 }
 
-bool PyDbAcValue::reset1(void)
+bool PyDbAcValue::reset1(void) const
 {
     return impObj()->reset();
 }
 
-bool PyDbAcValue::reset2(AcValue::DataType nDataType)
+bool PyDbAcValue::reset2(AcValue::DataType nDataType) const
 {
     return impObj()->reset(nDataType);
 }
 
-bool PyDbAcValue::resetValue(void)
+bool PyDbAcValue::resetValue(void) const
 {
     return impObj()->resetValue();
 }
@@ -658,7 +664,7 @@ AcValue::UnitType PyDbAcValue::unitType(void) const
     return impObj()->unitType();
 }
 
-bool PyDbAcValue::setUnitType(AcValue::UnitType nUnitType)
+bool PyDbAcValue::setUnitType(AcValue::UnitType nUnitType) const
 {
     return impObj()->setUnitType(nUnitType);
 }
@@ -668,7 +674,7 @@ std::string PyDbAcValue::getFormat(void) const
     return wstr_to_utf8(impObj()->getFormat());
 }
 
-bool PyDbAcValue::setFormat(const std::string& pszFormat)
+bool PyDbAcValue::setFormat(const std::string& pszFormat) const
 {
     return impObj()->setFormat(utf8_to_wstr(pszFormat).c_str());
 }
@@ -678,89 +684,89 @@ bool PyDbAcValue::isValid(void) const
     return impObj()->isValid();
 }
 
-void PyDbAcValue::setDouble(double value)
+void PyDbAcValue::setDouble(double value) const
 {
     PyThrowFalse(impObj()->set(value));
 }
 
-void PyDbAcValue::setInt32(Adesk::Int32 value)
+void PyDbAcValue::setInt32(Adesk::Int32 value) const
 {
     PyThrowFalse(impObj()->set(value));
 }
 
-void PyDbAcValue::setString(const std::string& value)
+void PyDbAcValue::setString(const std::string& value) const
 {
     PyThrowFalse(impObj()->set(utf8_to_wstr(value).c_str()));
 }
 
-void PyDbAcValue::setObjectId(const PyDbObjectId& value)
+void PyDbAcValue::setObjectId(const PyDbObjectId& value) const
 {
     PyThrowFalse(impObj()->set(value.m_id));
 }
 
-void PyDbAcValue::setPoint3d(const AcGePoint3d& value)
+void PyDbAcValue::setPoint3d(const AcGePoint3d& value) const
 {
     PyThrowFalse(impObj()->set(value));
 }
 
-void PyDbAcValue::setPoint2d(const AcGePoint2d& value)
+void PyDbAcValue::setPoint2d(const AcGePoint2d& value) const
 {
     PyThrowFalse(impObj()->set(value));
 }
 
-double PyDbAcValue::getDouble()
+double PyDbAcValue::getDouble() const
 {
     double value;
     PyThrowFalse(impObj()->get(value));
     return value;
 }
 
-Int32 PyDbAcValue::getInt32()
+Int32 PyDbAcValue::getInt32() const
 {
     Int32 value;
     PyThrowFalse(impObj()->get(value));
     return value;
 }
 
-std::string PyDbAcValue::getString()
+std::string PyDbAcValue::getString() const
 {
     RxAutoOutStr value;
     PyThrowFalse(impObj()->get(value.buf));
     return value.str();
 }
 
-PyDbObjectId PyDbAcValue::getObjectId()
+PyDbObjectId PyDbAcValue::getObjectId() const
 {
     PyDbObjectId value;
     PyThrowFalse(impObj()->get(value.m_id));
     return value;
 }
 
-AcGePoint2d PyDbAcValue::getPoint2d()
+AcGePoint2d PyDbAcValue::getPoint2d() const
 {
     AcGePoint2d value;
     PyThrowFalse(impObj()->get(value));
     return value;
 }
 
-AcGePoint3d PyDbAcValue::getPoint3d()
+AcGePoint3d PyDbAcValue::getPoint3d() const
 {
     AcGePoint3d value;
     PyThrowFalse(impObj()->get(value));
     return value;
 }
 
-std::string PyDbAcValue::format1()
+std::string PyDbAcValue::format1() const
 {
     return wstr_to_utf8(impObj()->format());
 }
 
-std::string PyDbAcValue::format2(AcValue::FormatOption nOption)
+std::string PyDbAcValue::format2(AcValue::FormatOption nOption) const
 {
     return wstr_to_utf8(impObj()->format(nOption));
 }
 
-bool PyDbAcValue::convertTo(AcValue::DataType nDataType, AcValue::UnitType nUnitType)
+bool PyDbAcValue::convertTo(AcValue::DataType nDataType, AcValue::UnitType nUnitType) const
 {
     return impObj()->convertTo(nDataType, nUnitType);
 }

@@ -6,6 +6,7 @@
 #include "PyDbGripData.h"
 
 using namespace boost::python;
+
 //----------------------------------------------------------------------------------------------------
 //wrapper
 void makePyDbEntityWrapper()
@@ -25,20 +26,23 @@ void makePyDbEntityWrapper()
         "- nameType: PyDb.PlotStyleNameType, doSubents: bool\n"
         "- nameType: PyDb.PlotStyleNameType, newId: PyDb.ObjectId, doSubents: bool\n";
 
-    PyDocString DS("PyDb.Entity");
+    PyDocString DS("Entity");
     class_<PyDbEntity, bases<PyDbObject>>("Entity", boost::python::no_init)
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead", "erased: bool=False" }, 4270)))
         .def("blockId", &PyDbEntity::blockId, DS.ARGS(4286))
         .def("color", &PyDbEntity::color, DS.ARGS(4292))
         .def("setColor", &PyDbEntity::setColor1)
         .def("setColor", &PyDbEntity::setColor2)
-        .def("setColor", &PyDbEntity::setColor3, DS.ARGS({ "clr: PyDb.AcCmColor", "dosubents : bool=True","db : PyDb.Database='current'" }, 4349))
+        .def("setColor", &PyDbEntity::setColor3, DS.ARGS({ "clr: PyDb.Color", "dosubents : bool=True","db : PyDb.Database=..." }, 4349))
         .def("colorIndex", &PyDbEntity::colorIndex, DS.ARGS())
         .def("setColorIndex", &PyDbEntity::setColorIndex1)
         .def("setColorIndex", &PyDbEntity::setColorIndex2, DS.ARGS({ "clr: int",  "dosubents : bool=True" }, 4350))
         .def("entityColor", &PyDbEntity::entityColor, DS.ARGS(4302))
+        .def("transparency", &PyDbEntity::transparency, DS.ARGS())
+        .def("setTransparency", &PyDbEntity::setTransparency1)
+        .def("setTransparency", &PyDbEntity::setTransparency2, DS.ARGS({ "transparency: PyDb.Transparency",  "dosubents : bool=True" }, 4361))
         .def("layer", &PyDbEntity::layer, DS.ARGS(4327))
         .def("layerId", &PyDbEntity::layerId, DS.ARGS(4328))
         .def("setLayer", &PyDbEntity::setLayer1)
@@ -106,8 +110,11 @@ void makePyDbEntityWrapper()
         .def("addSubentPaths", &PyDbEntity::addSubentPaths, DS.ARGS({ "paths: list[PyDb.FullSubentPath]" }, 4283))
         .def("getSubentPathsAtGsMarker", &PyDbEntity::getSubentPathsAtGsMarker1, DS.ARGS({ "type: PyDb.SubentType","gsMark: int","pickPoint: PyGe.Point3d","viewXform: PyGe.Matrix3d" }, 4318))
         .def("highlight", &PyDbEntity::highlight1)
-        .def("highlight", &PyDbEntity::highlight2, DS.ARGS({ "path: PyDb.FullSubentPath = None","highlightAll : bool = False" }, 4322))
+        .def("highlight", &PyDbEntity::highlight2, DS.ARGS({ "path: PyDb.FullSubentPath = ...","highlightAll : bool = False" }, 4322))
         .def("subent", &PyDbEntity::subentPtr, DS.ARGS({ "path: PyDb.FullSubentPath" }))
+#if !defined (_BRXTARGET260)
+        .def("pushHighlight", &PyDbEntity::pushHighlight, DS.ARGS({ "path: PyDb.FullSubentPath", "highlightStyle: PyGi.HighlightStyle"}))
+#endif
         .def("className", &PyDbEntity::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbEntity::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbEntity::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -179,7 +186,7 @@ void PyDbEntity::setLayer6(const PyDbObjectId& newVal, bool doSubents, bool allo
 
 std::string PyDbEntity::plotStyleName() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     return wstr_to_utf8(impObj()->plotStyleName());
 #else
     AcString str;
@@ -190,9 +197,9 @@ std::string PyDbEntity::plotStyleName() const
 
 PyDbObjectId PyDbEntity::getPlotStyleNameId() const
 {
-    AcDbObjectId id;
-    impObj()->getPlotStyleNameId(id);
-    return PyDbObjectId(id);
+    PyDbObjectId id;
+    impObj()->getPlotStyleNameId(id.m_id);
+    return id;
 }
 
 void PyDbEntity::setColor1(const AcCmColor& color) const
@@ -235,7 +242,12 @@ AcCmTransparency PyDbEntity::transparency() const
     return impObj()->transparency();
 }
 
-void PyDbEntity::setTransparency(const AcCmTransparency& trans, Adesk::Boolean doSubents /*= true*/) const
+void PyDbEntity::setTransparency1(const AcCmTransparency& trans) const
+{
+    return PyThrowBadEs(impObj()->setTransparency(trans, true));
+}
+
+void PyDbEntity::setTransparency2(const AcCmTransparency& trans, Adesk::Boolean doSubents) const
 {
     return PyThrowBadEs(impObj()->setTransparency(trans, doSubents));
 }
@@ -267,12 +279,12 @@ void PyDbEntity::setPlotStyleName3(AcDb::PlotStyleNameType tp, const PyDbObjectI
 
 std::string PyDbEntity::linetype() const
 {
-    return  wstr_to_utf8(impObj()->linetype());
+    return wstr_to_utf8(impObj()->linetype());
 }
 
 PyDbObjectId PyDbEntity::linetypeId() const
 {
-    return  PyDbObjectId(impObj()->linetypeId());
+    return PyDbObjectId(impObj()->linetypeId());
 }
 
 void PyDbEntity::setLinetype1(const std::string& newVal) const
@@ -610,6 +622,13 @@ void PyDbEntity::highlight2(const PyDbFullSubentPath& subId, const Adesk::Boolea
     PyThrowBadEs(impObj()->highlight(subId.pyImp, highlightAll));
 }
 
+#if !defined (_BRXTARGET260)
+void PyDbEntity::pushHighlight(const PyDbFullSubentPath& subId, AcGiHighlightStyle highlightStyle) const
+{
+    PyThrowBadEs(impObj()->pushHighlight(subId.pyImp, highlightStyle));
+}
+#endif
+
 PyDbEntity PyDbEntity::subentPtr(const PyDbFullSubentPath& subId) const
 {
     return PyDbEntity(impObj()->subentPtr(subId.pyImp), true);
@@ -647,10 +666,16 @@ AcDbEntity* PyDbEntity::impObj(const std::source_location& src /*= std::source_l
 //PyDbBlockBegin
 void makePyDbBlockBeginWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n";
+
     PyDocString DS("BlockBegin");
-    class_<PyDbBlockBegin, bases<PyDbEntity>>("BlockBegin", boost::python::no_init)
+    class_<PyDbBlockBegin, bases<PyDbEntity>>("BlockBegin")
+        .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.CTOR(ctords, 2484)))
         .def("className", &PyDbBlockBegin::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbBlockBegin::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbBlockBegin::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -658,8 +683,13 @@ void makePyDbBlockBeginWrapper()
         ;
 }
 
-PyDbBlockBegin::PyDbBlockBegin(AcDbBlockBegin* ptr, bool autoDelete)
-    : PyDbEntity(ptr, autoDelete)
+PyDbBlockBegin::PyDbBlockBegin()
+    : PyDbBlockBegin(new AcDbBlockBegin(), true)
+{
+}
+
+PyDbBlockBegin::PyDbBlockBegin(const PyDbObjectId& id)
+    : PyDbBlockBegin(id, AcDb::OpenMode::kForRead)
 {
 }
 
@@ -668,8 +698,8 @@ PyDbBlockBegin::PyDbBlockBegin(const PyDbObjectId& id, AcDb::OpenMode mode)
 {
 }
 
-PyDbBlockBegin::PyDbBlockBegin(const PyDbObjectId& id)
-    : PyDbBlockBegin(id, AcDb::OpenMode::kForRead)
+PyDbBlockBegin::PyDbBlockBegin(AcDbBlockBegin* ptr, bool autoDelete)
+    : PyDbEntity(ptr, autoDelete)
 {
 }
 
@@ -705,10 +735,16 @@ AcDbBlockBegin* PyDbBlockBegin::impObj(const std::source_location& src /*= std::
 //PyDbBlockEnd
 void makePyDbBlockEndWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n";
+
     PyDocString DS("BlockEnd");
-    class_<PyDbBlockEnd, bases<PyDbEntity>>("BlockEnd", boost::python::no_init)
+    class_<PyDbBlockEnd, bases<PyDbEntity>>("BlockEnd")
+        .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.CTOR(ctords, 2496)))
         .def("className", &PyDbBlockEnd::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbBlockEnd::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbBlockEnd::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -716,18 +752,23 @@ void makePyDbBlockEndWrapper()
         ;
 }
 
-PyDbBlockEnd::PyDbBlockEnd(AcDbBlockEnd* ptr, bool autoDelete)
-    : PyDbEntity(ptr, autoDelete)
-{
-}
-
-PyDbBlockEnd::PyDbBlockEnd(const PyDbObjectId& id, AcDb::OpenMode mode)
-    : PyDbEntity(openAcDbObject<AcDbBlockEnd>(id, mode), false)
+PyDbBlockEnd::PyDbBlockEnd()
+    : PyDbBlockEnd(new AcDbBlockEnd(), true)
 {
 }
 
 PyDbBlockEnd::PyDbBlockEnd(const PyDbObjectId& id)
     : PyDbBlockEnd(id, AcDb::OpenMode::kForRead)
+{
+}
+
+PyDbBlockEnd::PyDbBlockEnd(const PyDbObjectId& id, AcDb::OpenMode mode)
+    : PyDbBlockEnd(openAcDbObject<AcDbBlockEnd>(id, mode), false)
+{
+}
+
+PyDbBlockEnd::PyDbBlockEnd(AcDbBlockEnd* ptr, bool autoDelete)
+    : PyDbEntity(ptr, autoDelete)
 {
 }
 
@@ -763,10 +804,16 @@ AcDbBlockEnd* PyDbBlockEnd::impObj(const std::source_location& src /*= std::sour
 //PyDbSequenceEnd
 void makePyDbSequenceEndWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n";
+
     PyDocString DS("SequenceEnd");
-    class_<PyDbSequenceEnd, bases<PyDbEntity>>("SequenceEnd", boost::python::no_init)
+    class_<PyDbSequenceEnd, bases<PyDbEntity>>("SequenceEnd")
+        .def(init<>())
         .def(init<const PyDbObjectId&>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode=PyDb.OpenMode.kForRead" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode>(DS.CTOR(ctords, 8552)))
         .def("className", &PyDbSequenceEnd::className, DS.SARGS()).staticmethod("className")
         .def("desc", &PyDbSequenceEnd::desc, DS.SARGS(15560)).staticmethod("desc")
         .def("cloneFrom", &PyDbSequenceEnd::cloneFrom, DS.SARGS({ "otherObject: PyRx.RxObject" })).staticmethod("cloneFrom")
@@ -774,8 +821,13 @@ void makePyDbSequenceEndWrapper()
         ;
 }
 
-PyDbSequenceEnd::PyDbSequenceEnd(AcDbSequenceEnd* ptr, bool autoDelete)
-    : PyDbEntity(ptr, autoDelete)
+PyDbSequenceEnd::PyDbSequenceEnd()
+    : PyDbSequenceEnd(new AcDbSequenceEnd(), true)
+{
+}
+
+PyDbSequenceEnd::PyDbSequenceEnd(const PyDbObjectId& id)
+    : PyDbSequenceEnd(id, AcDb::OpenMode::kForRead)
 {
 }
 
@@ -784,8 +836,8 @@ PyDbSequenceEnd::PyDbSequenceEnd(const PyDbObjectId& id, AcDb::OpenMode mode)
 {
 }
 
-PyDbSequenceEnd::PyDbSequenceEnd(const PyDbObjectId& id)
-    : PyDbSequenceEnd(id, AcDb::OpenMode::kForRead)
+PyDbSequenceEnd::PyDbSequenceEnd(AcDbSequenceEnd* ptr, bool autoDelete)
+    : PyDbEntity(ptr, autoDelete)
 {
 }
 
@@ -826,7 +878,7 @@ void makePyDbSubentIdWrapper()
         "- type: PyDb.SubentType, indexMarker: int\n"
         "- pTypeClass: PyRx.RxClass, indexMarker: int\n";
 
-    PyDocString DS("PyDb.SubentId");
+    PyDocString DS("SubentId");
     class_<PyDbSubentId>("SubentId")
         .def(init<>())
         .def(init<AcDb::SubentType, Adesk::GsMarker>())
@@ -928,7 +980,7 @@ void makePyDbFullSubentPathWrapper()
         "- id: PyDb.ObjectId, sub: PyDb.SubentId\n"
         "- ids: list[PyDb.ObjectId], sub: PyDb.SubentId\n";
 
-    PyDocString DS("PyDb.FullSubentPath");
+    PyDocString DS("FullSubentPath");
     class_<PyDbFullSubentPath>("FullSubentPath")
         .def(init<>())
         .def(init<AcDb::SubentType, Adesk::GsMarker>())
@@ -987,7 +1039,7 @@ bool PyDbFullSubentPath::operator!=(const PyDbFullSubentPath& id) const
 
 void PyDbFullSubentPath::setObjectIds(const boost::python::list& objectIds)
 {
-#if defined (_ZRXTARGET240) || defined (_BRXTARGET250)
+#if defined (_ZRXTARGET240) || defined (_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     pyImp.setObjectIds(PyListToObjectIdArray(objectIds));
@@ -1001,7 +1053,7 @@ boost::python::list PyDbFullSubentPath::objectIds() const
 
 void PyDbFullSubentPath::setSubentId(const PyDbSubentId& subentId)
 {
-#if defined (_ZRXTARGET240) || defined (_BRXTARGET250)
+#if defined (_ZRXTARGET240) || defined (_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     pyImp.setSubentId(*subentId.impObj());

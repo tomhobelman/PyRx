@@ -45,6 +45,9 @@ inline const char* appHostName()
 #ifdef _ZRXTARGET 
     return "ZRX";
 #endif
+#ifdef _IRXTARGET 
+    return "IRX";
+#endif
 #ifdef _GRXTARGET 
     return "GRX";
 #endif
@@ -55,7 +58,7 @@ inline const char* appHostName()
 }
 
 //TODO:
-void        printExceptionMsg(const std::source_location& src = std::source_location::current());
+void printExceptionMsg(const std::source_location& src = std::source_location::current());
 
 //-----------------------------------------------------------------------------------
 // PyNullObject
@@ -105,10 +108,9 @@ public:
     static void translator(const PyNotimplementedByHost& x);
 };
 
-#if defined(_BRXTARGET)
-
 //-----------------------------------------------------------------------------------
 // PyBrxBimError
+#if defined(_BRXTARGET)
 class PyBrxBimError
 {
     pysource_location m_src;
@@ -129,7 +131,6 @@ inline void PyThrowBadBim(BimApi::ResultStatus hr, const std::source_location& s
     if (FAILED(hr)) [[unlikely]]
         throw PyAcadHrError(hr, src);
 }
-
 #endif
 
 //-----------------------------------------------------------------------------------
@@ -156,7 +157,7 @@ private:
 private:
     pysource_location m_src;
     std::string m_fmt;
-    Acad::ErrorStatus m_es = Acad::eNotImplemented;
+    Acad::ErrorStatus m_es = eNotImplementedYet;
 };
 
 //-----------------------------------------------------------------------------------
@@ -184,6 +185,22 @@ private:
     pysource_location m_src;
     std::string m_fmt;
     AcBr::ErrorStatus m_es = AcBr::eNotApplicable;
+};
+
+//-----------------------------------------------------------------------------------
+// PyRxEKeyError
+class PyRxEKeyError : std::exception
+{
+public:
+    explicit PyRxEKeyError(const std::string& key, const std::source_location& src = std::source_location::current());
+    void        generateformat();
+    const char* what() const noexcept;
+    static void translate(const PyRxEKeyError& e);
+
+private:
+    std::string m_key;
+    std::string m_fmt;
+    pysource_location m_src;
 };
 
 //-----------------------------------------------------------------------------------
@@ -217,4 +234,5 @@ inline void PyThrowFalse(bool es, const std::source_location& src = std::source_
     if (es == false) [[unlikely]]
         throw PyErrorStatusException(eInvalidInput, src);
 }
+
 #pragma pack (pop)

@@ -2,11 +2,43 @@
 #include "PyEdSelectionSet.h"
 #include "ResultBuffer.h"
 #include "PyRxObject.h"
+#include "acedsubsel.h"
 
 using namespace boost::python;
 
+//-----------------------------------------------------------------------------------------
+//SS_Iterator
+struct SS_Iterator
+{
+    SS_Iterator(const PyEdSelectionSet& selectionSet) : ss(selectionSet)
+    {
+        if (!selectionSet.isInitialized())
+            PyThrowBadEs(eNotInitializedYet);
+    }
+
+    PyDbObjectId next()
+    {
+        if (current >= ss.size())
+        {
+            PyErr_SetString(PyExc_StopIteration, "End of Selection Set");
+            boost::python::throw_error_already_set();
+        }
+        return ss.getAt(current++); // Fetch items one-by-one lazily
+    }
+
+    SS_Iterator& iter() { return *this; } // __iter__ must return self
+
+    //members
+    PyEdSelectionSet ss;
+    size_t current = 0;
+};
+
 void makePyEdSelectionSetWrapper()
 {
+    class_<SS_Iterator>("SelectionSetIterator", no_init)
+        .def("__iter__", &SS_Iterator::iter, return_internal_reference<>())
+        .def("__next__", &SS_Iterator::next);
+
     constexpr const std::string_view objectIdsOverloads = "Overloads:\n"
         "desc: PyRx.RxClass=PyDb.Entity\n"
         "descList: list[PyRx.RxClass]\n";
@@ -25,18 +57,23 @@ void makePyEdSelectionSetWrapper()
         .def("objectIds", &PyEdSelectionSet::objectIds)
         .def("objectIds", &PyEdSelectionSet::objectIdsOfType)
         .def("objectIds", &PyEdSelectionSet::objectIdsOfTypeList, DS.OVRL(objectIdsOverloads))
+        .def("objectIdArray", &PyEdSelectionSet::objectIdArray1)
+        .def("objectIdArray", &PyEdSelectionSet::objectIdArray2)
+        .def("objectIdArray", &PyEdSelectionSet::objectIdArray3, DS.OVRL(objectIdsOverloads))
         .def("adsname", &PyEdSelectionSet::adsname, DS.ARGS())
         .def("ssNameX", &PyEdSelectionSet::ssNameX1)
         .def("ssNameX", &PyEdSelectionSet::ssNameX2, DS.ARGS({ "val: int = 0" }))
+        .def("getAt", &PyEdSelectionSet::getAt, DS.ARGS({ "val: int" }))
+        .def("subentLength", &PyEdSelectionSet::subentLength, DS.ARGS({ "index: int" }))
+        .def("subentName", &PyEdSelectionSet::subentName, DS.ARGS({ "index: int", "subentIndex: int" }))
+        .def("subentNameX", &PyEdSelectionSet::subentNameX, DS.ARGS({ "index: int", "subentIndex: int","flags: int" }))
         .def("ssSetFirst", &PyEdSelectionSet::ssSetFirst, DS.ARGS())
         .def("ssXform", &PyEdSelectionSet::ssXform, DS.ARGS({ "xform: PyGe.Matrix3d" }))
         .def("keepAlive", &PyRxObject::forceKeepAlive, DS.ARGS({ "flag: bool" }))
-        .def("__iter__", range(&PyEdSelectionSet::begin, &PyEdSelectionSet::end))
+        .def("__iter__", +[](const PyEdSelectionSet& self) {return SS_Iterator(self); })
         ;
 }
 
-
-//used a shared pointer for reference counting. 
 struct PyEdSSDeleter
 {
     explicit PyEdSSDeleter(bool autoDelete)
@@ -94,12 +131,33 @@ size_t PyEdSelectionSet::size() const
     return sslen;
 }
 
+PyDbObjectId PyEdSelectionSet::getAt(size_t index) const
+{
+    if (!isInitialized())
+        throw PyErrorStatusException(Acad::eNotInitializedYet);
+    PyDbObjectId id;
+    ads_name ename = { 0 };
+    PyThrowBadRt(acedSSName(impObj()->data(), index, ename));
+    PyThrowBadEs(acdbGetObjectId(id.m_id, ename));
+    return id;
+}
+
+size_t PyEdSelectionSet::subentLength(size_t index) const
+{
+    if (!isInitialized())
+        return 0;
+    Adesk::Int32 sslen = 0;
+    if (acedSSSubentLength(impObj()->data(), index, &sslen) != RTNORM)
+        return 0;
+    return sslen;
+}
+
 void PyEdSelectionSet::clear()
 {
     m_pSet.reset(new PySSName());
 }
 
-void PyEdSelectionSet::add(const PyDbObjectId& objId)
+void PyEdSelectionSet::add(const PyDbObjectId& objId) const
 {
     if (!isInitialized())
         throw PyErrorStatusException(Acad::eNotInitializedYet);
@@ -108,7 +166,7 @@ void PyEdSelectionSet::add(const PyDbObjectId& objId)
     PyThrowBadRt(acedSSAdd(ent, impObj()->data(), impObj()->data()));
 }
 
-void PyEdSelectionSet::remove(const PyDbObjectId& objId)
+void PyEdSelectionSet::remove(const PyDbObjectId& objId) const
 {
     if (!isInitialized())
         throw PyErrorStatusException(Acad::eNotInitializedYet);
@@ -117,7 +175,7 @@ void PyEdSelectionSet::remove(const PyDbObjectId& objId)
     PyThrowBadRt(acedSSDel(ent, impObj()->data()));
 }
 
-bool PyEdSelectionSet::hasMember(const PyDbObjectId& objId)
+bool PyEdSelectionSet::hasMember(const PyDbObjectId& objId) const
 {
     if (!isInitialized())
         throw PyErrorStatusException(Acad::eNotInitializedYet);
@@ -135,7 +193,26 @@ AdsName PyEdSelectionSet::adsname() const
     return _name;
 }
 
-bool PyEdSelectionSet::ssSetFirst()
+PyDbFullSubentPath PyEdSelectionSet::subentName(size_t entIndex, size_t subentIndex) const
+{
+    if (!isInitialized())
+        throw PyErrorStatusException(Acad::eNotInitializedYet);
+    AcDbFullSubentPath _path;
+    PyThrowBadRt(acedSSSubentName(m_pSet->data(), entIndex, subentIndex, _path));
+    return PyDbFullSubentPath(_path);
+}
+
+boost::python::list PyEdSelectionSet::subentNameX(size_t entIndex, size_t subentIndex, int flags) const
+{
+    if (!isInitialized())
+        throw PyErrorStatusException(Acad::eNotInitializedYet);
+    resbuf* pRb = nullptr;
+    PyThrowBadRt(acedSSSubentNameX(&pRb, m_pSet->data(), entIndex, subentIndex, flags));
+    AcResBufPtr holder(pRb);
+    return resbufToList(pRb);
+}
+
+bool PyEdSelectionSet::ssSetFirst() const
 {
     if (!isInitialized())
         throw PyErrorStatusException(Acad::eNotInitializedYet);
@@ -143,7 +220,7 @@ bool PyEdSelectionSet::ssSetFirst()
     return acedSSSetFirst(m_pSet->data(), dummy) == RTNORM;
 }
 
-Acad::PromptStatus PyEdSelectionSet::ssXform(const AcGeMatrix3d& xform)
+Acad::PromptStatus PyEdSelectionSet::ssXform(const AcGeMatrix3d& xform) const
 {
     if (!isInitialized())
         throw PyErrorStatusException(Acad::eNotInitializedYet);
@@ -152,12 +229,12 @@ Acad::PromptStatus PyEdSelectionSet::ssXform(const AcGeMatrix3d& xform)
     return static_cast<Acad::PromptStatus>(acedXformSS(m_pSet->data(), adsXform));
 }
 
-boost::python::list PyEdSelectionSet::ssNameX1()
+boost::python::list PyEdSelectionSet::ssNameX1() const
 {
     return ssNameX2(0);
 }
 
-boost::python::list PyEdSelectionSet::ssNameX2(int idx)
+boost::python::list PyEdSelectionSet::ssNameX2(int idx) const
 {
     if (!isInitialized())
         throw PyErrorStatusException(Acad::eNotInitializedYet);
@@ -167,7 +244,7 @@ boost::python::list PyEdSelectionSet::ssNameX2(int idx)
     return resbufToList(rb);
 }
 
-boost::python::list PyEdSelectionSet::objectIds()
+boost::python::list PyEdSelectionSet::objectIds() const
 {
     PyAutoLockGIL lock;
     if (!isInitialized())
@@ -175,7 +252,7 @@ boost::python::list PyEdSelectionSet::objectIds()
     return ObjectIdArrayToPyList(objectIdsImpl());
 }
 
-boost::python::list PyEdSelectionSet::objectIdsOfType(const PyRxClass& _class)
+boost::python::list PyEdSelectionSet::objectIdsOfType(const PyRxClass& _class) const
 {
     PyAutoLockGIL lock;
     if (!isInitialized())
@@ -190,7 +267,7 @@ boost::python::list PyEdSelectionSet::objectIdsOfType(const PyRxClass& _class)
     return idList;
 }
 
-boost::python::list PyEdSelectionSet::objectIdsOfTypeList(const boost::python::list& _classes)
+boost::python::list PyEdSelectionSet::objectIdsOfTypeList(const boost::python::list& _classes) const
 {
     PyAutoLockGIL lock;
     if (!isInitialized())
@@ -207,7 +284,49 @@ boost::python::list PyEdSelectionSet::objectIdsOfTypeList(const boost::python::l
     return idList;
 }
 
-void PyEdSelectionSet::forceKeepAlive(bool keepIt)
+PyDbObjectIdArray PyEdSelectionSet::objectIdArray1() const
+{
+    if (!isInitialized())
+        throw PyErrorStatusException(Acad::eNotInitializedYet);
+    const auto& m_ids = objectIdsImpl();
+    PyDbObjectIdArray ids;
+    ids.reserve(m_ids.length());
+    for (const auto& id : m_ids)
+        ids.push_back(PyDbObjectId{ id });
+    return ids;
+}
+
+PyDbObjectIdArray PyEdSelectionSet::objectIdArray2(const PyRxClass& _class) const
+{
+    if (!isInitialized())
+        throw PyErrorStatusException(Acad::eNotInitializedYet);
+    PyDbObjectIdArray idList;
+    const auto _desc = _class.impObj();
+    for (const auto& id : objectIdsImpl())
+    {
+        if (id.objectClass()->isDerivedFrom(_desc))
+            idList.push_back(PyDbObjectId{ id });
+    }
+    return idList;
+}
+
+PyDbObjectIdArray PyEdSelectionSet::objectIdArray3(const boost::python::list& _classes) const
+{
+    if (!isInitialized())
+        throw PyErrorStatusException(Acad::eNotInitializedYet);
+    PyDbObjectIdArray idList;
+    std::unordered_set<AcRxClass*> _set;
+    for (auto& item : py_list_to_std_vector<PyRxClass>(_classes))
+        _set.insert(item.impObj());
+    for (const auto& id : objectIdsImpl())
+    {
+        if (_set.contains(id.objectClass()))
+            idList.push_back(PyDbObjectId{ id });
+    }
+    return idList;
+}
+
+void PyEdSelectionSet::forceKeepAlive(bool keepIt) const
 {
     auto del_p = std::get_deleter<PyEdSSDeleter>(m_pSet);
     if (del_p == nullptr)
@@ -241,31 +360,3 @@ PySSName* PyEdSelectionSet::impObj(const std::source_location& src /*= std::sour
     return m_pSet.get();
 }
 
-void PyEdSelectionSet::filliterator()
-{
-    if (!isInitialized())
-        throw PyErrorStatusException(Acad::eNotInitializedYet);
-    PyDbObjectId objId;
-    ads_name ename = { 0 };
-    auto nsize = size();
-    m_iterable.reserve(nsize);
-    for (size_t i = 0; i < nsize; i++)
-    {
-        if (acedSSName(impObj()->data(), i, ename) == RTNORM) [[likely]] {
-            if (acdbGetObjectId(objId.m_id, ename) == eOk) [[likely]] {
-                m_iterable.push_back(objId);
-            }
-        }
-    }
-}
-
-std::vector<PyDbObjectId>::iterator PyEdSelectionSet::begin()
-{
-    return m_iterable.begin();
-}
-
-std::vector<PyDbObjectId>::iterator PyEdSelectionSet::end()
-{
-    filliterator();
-    return m_iterable.end();
-}

@@ -20,9 +20,12 @@ public:
     PyDbCurve(const PyDbObjectId& id, AcDb::OpenMode mode);
     PyDbCurve(const PyDbObjectId& id, AcDb::OpenMode mode, bool erased);
     virtual ~PyDbCurve() override = default;
-
     Adesk::Boolean      isClosed() const;
     Adesk::Boolean      isPeriodic() const;
+    Adesk::Boolean      isOn1(const AcGePoint3d& pnt) const;
+    Adesk::Boolean      isOn2(const AcGePoint3d& pnt, const AcGeTol& tol) const;
+    Adesk::Boolean      isOn3(double param) const;
+    Adesk::Boolean      isOn4(double param, const AcGeTol& tol) const;
     double              getStartParam() const;
     double              getEndParam() const;
     AcGePoint3d         getStartPoint() const;
@@ -52,19 +55,19 @@ public:
     boost::python::list getSplitCurvesAtPoint(const AcGePoint3d& givenPnt) const;
     boost::python::list getSplitCurvesAtPoints(const boost::python::object& params) const;
 
-    PyDbCurve           getOrthoProjectedCurve(const PyGePlane& plane);
-    PyDbCurve           getProjectedCurve(const PyGePlane& plane, const AcGeVector3d& projDir);
+    PyDbCurve           getOrthoProjectedCurve(const PyGePlane& plane) const;
+    PyDbCurve           getProjectedCurve(const PyGePlane& plane, const AcGeVector3d& projDir) const;
 
-    PyDbSpline          getSpline();
-    void                extend1(double newParam);
-    void                extend2(Adesk::Boolean extendStart, const AcGePoint3d& toPoint);
+    PyDbSpline          getSpline() const;
+    void                extend1(double newParam) const;
+    void                extend2(Adesk::Boolean extendStart, const AcGePoint3d& toPoint) const;
     double              getArea() const;
-    void                reverseCurve();
+    void                reverseCurve() const;
     PyGeCurve3d         getAcGeCurve1() const;
     PyGeCurve3d         getAcGeCurve2(const AcGeTol& tol) const;
-    void                setFromAcGeCurve1(const PyGeCurve3d& geCurve);
-    void                setFromAcGeCurve2(const PyGeCurve3d& geCurve, AcGeVector3d& normal);
-    void                setFromAcGeCurve3(const PyGeCurve3d& geCurve, AcGeVector3d& normal, const AcGeTol& tol);
+    void                setFromAcGeCurve1(const PyGeCurve3d& geCurve) const;
+    void                setFromAcGeCurve2(const PyGeCurve3d& geCurve, AcGeVector3d& normal) const;
+    void                setFromAcGeCurve3(const PyGeCurve3d& geCurve, AcGeVector3d& normal, const AcGeTol& tol) const;
     static PyDbCurve    createFromAcGeCurve1(const PyGeCurve3d& geCurve);
     static PyDbCurve    createFromAcGeCurve2(const PyGeCurve3d& geCurve, AcGeVector3d& normal);
     static PyDbCurve    createFromAcGeCurve3(const PyGeCurve3d& geCurve, AcGeVector3d& normal, const AcGeTol& tol);

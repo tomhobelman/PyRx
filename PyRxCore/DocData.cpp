@@ -25,11 +25,10 @@
 #include "StdAfx.h"
 
 //-----------------------------------------------------------------------------------------
-//---- AcGiImageBGRA32Package storage for acedAddSupplementalCursorImage
-#if defined(_ARXTARGET)
+// AcGiImageBGRA32Package storage for acedAddSupplementalCursorImage and PyGiGeometry::image
 AcGiImageBGRA32Package::AcGiImageBGRA32Package(const wxImage& wximage, Adesk::UInt8 alpha)
 {
-    create(wximage, alpha);
+    create(wximage.Mirror(true), alpha);
 }
 
 void AcGiImageBGRA32Package::create(const wxImage& wximage, Adesk::UInt8 alpha)
@@ -52,9 +51,9 @@ void AcGiImageBGRA32Package::create(const wxImage& wximage, Adesk::UInt8 alpha)
                 _pixelData.emplace_back(AcGiPixelBGRA32{ wximage.GetBlue(x,y), wximage.GetGreen(x,y), wximage.GetRed(x,y), alpha });
         }
     }
+    std::reverse(_pixelData.begin(), _pixelData.end());
     _acImage.setImage(wximage.GetWidth(), wximage.GetHeight(), _pixelData.data());
 }
-#endif
 
 //-----------------------------------------------------------------------------
 //----- The one and only document manager object. You can use the DocVars object to retrieve
@@ -93,7 +92,7 @@ AcGiImageBGRA32* CDocData::createCursorImage(const wxImage& wximage, Adesk::UInt
 #endif
 
 #if defined(_ARXTARGET)
-AcGiImageBGRA32* CDocData::getCursorImage()
+AcGiImageBGRA32* CDocData::getCursorImage() const
 {
     if (m_pAcImage.get())
         return &m_pAcImage->_acImage;

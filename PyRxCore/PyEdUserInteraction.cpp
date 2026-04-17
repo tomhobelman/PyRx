@@ -56,7 +56,7 @@ void PySysVarImpl::set(const std::string& name, const boost::python::object& obj
     }
 }
 
-void PySysVarImpl::clear()
+void PySysVarImpl::clear() const
 {
     try
     {
@@ -97,25 +97,25 @@ void makePyEdUserInteractionWrapper()
 
 PyEdUserInteraction::PyEdUserInteraction()
 {
-    userInteraction(acDocManagerPtr()->curDocument(), true);
+    beginUserInteraction(acDocManagerPtr()->curDocument(), true);
 }
 
 PyEdUserInteraction::PyEdUserInteraction(AcApDocument* pDocument, bool prompting)
 {
-    userInteraction(pDocument, prompting);
+    beginUserInteraction(pDocument, prompting);
 }
 
 PyEdUserInteraction::PyEdUserInteraction(PyApDocument& pDocument, bool prompting)
 {
-    userInteraction(pDocument.impObj(), prompting);
+    beginUserInteraction(pDocument.impObj(), prompting);
 }
 
 PyEdUserInteraction::~PyEdUserInteraction(void)
 {
-    undoUserInteraction();
+    endUserInteraction();
 }
 
-void PyEdUserInteraction::userInteraction(AcApDocument* pDocument, bool prompting)
+void PyEdUserInteraction::beginUserInteraction(AcApDocument* pDocument, bool prompting)
 {
     AcApDocManager* pDocMan = acDocManagerPtr();
     if (pDocMan->curDocument() == pDocument)
@@ -129,27 +129,29 @@ void PyEdUserInteraction::userInteraction(AcApDocument* pDocument, bool promptin
             return;
 
         m_activeWindow = GetFocus();
-        for (HWND window = ::GetActiveWindow(); window != NULL; window = ::GetWindow(window, GW_OWNER))
+        for (HWND hwnd = ::GetActiveWindow(); hwnd != NULL; hwnd = ::GetWindow(hwnd, GW_OWNER))
         {
-            if (window == hwMainWnd)
+            if (hwnd == hwMainWnd)
                 break;
-            m_wnds.push_back(window);
+            m_wnds.emplace_back(hwnd);
         }
-        ::EnableWindow(hwMainWnd, TRUE);
-        ::SetFocus(hwMainWnd);
-        for (size_t idx = 0; idx < m_wnds.size(); idx++)
         {
-            ::ShowWindow(m_wnds[idx], SW_HIDE);
+            ::EnableWindow(hwMainWnd, TRUE);
+            ::SetFocus(hwMainWnd);
+            for (auto hwnd : m_wnds)
+            {
+                ::ShowWindow(hwnd, SW_HIDE);
+            }
         }
     }
 }
 
-void PyEdUserInteraction::undoUserInteraction()
+void PyEdUserInteraction::endUserInteraction()
 {
     acDocManagerPtr()->enableDocumentActivation();
     if (m_wnds.size() > 0)
     {
-        for (std::vector<HWND>::reverse_iterator it = m_wnds.rbegin(); it != m_wnds.rend(); ++it)
+        for (auto it = m_wnds.rbegin(); it != m_wnds.rend(); ++it)
             ::ShowWindow(*it, SW_SHOW);
         ::EnableWindow(adsw_acadMainWnd(), FALSE);
         ::SetFocus(m_activeWindow);
@@ -161,7 +163,7 @@ void PyEdUserInteraction::undoUserInteraction()
 void makePyEdUIContextWrapper()
 {
     PyDocString DS("UIContext");
-    class_<PyEdUIContext>("UIContext")
+    class_<PyEdUIContext, boost::noncopyable>("UIContext")
         .def(init<>(DS.ARGS()))
         .def("getMenuContext", &PyEdUIContext::getMenuContextWr, DS.ARGS({ "val: PyRx.RxClass","ids: list[PyDb.ObjectId]" }))
         .def("onCommand", &PyEdUIContext::onCommandWr, DS.ARGS({ "mnuCmd: int" }))
@@ -170,7 +172,7 @@ void makePyEdUIContextWrapper()
         .def("addObjectContextMenu", &PyEdUIContext::addObjectContextMenu, DS.SARGS({ "val: PyRx.RxClass","context: PyEd.UIContext" })).staticmethod("addObjectContextMenu")
         .def("removeObjectContextMenu", &PyEdUIContext::removeObjectContextMenu, DS.SARGS({ "val: PyRx.RxClass","context: PyEd.UIContext" })).staticmethod("removeObjectContextMenu")
         .def("addDefaultContextMenu", &PyEdUIContext::addDefaultContextMenu1)
-        .def("addDefaultContextMenu", &PyEdUIContext::addDefaultContextMenu2, DS.SARGS({ "context: PyEd.UIContext","appName: str=None" })).staticmethod("addDefaultContextMenu")
+        .def("addDefaultContextMenu", &PyEdUIContext::addDefaultContextMenu2, DS.SARGS({ "context: PyEd.UIContext","appName: str = ..." })).staticmethod("addDefaultContextMenu")
         .def("removeDefaultContextMenu", &PyEdUIContext::removeDefaultContextMenu, DS.SARGS({ "context: PyEd.UIContext" })).staticmethod("removeDefaultContextMenu")
         ;
 }
@@ -273,7 +275,7 @@ void PyEdUIContext::OnUpdateMenuWr()
     }
 }
 
-void PyEdUIContext::calcHitPoint()
+void PyEdUIContext::calcHitPoint() const
 {
     CPoint cursorPos;
     ::GetCursorPos(&cursorPos);
@@ -282,11 +284,11 @@ void PyEdUIContext::calcHitPoint()
     acedDwgPoint cpt;
     acedCoordFromPixelToWorld(cursorPos, cpt);
 
-    resbuf fromrb;
+    resbuf fromrb{};
     fromrb.restype = RTSHORT;
     fromrb.resval.rint = 2; // DCS
 
-    resbuf torb;
+    resbuf torb{};
     torb.restype = RTSHORT;
     torb.resval.rint = 0; // WCS 
 

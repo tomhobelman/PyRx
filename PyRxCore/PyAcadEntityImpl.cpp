@@ -269,75 +269,10 @@ void PyIAcadEntityImpl::ScaleEntity(const AcGePoint3d& basePoint, double scaleFa
 
 void PyIAcadEntityImpl::TransformBy(const AcGeMatrix3d& xform) const
 {
-    //TODO: use AcAxMatrix3d;
-    static SAFEARRAYBOUND bounds[2];
-    bounds[0].cElements = 4;
-    bounds[0].lLbound = 0;
-    bounds[1].cElements = 4;
-    bounds[1].lLbound = 0;
-
-    long ind[2];
-    CComSafeArray<double> sm;
-    sm.Create(bounds, 2);
-    {
-        //0
-        ind[0] = 0;
-        ind[1] = 0;
-        sm.MultiDimSetAt(ind, xform.entry[0][0]);
-        ind[0] = 0;
-        ind[1] = 1;
-        sm.MultiDimSetAt(ind, xform.entry[0][1]);
-        ind[0] = 0;
-        ind[1] = 2;
-        sm.MultiDimSetAt(ind, xform.entry[0][2]);
-        ind[0] = 0;
-        ind[1] = 3;
-        sm.MultiDimSetAt(ind, xform.entry[0][3]);
-        //1
-        ind[0] = 1;
-        ind[1] = 0;
-        sm.MultiDimSetAt(ind, xform.entry[1][0]);
-        ind[0] = 1;
-        ind[1] = 1;
-        sm.MultiDimSetAt(ind, xform.entry[1][1]);
-        ind[0] = 1;
-        ind[1] = 2;
-        sm.MultiDimSetAt(ind, xform.entry[1][2]);
-        ind[0] = 1;
-        ind[1] = 3;
-        sm.MultiDimSetAt(ind, xform.entry[1][3]);
-        //2
-        ind[0] = 2;
-        ind[1] = 0;
-        sm.MultiDimSetAt(ind, xform.entry[2][0]);
-        ind[0] = 2;
-        ind[1] = 1;
-        sm.MultiDimSetAt(ind, xform.entry[2][1]);
-        ind[0] = 2;
-        ind[1] = 2;
-        sm.MultiDimSetAt(ind, xform.entry[2][2]);
-        ind[0] = 2;
-        ind[1] = 3;
-        sm.MultiDimSetAt(ind, xform.entry[2][3]);
-        //3
-        ind[0] = 3;
-        ind[1] = 0;
-        sm.MultiDimSetAt(ind, xform.entry[3][0]);
-        ind[0] = 3;
-        ind[1] = 1;
-        sm.MultiDimSetAt(ind, xform.entry[3][1]);
-        ind[0] = 3;
-        ind[1] = 2;
-        sm.MultiDimSetAt(ind, xform.entry[3][2]);
-        ind[0] = 3;
-        ind[1] = 3;
-        sm.MultiDimSetAt(ind, xform.entry[3][3]);
-    }
-    VARIANT axform;
-    VariantInit(&axform);
-    axform.vt = VT_ARRAY | VT_R8;
-    axform.parray = sm;
-    PyThrowBadHr(impObj()->TransformBy(axform));
+    AcAxDocLock axlock;
+    AcDbEntityPointer pEnt(id(), AcDb::OpenMode::kForWrite);
+    PyThrowBadEs(pEnt.openStatus());
+    PyThrowBadEs(pEnt->transformBy(xform));
 }
 
 void PyIAcadEntityImpl::Update() const
@@ -813,7 +748,7 @@ void PyIAcadPViewportImpl::SetSheetView(const PyIAcadViewImpl& val) const
 
 AcDbObjectId PyIAcadPViewportImpl::GetLabelBlockId() const
 {
-#if defined(_GRXTARGET)
+#if defined(_GRXTARGET250)
     LONG rtVal = 0;
 #else
     LONG_PTR rtVal = 0;
@@ -826,7 +761,7 @@ AcDbObjectId PyIAcadPViewportImpl::GetLabelBlockId() const
 
 void PyIAcadPViewportImpl::SetLabelBlockId(const AcDbObjectId& id) const
 {
-#if defined(_GRXTARGET)
+#if defined(_GRXTARGET250)
     PyThrowBadHr(impObj()->put_LabelBlockId((LONG*)id.asOldId()));
 #elif defined(_BRXTARGET)
     PyThrowBadHr(impObj()->put_LabelBlockId((LONG_PTR)id.asOldId()));
@@ -886,7 +821,7 @@ AcGePoint3dArray PyIAcad3DFaceImpl::GetCoordinates() const
     _variant_t coords;
     PyThrowBadHr(impObj()->get_Coordinates(&coords.GetVARIANT()));
     unsigned long pcElem = 0;
-    std::array<double, 12> doubles;
+    std::array<double, 12> doubles{};
     PyThrowBadHr(VariantToDoubleArray(coords, doubles.data(), doubles.size(), &pcElem));
     AcGePoint3dArray pnts;
     pnts.append(AcGePoint3d{ doubles.at(0),doubles.at(1),doubles.at(2) });
@@ -899,7 +834,7 @@ AcGePoint3dArray PyIAcad3DFaceImpl::GetCoordinates() const
 void PyIAcad3DFaceImpl::SetCoordinates(const AcGePoint3d& p1, const AcGePoint3d& p2, const AcGePoint3d& p3, const AcGePoint3d& p4) const
 {
     constexpr size_t sz = sizeof(AcGePoint3d);
-    std::array<double, 12> doubles;
+    std::array<double, 12> doubles{};
     memcpy(doubles.data() + 0, asDblArray(p1), sz);
     memcpy(doubles.data() + 3, asDblArray(p2), sz);
     memcpy(doubles.data() + 6, asDblArray(p3), sz);
@@ -3955,7 +3890,7 @@ void PyIAcadSplineImpl::SetWeights(const Doubles& val) const
 
 PyAcSplineKnotParameterizationType PyIAcadSplineImpl::GetKnotParameterization() const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     AcSplineKnotParameterizationType rtVal = (AcSplineKnotParameterizationType)PyAcSplineKnotParameterizationType::pyacChord;
@@ -3966,7 +3901,7 @@ PyAcSplineKnotParameterizationType PyIAcadSplineImpl::GetKnotParameterization() 
 
 void PyIAcadSplineImpl::SetKnotParameterization(PyAcSplineKnotParameterizationType val) const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_KnotParameterization((AcSplineKnotParameterizationType)val));
@@ -3975,7 +3910,7 @@ void PyIAcadSplineImpl::SetKnotParameterization(PyAcSplineKnotParameterizationTy
 
 PyAcSplineFrameType PyIAcadSplineImpl::GetSplineFrame() const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     AcSplineFrameType rtVal = (AcSplineFrameType)PyAcSplineFrameType::pyacShow;
@@ -3986,7 +3921,7 @@ PyAcSplineFrameType PyIAcadSplineImpl::GetSplineFrame() const
 
 void PyIAcadSplineImpl::SetSplineFrame(PyAcSplineFrameType val) const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_SplineFrame((AcSplineFrameType)val));
@@ -3995,7 +3930,7 @@ void PyIAcadSplineImpl::SetSplineFrame(PyAcSplineFrameType val) const
 
 PyAcSplineMethodType PyIAcadSplineImpl::GetSplineMethod() const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     AcSplineMethodType rtVal = (AcSplineMethodType)PyAcSplineMethodType::pyacFit;
@@ -4006,7 +3941,7 @@ PyAcSplineMethodType PyIAcadSplineImpl::GetSplineMethod() const
 
 void PyIAcadSplineImpl::SetSplineMethod(PyAcSplineMethodType val) const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_SplineMethod((AcSplineMethodType)val));
@@ -4015,7 +3950,7 @@ void PyIAcadSplineImpl::SetSplineMethod(PyAcSplineMethodType val) const
 
 long PyIAcadSplineImpl::GetDegree2() const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     long rtval = 0.0;
@@ -4026,7 +3961,7 @@ long PyIAcadSplineImpl::GetDegree2() const
 
 void PyIAcadSplineImpl::SetDegree2(long val) const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_Degree2(val));
@@ -4035,7 +3970,7 @@ void PyIAcadSplineImpl::SetDegree2(long val) const
 
 bool PyIAcadSplineImpl::GetClosed2() const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -4046,7 +3981,7 @@ bool PyIAcadSplineImpl::GetClosed2() const
 
 void PyIAcadSplineImpl::SetClosed2(bool val) const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250) || defined(_ZRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_Closed2(val));
@@ -4906,7 +4841,7 @@ void PyIAcadExternalReferenceImpl::SetPath(const CString& val) const
 
 bool PyIAcadExternalReferenceImpl::GetLayerPropertyOverrides() const
 {
-#if defined(_BRXTARGET250) || defined(_GRXTARGET250)
+#if defined(_BRXTARGET260) || defined(_GRXTARGET250)
     throw PyNotimplementedByHost{};
 #else
     VARIANT_BOOL rtVal = VARIANT_FALSE;
@@ -5202,7 +5137,7 @@ void PyIAcadHatchImpl::SetOrigin(const AcGePoint3d& val) const
 
 PyIAcadAcCmColorPtr PyIAcadHatchImpl::GetBackgroundColor() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost{};
 #else
     IAcadAcCmColor* rtVal = nullptr;
@@ -5213,7 +5148,7 @@ PyIAcadAcCmColorPtr PyIAcadHatchImpl::GetBackgroundColor() const
 
 void PyIAcadHatchImpl::SetBackgroundColor(const PyIAcadAcCmColorImpl& val) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost{};
 #else
     PyThrowBadHr(impObj()->put_BackgroundColor(val.impObj()));
@@ -5882,7 +5817,7 @@ boost::python::tuple PyIAcadSectionImpl::HitTest(const AcGePoint3d& hit) const
     VARIANT_BOOL bhit = VARIANT_FALSE;
     AcSectionSubItem subItem = (AcSectionSubItem)PyAcSectionSubItem::pyacSectionSubItemkNone;
     PyThrowBadHr(AcGePoint3dToVariant(varPtHit.GetVARIANT(), hit));
-    PyThrowBadHr(impObj()->HitTest(varPtHit,&bhit,&segmentIndex, &vtPtOnSegment.GetVARIANT() ,&subItem));
+    PyThrowBadHr(impObj()->HitTest(varPtHit, &bhit, &segmentIndex, &vtPtOnSegment.GetVARIANT(), &subItem));
     PyThrowBadHr(VariantToAcGePoint3d(vtPtOnSegment, rtvtPtOnSegment));
     return boost::python::make_tuple(bhit ? VARIANT_TRUE : VARIANT_FALSE, segmentIndex, rtvtPtOnSegment, (PyAcSectionSubItem)subItem);
 }
@@ -5902,9 +5837,9 @@ PyIAcadSectionSettingsPtr PyIAcadSectionImpl::GetSettings() const
 }
 
 void PyIAcadSectionImpl::GenerateSectionGeometry(
-    const PyIAcadEntityImpl& val, 
-    PyIAcadEntityPtrArray& vecIntersectionBoundaryObjs, 
-    PyIAcadEntityPtrArray& vecIntersectionFillObjs, 
+    const PyIAcadEntityImpl& val,
+    PyIAcadEntityPtrArray& vecIntersectionBoundaryObjs,
+    PyIAcadEntityPtrArray& vecIntersectionFillObjs,
     PyIAcadEntityPtrArray& vecBackgroudnObjs,
     PyIAcadEntityPtrArray& vecForegroudObjs,
     PyIAcadEntityPtrArray& vecCurveTangencyObjs) const
@@ -5914,7 +5849,7 @@ void PyIAcadSectionImpl::GenerateSectionGeometry(
     _variant_t vtBackgroudnObjs;
     _variant_t vtForegroudObjs;
     _variant_t vtCurveTangencyObjs;
-    PyThrowBadHr(impObj()->GenerateSectionGeometry(val.impObj(), &vtIntersectionBoundaryObjs.GetVARIANT(),& vtIntersectionFillObjs.GetVARIANT(), 
+    PyThrowBadHr(impObj()->GenerateSectionGeometry(val.impObj(), &vtIntersectionBoundaryObjs.GetVARIANT(), &vtIntersectionFillObjs.GetVARIANT(),
         &vtBackgroudnObjs.GetVARIANT(), &vtForegroudObjs.GetVARIANT(), &vtCurveTangencyObjs.GetVARIANT()));
     PyThrowBadHr(VariantToPyIAcadEntityPtrArray(vtIntersectionBoundaryObjs, vecIntersectionBoundaryObjs));
     PyThrowBadHr(VariantToPyIAcadEntityPtrArray(vtIntersectionFillObjs, vecIntersectionFillObjs));
@@ -5977,7 +5912,7 @@ void PyIAcadMLeaderImpl::SetLeaderLineColor(const PyIAcadAcCmColorImpl& val) con
 CString PyIAcadMLeaderImpl::GetLeaderLinetype() const
 {
     _bstr_t bstrVal;
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     PyThrowBadHr(impObj()->get_LeaderLineType(&bstrVal.GetBSTR()));
 #else
     PyThrowBadHr(impObj()->get_LeaderLinetype(&bstrVal.GetBSTR()));
@@ -5988,7 +5923,7 @@ CString PyIAcadMLeaderImpl::GetLeaderLinetype() const
 void PyIAcadMLeaderImpl::SetLeaderLinetype(const CString& val) const
 {
     _bstr_t bstrval{ val };
-#ifdef _BRXTARGET250
+#ifdef _BRXTARGET260
     PyThrowBadHr(impObj()->put_LeaderLineType(bstrval));
 #else
     PyThrowBadHr(impObj()->put_LeaderLinetype(bstrval));

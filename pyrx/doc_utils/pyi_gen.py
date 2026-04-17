@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import collections.abc as c
-import enum
+import copy
 import inspect
 import logging
 import textwrap
 import types
 import typing as t
+from pathlib import Path
+from typing import NamedTuple
 
 from .boost_meta import _BoostPythonEnum
 from .misc import DocstringsManager, ReturnTypesManager
@@ -17,15 +19,25 @@ from .parse_docstring import (
     get_return_type,
     get_text_signatures,
 )
+from .stubs.base import Node, StubSrcManager
 
 logger = logging.getLogger(__name__)
 
 LINE_LENGTH = 99
 
+BASE_DIR = Path(__file__).parent
+
+
 class BoostPythonEnum(_BoostPythonEnum): ...
+
+
 class BoostPythonInstance(t.Protocol): ...
+
+
 class BoostPythonFunction(t.Protocol):
     def __call__(self, *args, **kwargs) -> t.Any: ...
+
+
 class BoostPythonStaticProperty(t.Protocol): ...
 
 
@@ -147,7 +159,9 @@ class _MethodWriter:
             s += ", /"
         return s
 
-    def _write_method(self, signature: str, is_overload: bool, write_docstring: bool = True) -> str:
+    def _write_method(
+        self, signature: str, is_overload: bool, write_docstring: bool = True
+    ) -> str:
         if is_overload and self.is_property:
             raise ValueError("cannot be both a overload and a property")
         chunks = []
@@ -174,13 +188,12 @@ class _MethodWriter:
             chunks.append(self._write_method(signatures[0], is_overload=False))
         else:
             chunks.extend(
-                self._write_method(signature, is_overload=True, write_docstring=False)
+                self._write_method(signature, is_overload=True, write_docstring=True)
                 for signature in signatures
             )
             chunks.append(
                 self._write_method(
-                    "self, *args" if not self.is_static else "*args",
-                    is_overload=True
+                    "self, *args" if not self.is_static else "*args", is_overload=True
                 )
             )
         return "".join(chunks)
@@ -217,7 +230,6 @@ class _BoostPythonInstanceClassPyiGenerator:
         self,
         docstrings: DocstringsManager,
         return_types: ReturnTypesManager,
-        type_fixer: TypeFixer,
         indent: Indent | int = 0,
         line_length=LINE_LENGTH,
         boost_types: BoostPythonTypes = BoostPythonTypes(),
@@ -226,13 +238,15 @@ class _BoostPythonInstanceClassPyiGenerator:
         self.return_types = return_types
         self.indent = Indent(indent)
         self.line_length = line_length
-        self.type_fixer = type_fixer
         self.boost_types = boost_types
 
     _MEMBERS_TO_SKIP = {
         "__repr__",
         "__str__",
         "__eq__",
+        "__ne__",
+        "__sub__",
+        "__isub__",
         "__bool__",
         "__doc__",
         "__module__",
@@ -240,27 +254,46 @@ class _BoostPythonInstanceClassPyiGenerator:
         "__safe_for_unpickling__",
     }
 
-    def gen(self, cls: t.Type[BoostPythonInstance], module_name: str) -> str:
+    def get_chunks(
+        self, cls: t.Type[BoostPythonInstance], module_name: str, node: Node | None
+    ) -> c.Generator[str | Node, None, None]:
         indent = self.indent
-        chunks = []
-        cls_name = cls.__name__
-        chunks.append(f"{indent}class {cls_name}")
-        bases = ", ".join(
-            f"{base.__module__}.{base.__name__}"
-            for base in cls.__bases__
-            if base is not self.boost_types.instance
-        )
-        if bases:
-            chunks.append(f"({bases})")
-        chunks.append(":\n")
+        if node is None:
+            chunks = []
+            cls_name = cls.__name__
+            chunks.append(f"{indent}class {cls_name}")
+            bases = ", ".join(
+                f"{base.__module__}.{base.__name__}"
+                for base in cls.__bases__
+                if base is not self.boost_types.instance
+            )
+            if bases:
+                chunks.append(f"({bases})")
+            chunks.append(":\n")
+            yield "".join(chunks)
+            chunks.clear()
         cls_dict = cls.__dict__
+        stub_nodes = {node.name: node for node in node.children} if node else {}
+        if stub_nodes:
+            assert node is not None
+            first_node_child = next(iter(stub_nodes.values()))
+            cls_header_node = copy.copy(node)
+            cls_header_node.end_line = first_node_child.start_line - 1
+            yield cls_header_node
         for cls_member_name, cls_member in inspect.getmembers(cls):
+            try:
+                stub_node = stub_nodes.pop(cls_member_name)
+            except KeyError:
+                pass
+            else:
+                yield stub_node
+                continue
             if cls_member_name not in cls_dict:  # skip methods inherited from base classes
                 continue
             if cls_member_name in self._MEMBERS_TO_SKIP:
                 continue
             if inspect.ismethoddescriptor(cls_member):  # method or staticmethod
-                s = self._write_method(
+                yield self._write_method(
                     meth_name=cls_member_name,
                     meth_obj=cls_member,
                     cls_obj=cls,
@@ -268,7 +301,7 @@ class _BoostPythonInstanceClassPyiGenerator:
                     indent=indent + 1,
                 )
             elif inspect.isdatadescriptor(cls_member):  # @property
-                s = self._write_property(
+                yield self._write_property(
                     meth_name=cls_member_name,
                     meth_obj=cls_member,
                     cls_obj=cls,
@@ -276,21 +309,53 @@ class _BoostPythonInstanceClassPyiGenerator:
                     indent=indent + 1,
                 )
             elif isinstance(cls.__dict__[cls_member_name], self.boost_types.static_property):
-                s = self._write_static_property(cls_member_name, cls_member)
+                yield self._write_static_property(cls_member_name, cls_member)
             elif cls_member_name == "__init__":
-                s = self._write_builtin_init()
+                yield self._write_builtin_init()
             else:
                 logger.warning(
                     f"Skipping a member of the {module_name}.{cls_name} class:\n"
                     f"\tname: {cls_member_name}\n"
                     f"\trepr: {cls_member!r}"
                 )
-                continue
-            chunks.append(s)
 
-        return "".join(chunks)
+    def gen(
+        self, cls: t.Type[BoostPythonInstance], module_name: str, node: Node | None
+    ) -> c.Generator[range | str, None, None]:
+        chunks = tuple(self.get_chunks(cls, module_name, node))
+        if node is not None:
+            prev_range_stop = 0
 
-    def _write_method(self, meth_name: str, meth_obj: types.MethodDescriptorType, cls_obj: t.Type[BoostPythonInstance], module_name: str, indent: Indent) -> str:
+        for chunk in chunks:
+            if isinstance(chunk, Node):
+                child_node = chunk
+                child_range = child_node.range
+                if prev_range_stop is not None and not child_range.start >= prev_range_stop:
+                    # We assume that the order of the stubs file should
+                    # be the same as when generated - alphabetically in
+                    # groups
+                    raise ValueError(f"The order of nodes is incorrect: {child_node.name}")
+                # in addition to the current node's line, we also return
+                # everything from the end of the previous (detected)
+                # node, these can be e.g. overloads, TypeVar
+                # definitions, etc.
+                yield range(prev_range_stop + 1, child_range.stop)
+                prev_range_stop = child_range.stop
+            else:  # str
+                yield chunk
+
+        if node is not None:
+            # return all lines until the end of class
+            yield range(prev_range_stop + 1, node.range.stop)
+
+    def _write_method(
+        self,
+        meth_name: str,
+        meth_obj: types.MethodDescriptorType,
+        cls_obj: t.Type[BoostPythonInstance],
+        module_name: str,
+        indent: Indent,
+    ) -> str:
         is_static = isinstance(cls_obj.__dict__[meth_name], staticmethod)
         meth_data = self._get_cls_member_data(meth_obj, meth_name, cls_obj.__name__, module_name)
         signatures = meth_data.signatures
@@ -311,7 +376,9 @@ class _BoostPythonInstanceClassPyiGenerator:
             indent=indent,
         )
 
-    def _write_property(self, meth_name: str, meth_obj, cls_obj, module_name: str, indent: Indent) -> str:
+    def _write_property(
+        self, meth_name: str, meth_obj, cls_obj, module_name: str, indent: Indent
+    ) -> str:
         meth_data = self._get_cls_member_data(meth_obj, meth_name, cls_obj.__name__, module_name)
         docstring = meth_data.docstring
         if docstring is not None:
@@ -351,7 +418,11 @@ class _BoostPythonInstanceClassPyiGenerator:
         )
 
     def _get_cls_member_data(
-        self, cls_member: types.MethodDescriptorType, cls_member_name: str, cls_name: str, module_name: str
+        self,
+        cls_member: types.MethodDescriptorType,
+        cls_member_name: str,
+        cls_name: str,
+        module_name: str,
     ) -> _ClsMemberData:
         raw_docstring = getattr(cls_member, "__doc__", None)
         if raw_docstring is None:
@@ -360,11 +431,6 @@ class _BoostPythonInstanceClassPyiGenerator:
         overloads = get_overloads(raw_docstring)
         docstring_id = get_docstring_id(raw_docstring)
         return_type = get_return_type(raw_docstring)
-        try:
-            return_type = self.type_fixer(return_type)
-        except ValueError as e:
-            logger.error(str(e))
-
         signatures = (
             tuple(get_text_signatures(base_signature, overloads))
             if base_signature is not None
@@ -382,24 +448,9 @@ class _BoostPythonInstanceClassPyiGenerator:
         return _ClsMemberData(signatures, return_type, docstring)
 
 
-class PyBoostModule(str, enum.Enum):
-    module: types.ModuleType
-    module_name: str
-    orig_module_name: str
-
-    def __new__(cls, module_name: str, module: types.ModuleType, orig_module_name: str):
-        obj = str.__new__(cls)
-        obj._value_ = module_name
-        obj.module_name = module_name
-        obj.module = module
-        obj.orig_module_name = orig_module_name
-        return obj
-
-    @classmethod
-    def _missing_(cls, value):
-        for item in cls:
-            if value in (item.orig_module_name, item.module):
-                return item
+class PyBoostModule(NamedTuple):
+    name: str
+    orig_name: str
 
 
 class _ModulePyiGenerator:
@@ -417,20 +468,19 @@ class _ModulePyiGenerator:
         self.docstrings = docstrings
         self.return_types = return_types
         self.line_length = line_length
-        self.type_fixer = TypeFixer(module=self.module, all_modules=self.all_modules)
         self.boost_types = boost_types
         self._boost_python_instance_class_generator = _BoostPythonInstanceClassPyiGenerator(
             docstrings=self.docstrings,
             return_types=self.return_types,
-            type_fixer=self.type_fixer,
             indent=Indent(0),
             line_length=self.line_length,
             boost_types=self.boost_types,
         )
+        self.stub_src = StubSrcManager.for_module(module)
 
     def _write_module_header(self, enums: bool):
         chunks: list[str] = ["from __future__ import annotations\n"]
-        chunks.append("from typing import TypeVar, ClassVar, Self, Any, Collection, Iterator, overload\n")
+        chunks.append("from typing import Any, ClassVar, Collection, Iterator, Self, overload\n")
         chunks.append(self._write_pyrx_import())
         chunks.append("import wx\n")
         if enums:
@@ -440,7 +490,7 @@ class _ModulePyiGenerator:
     def _write_pyrx_import(self) -> str:
         return (
             "\n".join(
-                f"from pyrx import {module.module_name} as {module.orig_module_name}"
+                f"from pyrx import {module.name} as {module.orig_name}"
                 for module in self.all_modules
             )
             + "\n"
@@ -451,21 +501,33 @@ class _ModulePyiGenerator:
             return True
         return False
 
-    def gen(self) -> str:
+    def get_chunks(self) -> c.Generator[range | str, None, None]:
         module = self.module
         module_name = module.__name__
-        classes: list[tuple[str, type]] = []
-        functions: list[tuple[str, BoostPythonFunction]] = []
+        classes: list[tuple[str, type, Node | None]] = []
+        functions: list[tuple[str, BoostPythonFunction, Node | None]] = []
         global_enum_members: list[tuple[str, BoostPythonEnum]] = []
+        if self.stub_src is not None:
+            stub_nodes = {node.name: node for node in self.stub_src.tree.children}
+        else:
+            stub_nodes = {}
         for member_name, member in inspect.getmembers(module):
-            if self._skip_member(member_name, member):
+            try:
+                stub_node = stub_nodes.pop(member_name)
+            except KeyError:
+                stub_node = None
+            if stub_node is not None and self._skip_member(member_name, member):
                 continue
             if inspect.isclass(member):
-                classes.append((member_name, member))
+                classes.append((member_name, member, stub_node))
             elif isinstance(member, self.boost_types.enum):
+                if stub_node is not None:
+                    raise NotImplementedError(
+                        f"stub node for enum member {module_name}::{member_name}"
+                    )
                 global_enum_members.append((member_name, member))
             elif isinstance(member, self.boost_types.function):
-                functions.append((member_name, member))
+                functions.append((member_name, member, stub_node))
             else:
                 logger.error(
                     f"Unknown member (class) of module {module_name}:\n"
@@ -473,22 +535,32 @@ class _ModulePyiGenerator:
                     f"\trepr: {member!r}"
                 )
 
-        chunks: list[str] = []
-
-        chunks.append(
+        yield (
             self._write_module_header(
-                enums=any(issubclass(cls, self.boost_types.enum) for _, cls in classes)
+                enums=any(issubclass(cls, self.boost_types.enum) for _, cls, _ in classes)
             )
         )
+        if self.stub_src is not None and self.stub_src.header is not None:
+            yield self.stub_src.header
 
         for enum_name, enum_obj in global_enum_members:
-            chunks.append(self._write_global_enum_member(enum_name, enum_obj))
+            yield (self._write_global_enum_member(enum_name, enum_obj))
 
-        for cls_name, cls in classes:
+        for cls_name, cls, node in classes:
             if issubclass(cls, self.boost_types.instance):
-                chunks.append(self._write_boost_python_instance_class(cls_name, cls, module_name))
+                yield from self._write_boost_python_instance_class(
+                    cls_name, cls, module_name, node
+                )
             elif issubclass(cls, self.boost_types.enum):
-                chunks.append(self._write_boost_python_enum_class(cls_name, cls))
+                if node is not None:
+                    raise NotImplementedError(
+                        f"stub node for enum class {module_name}::{cls_name}"
+                    )
+                yield (self._write_boost_python_enum_class(cls_name, cls))
+
+            elif cls_name == "ErrorStatusException":  # special case
+                if node is not None:
+                    yield node.range
             else:
                 logger.warning(
                     f"Skipping a member of the {module_name} module:\n"
@@ -496,15 +568,53 @@ class _ModulePyiGenerator:
                     f"\trepr: {cls!r}"
                 )
 
-        for func_name, func in functions:
-            chunks.append(self._write_boost_python_function(func_name, func))
+        for func_name, func, node in functions:
+            if node is not None:
+                yield node.range
+            else:
+                yield (self._write_boost_python_function(func_name, func))
 
-        return "".join(chunks)
+    def gen_iter(self) -> c.Generator[str, None, None]:
+        chunks = tuple(self.get_chunks())
+        stub_src = self.stub_src
+
+        if stub_src is not None:
+            prev_range_stop = 0
+
+        for chunk in chunks:
+            if isinstance(chunk, range):
+                child_range = chunk
+                if not child_range.start > prev_range_stop:
+                    # We assume that the order of the stubs file should
+                    # be the same as when generated - alphabetically in
+                    # groups
+                    raise ValueError(
+                        f"The order of stub nodes is incorrect: "
+                        f"{self.module.__name__}:{child_range.start}-{child_range.stop}"
+                    )
+                # in addition to the current node's line, we also return
+                # everything from the end of the previous (detected)
+                # node, these can be e.g. overloads, TypeVar
+                # definitions, etc.
+                assert stub_src is not None
+                yield stub_src.get_body_range(prev_range_stop + 1, child_range.stop)
+                prev_range_stop = child_range.stop
+            else:
+                yield chunk
+
+        if stub_src is not None:
+            # return all lines until the end of file
+            yield stub_src.get_body_range(prev_range_stop + 1, None)
+
+    def gen(self) -> str:
+        return "".join(self.gen_iter())
 
     def _write_global_enum_member(self, enum_name: str, enum_obj: BoostPythonEnum) -> str:
         return f"{enum_name}: {type(enum_obj).__name__}  # {int(enum_obj)}\n"
 
-    def _write_boost_python_enum_class(self, cls_name: str, cls_obj: t.Type[BoostPythonEnum]) -> str:
+    def _write_boost_python_enum_class(
+        self, cls_name: str, cls_obj: t.Type[BoostPythonEnum]
+    ) -> str:
         indent = Indent()
         member_indent = indent + 1
         chunks: list[str] = []
@@ -513,8 +623,12 @@ class _ModulePyiGenerator:
             chunks.append(f"{member_indent}{member_name}: ClassVar[Self]  # {int(member)}\n")
         return "".join(chunks)
 
-    def _write_boost_python_instance_class(self, cls_name: str, cls: t.Type[BoostPythonInstance], module_name: str) -> str:
-        return self._boost_python_instance_class_generator.gen(cls=cls, module_name=module_name)
+    def _write_boost_python_instance_class(
+        self, cls_name: str, cls: t.Type[BoostPythonInstance], module_name: str, node: Node | None
+    ) -> c.Generator[range | str, None, None]:
+        return self._boost_python_instance_class_generator.gen(
+            cls=cls, module_name=module_name, node=node
+        )
 
     def _write_boost_python_function(self, func_name: str, func_obj: BoostPythonFunction) -> str:
         indent = Indent(0)
@@ -525,17 +639,12 @@ class _ModulePyiGenerator:
             return_type = get_return_type(docstring)
         else:
             return_type = None
-        try:
-            return_type = self.type_fixer(return_type)
-        except ValueError as e:
-            logger.error(str(e))
-        else:
-            if return_type and return_type.strip() in ("tuple", "list", "dict"):
-                logger.warning(
-                    "not fully resolved return type: "
-                    f"{self.module.__name__}::{func_name} "
-                    f"-> {return_type}"
-                )
+        if return_type and return_type.strip() in ("tuple", "list", "dict"):
+            logger.warning(
+                "not fully resolved return type: "
+                f"{self.module.__name__}::{func_name} "
+                f"-> {return_type}"
+            )
 
         chunks: list[str] = []
         chunks.append(f"{indent}def {func_name}(*args)")
@@ -547,36 +656,6 @@ class _ModulePyiGenerator:
         else:
             chunks.append(f"{indent_2}...\n")
         return "".join(chunks)
-
-
-class TypeFixer:
-    def __init__(
-        self,
-        module: types.ModuleType,
-        all_modules: c.Iterable[PyBoostModule],
-    ):
-        self.module = module
-        self.all_modules = tuple(all_modules)
-
-    def __call__(self, type_str: str | None):
-        if type_str is None:
-            return None
-        try:
-            eval(type_str, self.module.__dict__)
-        except NameError:
-            pass
-        else:
-            return type_str
-
-        for module in self.all_modules:
-            try:
-                eval(type_str, module.module.__dict__)
-            except NameError:
-                pass
-            else:
-                return f"{module.orig_module_name}.{type_str}"
-
-        raise ValueError(f"Unknown type: {type_str}")
 
 
 def gen_pyi(

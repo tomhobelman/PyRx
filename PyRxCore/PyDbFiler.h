@@ -12,6 +12,7 @@ class PyDbHardOwnershipId;
 //-----------------------------------------------------------------------------------------
 //PyDbSnoopDwgFiler
 void makePyDbSnoopDwgFilerWrapper();
+
 class PyDbSnoopDwgFiler : public AcDbDwgFiler
 {
 public:
@@ -32,7 +33,11 @@ public:
     virtual Acad::ErrorStatus   writeSoftPointerId(const AcDbSoftPointerId& val) override;
     virtual Acad::ErrorStatus   readInt8(Adesk::Int8* pVal) override;
     virtual Acad::ErrorStatus   writeInt8(Adesk::Int8 val) override;
+#if defined(_ARXTARGET) && (_ARXTARGET >= 260)
+    //depreciated
+#else
     virtual Acad::ErrorStatus   readString(ACHAR** pVal) override;
+#endif
     virtual Acad::ErrorStatus   writeString(const ACHAR* pVal) override;
     virtual Acad::ErrorStatus   readString(AcString& val) override;
     virtual Acad::ErrorStatus   writeString(const AcString& pVal) override;
@@ -88,11 +93,12 @@ public:
 //-----------------------------------------------------------------------------------------
 //PyDbSnoopDxfFiler
 void makePyDbSnoopDxfFilerrWrapper();
+
 class PyDbSnoopDxfFiler : public AcDbDxfFiler
 {
 public:
     PyDbSnoopDxfFiler() = default;
-    inline virtual ~PyDbSnoopDxfFiler() = default;
+    inline virtual ~PyDbSnoopDxfFiler() override = default;
     virtual int                 rewindFiler() override;
     virtual Acad::ErrorStatus   filerStatus() const override;
     virtual void                resetFilerStatus() override;
@@ -130,9 +136,6 @@ public:
 public:
     boost::python::list m_list;
     AcDbDatabase* mpDb = nullptr;
-
-
 };
-
 
 #pragma pack (pop)

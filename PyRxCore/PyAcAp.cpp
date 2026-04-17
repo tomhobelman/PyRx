@@ -13,9 +13,44 @@
 
 using namespace boost::python;
 
+static DWORD writeLineToConsole(const std::wstring& buffer)
+{
+    DWORD numberOfCharsWritten = 0;
+    WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buffer.c_str(), buffer.size(), &numberOfCharsWritten, nullptr);
+    return numberOfCharsWritten;
+}
+
+static BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+    switch (fdwCtrlType)
+    {
+        case CTRL_C_EVENT:
+        case CTRL_CLOSE_EVENT:
+        case CTRL_BREAK_EVENT:
+        case CTRL_LOGOFF_EVENT:
+        case CTRL_SHUTDOWN_EVENT:
+            writeLineToConsole(L"\nUse quit() to exit: \n");
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static bool fireOnbeginConsole()
+{
+    if (HMENU hSysMenu = ::GetSystemMenu(GetConsoleWindow(), FALSE); hSysMenu)
+    {
+        ::EnableMenuItem(hSysMenu, SC_CLOSE, (MF_DISABLED | MF_GRAYED | MF_BYCOMMAND));
+        if (SetConsoleCtrlHandler(CtrlHandler, TRUE))
+            return true;
+    }
+    return false;
+}
 
 static PyApDocument curPyDoc()
 {
+    if (curDoc() == nullptr)
+        PyThrowBadEs(eNoDocument);
     return PyApDocument(curDoc(), false);
 }
 
@@ -26,6 +61,8 @@ static BOOST_PYTHON_MODULE(PyAp)
     register_exception_translator<PyNullObject>(PyNullObject::translator);
     register_exception_translator<PyNotimplementedByHost>(PyNotimplementedByHost::translator);
     register_exception_translator<PyAcadHrError>(PyAcadHrError::translator);
+    register_exception_translator<PyRxEKeyError>(&PyRxEKeyError::translate);
+
 #if defined(_BRXTARGET)
     register_exception_translator<PyBrxBimError>(PyBrxBimError::translator);
 #endif
@@ -66,7 +103,7 @@ static BOOST_PYTHON_MODULE(PyAp)
         ;
 
     enum_<PyRxTestFlags>("PyRxTestFlags")
-        .value("kPyReserved0", PyRxTestFlags::kPyTfReserved0)
+        .value("kNoOptimize", PyRxTestFlags::kPyTfNoOptimize)
         .value("kPyReserved1", PyRxTestFlags::kPyTfReserved1)
         .value("kPyReserved2", PyRxTestFlags::kPyTfReserved2)
         .value("kPyReserved3", PyRxTestFlags::kPyTfReserved3)
@@ -105,15 +142,15 @@ static BOOST_PYTHON_MODULE(PyAp)
         "- functionName: str\n";
 
     def("curDoc", curPyDoc);
+    def("fireOnbeginConsole", fireOnbeginConsole);
     def("Command", PyCommandDecorator1, (arg("flags") = CmdFlags::kMODAL));
     def("Command", PyCommandDecorator2, (arg("name") = "", arg("flags") = CmdFlags::kMODAL), DSCmd.SOVRL(CommandOverloads));
     def("LispFunction", PyLispFuncDecorator1);
     def("LispFunction", PyLispFuncDecorator2, DSLsp.SOVRL(LispOverloads));
+    def("using_scope", PyUsingDecorator);
 };
 
 void initPyApModule()
 {
     PyImport_AppendInittab(PyApNamespace, &PyInit_PyAp);
 }
-
-

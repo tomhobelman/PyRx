@@ -27,14 +27,14 @@ void makePyGePlaneWrapper()
         .def(init<const AcGePoint3d&, const AcGeVector3d&>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&>())
         .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>())
-        .def(init<double, double, double, double>(DS.CTOR(ctor)))
+        .def(init<double, double, double, double>(DS.CTOR(ctor, 12538)))
         .def("signedDistanceTo", &PyGePlane::signedDistanceTo, DS.ARGS({ "pt: PyGe.Point3d" }))
         .def("intersectWith", &PyGePlane::intersectWith1)
         .def("intersectWith", &PyGePlane::intersectWith2)
         .def("intersectWith", &PyGePlane::intersectWith3)
         .def("intersectWith", &PyGePlane::intersectWith4)
         .def("intersectWith", &PyGePlane::intersectWith5)
-        .def("intersectWith", &PyGePlane::intersectWith6, DS.ARGS({ "val: PyGe.LinearEnt3d | PyGe.Plane | PyGe.BoundedPlane", "tol: PyGe.Tol=None" }))
+        .def("intersectWith", &PyGePlane::intersectWith6, DS.ARGS({ "val: PyGe.LinearEnt3d | PyGe.Plane | PyGe.BoundedPlane", "tol: PyGe.Tol = ..." }))
         .def("set", &PyGePlane::set1)
         .def("set", &PyGePlane::set2)
         .def("set", &PyGePlane::set3)
@@ -125,7 +125,7 @@ boost::python::tuple PyGePlane::intersectWith4(const PyGePlane& otherPln, const 
 
 boost::python::tuple PyGePlane::intersectWith5(const PyGeBoundedPlane& bndPln) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -137,7 +137,7 @@ boost::python::tuple PyGePlane::intersectWith5(const PyGeBoundedPlane& bndPln) c
 
 boost::python::tuple PyGePlane::intersectWith6(const PyGeBoundedPlane& bndPln, const AcGeTol& tol) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -147,36 +147,36 @@ boost::python::tuple PyGePlane::intersectWith6(const PyGeBoundedPlane& bndPln, c
 #endif
 }
 
-void PyGePlane::set1(const AcGePoint3d& pnt, const AcGeVector3d& normal)
+void PyGePlane::set1(const AcGePoint3d& pnt, const AcGeVector3d& normal) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt, normal);
 #endif
 }
 
-void PyGePlane::set2(const AcGePoint3d& pntU, const AcGePoint3d& org, const AcGePoint3d& pntV)
+void PyGePlane::set2(const AcGePoint3d& pntU, const AcGePoint3d& org, const AcGePoint3d& pntV) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pntU, org, pntV);
 #endif
 }
 
-void PyGePlane::set3(double a, double b, double c, double d)
+void PyGePlane::set3(double a, double b, double c, double d) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(a, b, c, d);
 #endif
 }
 
-void PyGePlane::set4(const AcGePoint3d& org, const AcGeVector3d& uAxis, const AcGeVector3d& vAxis)
+void PyGePlane::set4(const AcGePoint3d& org, const AcGeVector3d& uAxis, const AcGeVector3d& vAxis) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(org, uAxis, vAxis);
@@ -224,13 +224,13 @@ void makePyGeBoundedPlaneWrapper()
     class_<PyGeBoundedPlane, bases<PyGePlanarEnt>>("BoundedPlane")
         .def(init<>())
         .def(init<const AcGePoint3d&, const AcGeVector3d&, const AcGeVector3d&>())
-        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint3d&, const AcGePoint3d&, const AcGePoint3d&>(DS.CTOR(ctor, 11711)))
         .def("intersectWith", &PyGeBoundedPlane::intersectWith1)
         .def("intersectWith", &PyGeBoundedPlane::intersectWith2)
         .def("intersectWith", &PyGeBoundedPlane::intersectWith3)
         .def("intersectWith", &PyGeBoundedPlane::intersectWith4)
         .def("intersectWith", &PyGeBoundedPlane::intersectWith5)
-        .def("intersectWith", &PyGeBoundedPlane::intersectWith6, DS.ARGS({ "val: PyGe.LinearEnt3d | PyGe.Plane | PyGe.BoundedPlane", "tol: PyGe.Tol=None" }))
+        .def("intersectWith", &PyGeBoundedPlane::intersectWith6, DS.ARGS({ "val: PyGe.LinearEnt3d | PyGe.Plane | PyGe.BoundedPlane", "tol: PyGe.Tol = ..." }))
         .def("set", &PyGeBoundedPlane::set1)
         .def("set", &PyGeBoundedPlane::set2, DS.OVRL(setOverloads))
         .def("cast", &PyGeBoundedPlane::cast, DS.SARGS({ "otherObject: PyGe.Entity3d" })).staticmethod("cast")
@@ -271,7 +271,7 @@ PyGeBoundedPlane::PyGeBoundedPlane(AcGeEntity3d* pEnt)
 
 boost::python::tuple PyGeBoundedPlane::intersectWith1(const PyGeLinearEnt3d& linEnt) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -283,7 +283,7 @@ boost::python::tuple PyGeBoundedPlane::intersectWith1(const PyGeLinearEnt3d& lin
 
 boost::python::tuple PyGeBoundedPlane::intersectWith2(const PyGeLinearEnt3d& linEnt, const AcGeTol& tol) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -295,7 +295,7 @@ boost::python::tuple PyGeBoundedPlane::intersectWith2(const PyGeLinearEnt3d& lin
 
 boost::python::tuple PyGeBoundedPlane::intersectWith3(const PyGePlane& otherPln) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -307,7 +307,7 @@ boost::python::tuple PyGeBoundedPlane::intersectWith3(const PyGePlane& otherPln)
 
 boost::python::tuple PyGeBoundedPlane::intersectWith4(const PyGePlane& otherPln, const AcGeTol& tol) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -319,7 +319,7 @@ boost::python::tuple PyGeBoundedPlane::intersectWith4(const PyGePlane& otherPln,
 
 boost::python::tuple PyGeBoundedPlane::intersectWith5(const PyGeBoundedPlane& bndPln) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -331,7 +331,7 @@ boost::python::tuple PyGeBoundedPlane::intersectWith5(const PyGeBoundedPlane& bn
 
 boost::python::tuple PyGeBoundedPlane::intersectWith6(const PyGeBoundedPlane& bndPln, const AcGeTol& tol) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -341,18 +341,18 @@ boost::python::tuple PyGeBoundedPlane::intersectWith6(const PyGeBoundedPlane& bn
 #endif
 }
 
-void PyGeBoundedPlane::set1(const AcGePoint3d& origin, const AcGeVector3d& uVec, const AcGeVector3d& vVec)
+void PyGeBoundedPlane::set1(const AcGePoint3d& origin, const AcGeVector3d& uVec, const AcGeVector3d& vVec) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(origin, uVec, vVec);
 #endif
 }
 
-void PyGeBoundedPlane::set2(const AcGePoint3d& p1, const AcGePoint3d& origin, const AcGePoint3d& p2)
+void PyGeBoundedPlane::set2(const AcGePoint3d& p1, const AcGePoint3d& origin, const AcGePoint3d& p2) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(p1, origin, p2);

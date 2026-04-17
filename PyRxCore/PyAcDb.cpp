@@ -49,7 +49,11 @@
 #include "PyDbDbLayerStateManager.h"
 #include "PyDbSection.h"
 #include "PyDbHyperlink.h"
-
+#include "PyDbGraph.h"
+#include "PyGeLinearEnt2d.h"
+#include "PyGeLinearEnt3d.h"
+#include "PyDbAssocAction.h"
+#include "PyGeClipBoundary2d.h"
 
 using namespace boost::python;
 
@@ -72,44 +76,29 @@ static void setWorkingPyDb(PyDbDatabase& wpd)
 
 static std::string AcDbExtents2dToString(const AcDbExtents2d& p)
 {
-    auto mi = p.minPoint();
-    auto ma = p.maxPoint();
+    const auto& mi = p.minPoint();
+    const auto& ma = p.maxPoint();
     return std::format("(({:.14f},{:.14f}),({:.14f},{:.14f}))", mi.x, mi.y, ma.x, ma.y);
 }
 
 static std::string AcDbExtents2dToStringRepr(const AcDbExtents2d& p)
 {
-    auto mi = p.minPoint();
-    auto ma = p.maxPoint();
+    const auto& mi = p.minPoint();
+    const auto& ma = p.maxPoint();
     return std::format("{}.Extents2d(({:.14f},{:.14f}),({:.14f},{:.14f}))", PyGeNamespace, mi.x, mi.y, ma.x, ma.y);
-}
-
-//TODO: test
-static bool AcDbExtents2dIntersects(const AcDbExtents2d& extents, const AcDbExtents2d& other)
-{
-    auto smin = extents.minPoint();
-    auto smax = extents.maxPoint();
-    auto omin = other.minPoint();
-    auto omax = other.maxPoint();
-    if (((smin.x <= omin.x && omin.x <= smax.x) || (omin.x <= smin.x && smin.x <= omax.x)) &&
-        ((smin.y <= omin.y && omin.y <= smax.y) || (omin.y <= smin.y && smin.y <= omax.y)))
-    {
-        return true;
-    }
-    return false;
 }
 
 static boost::python::tuple AcDbExtents2dCoords(const AcDbExtents2d& extents)
 {
     PyAutoLockGIL lock;
-    auto min = extents.minPoint();
-    auto max = extents.maxPoint();
+    const auto& min = extents.minPoint();
+    const auto& max = extents.maxPoint();
     return boost::python::make_tuple(min.x, min.y, max.x, max.y);
 }
 
 static void AcDbExtents2dAddPoints(AcDbExtents2d& extents, const boost::python::object& iterable)
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     for (const auto& point : PyListToPoint2dArray(iterable))
@@ -123,12 +112,59 @@ static AcGePoint2d AcDbExtents2dMidPoint(const AcDbExtents2d& extents)
     return seg.midPoint();
 }
 
-static bool AcDbExtents2dContains(const AcDbExtents2d& extents, AcGePoint2d pnt)
+static bool AcDbExtents2dContains1(const AcDbExtents2d& extents, AcGePoint2d pnt)
 {
-    auto min = extents.minPoint();
-    auto max = extents.maxPoint();
+    const auto& min = extents.minPoint();
+    const auto& max = extents.maxPoint();
     return min.x <= pnt.x && min.y <= pnt.y &&
         max.x >= pnt.x && max.y >= pnt.y;
+}
+
+static bool AcDbExtents2dContains2(const AcDbExtents2d& extents, const AcDbExtents2d& other)
+{
+    return AcDbExtents2dContains1(extents, other.minPoint()) && AcDbExtents2dContains1(extents, other.maxPoint());
+}
+
+static bool AcDbExtents2dIntersects1(const AcDbExtents2d& b1, const AcDbExtents2d& b2)
+{
+    if (b1.maxPoint().x < b2.minPoint().x || b1.minPoint().x > b2.maxPoint().x)
+        return false;
+    if (b1.maxPoint().y < b2.minPoint().y || b1.minPoint().y > b2.maxPoint().y)
+        return false;
+    return true;
+}
+
+static bool AcDbExtents2dIntersects2(const AcDbExtents2d& extents, const PyGeLinearEnt2d& other)
+{
+    auto ul = AcGePoint2d(extents.minPoint().x, extents.maxPoint().y);
+    auto lr = AcGePoint2d(extents.maxPoint().x, extents.minPoint().y);
+    AcGePoint2d _tmp;
+    if (other.impObj()->intersectWith(AcGeLineSeg2d(ul, extents.minPoint()), _tmp))
+        return true;
+    if (other.impObj()->intersectWith(AcGeLineSeg2d(ul, extents.minPoint()), _tmp))
+        return true;
+    if (other.impObj()->intersectWith(AcGeLineSeg2d(extents.maxPoint(), lr), _tmp))
+        return true;
+    if (other.impObj()->intersectWith(AcGeLineSeg2d(extents.minPoint(), lr), _tmp))
+        return true;
+    return false;
+}
+
+static boost::python::tuple AcDbExtents2dClipLineSeg2d(const AcDbExtents2d& extents, const PyGeLineSeg2d& other)
+{
+    AcGeLineSeg2d outseg;
+    bool flag = ::clipLineSeg2d(outseg, *other.impObj(), extents);
+    return boost::python::make_tuple(flag, PyGeLineSeg2d(outseg));
+}
+
+static boost::python::tuple AcDbExtents2dclipCircArc2d(const AcDbExtents2d& extents, const PyGeCircArc2d& other)
+{
+    AcArray<AcGeCircArc2d> outsegs;
+    bool flag = ::clipCircArc2d(outsegs, *other.impObj(), extents);
+    boost::python::list _pylist;
+    for (const auto outseg : outsegs)
+        _pylist.append(PyGeCircArc2d(outseg));
+    return boost::python::make_tuple(flag, _pylist);
 }
 
 static void makePyDbExtents2dWrapper()
@@ -148,11 +184,15 @@ static void makePyDbExtents2dWrapper()
         .def("addPoint", &AcDbExtents2d::addPoint, DS.ARGS({ "pt: PyGe.Point2d" }, 4520))
         .def("addPoints", &AcDbExtents2dAddPoints, DS.ARGS({ "pts: list[PyGe.Point2d]" }, 4520))
         .def("addExt", &AcDbExtents2d::addExt, DS.ARGS({ "ex: PyDb.Extents2d" }, 4519))
-        .def("expandBy", &AcDbExtents2d::expandBy, DS.ARGS({ "vec: PyGe.Vector2d" }, 4521))
+        .def("expandBy", &AcDbExtents2d::expandBy, DS.ARGS({ "vector: PyGe.Vector2d" }, 4521))
         .def("transformBy", &AcDbExtents2d::transformBy, DS.ARGS({ "xform: PyGe.Matrix2d" }, 4525))
-        .def("intersectsWith", &AcDbExtents2dIntersects, DS.ARGS({ "ex: PyDb.Extents2d" }))
+        .def("intersectsWith", &AcDbExtents2dIntersects1)
+        .def("intersectsWith", &AcDbExtents2dIntersects2, DS.ARGS({ "ex: PyDb.Extents2d | PyGe.LinearEnt2d" }))
         .def("coords", &AcDbExtents2dCoords, DS.ARGS())
-        .def("contains", &AcDbExtents2dContains, DS.ARGS({ "pt: PyGe.Point2d" }))
+        .def("contains", &AcDbExtents2dContains1)
+        .def("contains", &AcDbExtents2dContains2, DS.ARGS({ "val: PyDb.Extents2d|PyGe.Point2d" }))
+        .def("clipLineSeg2d", &AcDbExtents2dClipLineSeg2d, DS.ARGS({ "seg2d: PyGe.LineSeg2d" }, 19140))
+        .def("clipCircArc2d", &AcDbExtents2dclipCircArc2d, DS.ARGS({ "seg2d: PyGe.CircArc2d" }, 19141))
         .def("__str__", &AcDbExtents2dToString, DS.ARGS())
         .def("__repr__", &AcDbExtents2dToStringRepr, DS.ARGS())
         ;
@@ -160,41 +200,23 @@ static void makePyDbExtents2dWrapper()
 
 static std::string AcDbExtentsToString(const AcDbExtents& p)
 {
-    auto mi = p.minPoint();
-    auto ma = p.maxPoint();
+    const auto& mi = p.minPoint();
+    const auto& ma = p.maxPoint();
     return std::format("(({:.14f},{:.14f},{:.14f}),({:.14f},{:.14f},{:.14f}))", mi.x, mi.y, mi.z, ma.x, ma.y, ma.z);
 }
 
 static std::string AcDbExtentsToStringRepr(const AcDbExtents& p)
 {
-    auto mi = p.minPoint();
-    auto ma = p.maxPoint();
+    const auto& mi = p.minPoint();
+    const auto& ma = p.maxPoint();
     return std::format("{}.Extents(({:.14f},{:.14f},{:.14f}),({:.14f},{:.14f},{:.14f}))", PyGeNamespace, mi.x, mi.y, mi.z, ma.x, ma.y, ma.z);
-}
-
-//TODO: test
-//https://gamedev.stackexchange.com/questions/23748/testing-whether-two-cubes-are-touching-in-space
-static bool AcDbExtents3dIntersects(const AcDbExtents& extents, const AcDbExtents& other)
-{
-    auto smin = extents.minPoint();
-    auto smax = extents.maxPoint();
-    auto omin = other.minPoint();
-    auto omax = other.maxPoint();
-
-    if (((smin.x <= omin.x && omin.x <= smax.x) || (omin.x <= smin.x && smin.x <= omax.x)) &&
-        ((smin.y <= omin.y && omin.y <= smax.y) || (omin.y <= smin.y && smin.y <= omax.y)) &&
-        ((smin.z <= omin.z && omin.z <= smax.z) || (omin.z <= smin.z && smin.z <= omax.z)))
-    {
-        return true;
-    }
-    return false;
 }
 
 static boost::python::tuple AcDbExtents3dCoords(const AcDbExtents& extents)
 {
     PyAutoLockGIL lock;
-    auto min = extents.minPoint();
-    auto max = extents.maxPoint();
+    const auto& min = extents.minPoint();
+    const auto& max = extents.maxPoint();
     return boost::python::make_tuple(min.x, min.y, min.z, max.x, max.y, max.z);
 }
 
@@ -215,12 +237,83 @@ static void AcDbExtentsaddBlockExt(AcDbExtents& extents, const PyDbBlockTableRec
     extents.addBlockExt(rec.impObj());
 }
 
-static bool AcDbExtentsContains(const AcDbExtents& extents, AcGePoint3d pnt)
+static bool AcDbExtentsContains1(const AcDbExtents& extents, const AcGePoint3d& pnt)
 {
-    auto min = extents.minPoint();
-    auto max = extents.maxPoint();
+    const auto& min = extents.minPoint();
+    const auto& max = extents.maxPoint();
     return min.x <= pnt.x && min.y <= pnt.y && min.z <= pnt.z &&
         max.x >= pnt.x && max.y >= pnt.y && max.z >= pnt.z;
+}
+
+static bool AcDbExtents3dIntersects1(const AcDbExtents& b1, const AcDbExtents& b2)
+{
+    if (b1.maxPoint().x < b2.minPoint().x || b1.minPoint().x > b2.maxPoint().x)
+        return false;
+    if (b1.maxPoint().y < b2.minPoint().y || b1.minPoint().y > b2.maxPoint().y)
+        return false;
+    if (b1.maxPoint().z < b2.minPoint().z || b1.minPoint().z > b2.maxPoint().z)
+        return false;
+    return true;
+}
+
+static bool AcDbExtents3dIntersects2(const AcDbExtents& extents, const PyGeLinearEnt3d& other)
+{
+    AcGePoint3d x1(extents.minPoint().x, extents.minPoint().y, extents.minPoint().z);
+    AcGePoint3d x2(extents.minPoint().x, extents.minPoint().y, extents.maxPoint().z);
+    AcGePoint3d x3(extents.minPoint().x, extents.maxPoint().y, extents.minPoint().z);
+    AcGePoint3d x4(extents.minPoint().x, extents.maxPoint().y, extents.maxPoint().z);
+    AcGePoint3d x5(extents.maxPoint().x, extents.minPoint().y, extents.minPoint().z);
+    AcGePoint3d x6(extents.maxPoint().x, extents.minPoint().y, extents.maxPoint().z);
+    AcGePoint3d x7(extents.maxPoint().x, extents.maxPoint().y, extents.minPoint().z);
+    AcGePoint3d x8(extents.maxPoint().x, extents.maxPoint().y, extents.maxPoint().z);
+
+    AcGePoint3d _tmp;
+    {//flat?
+        if (other.impObj()->intersectWith(AcGeLineSeg3d(x1, x2), _tmp))
+            return true;
+        if (other.impObj()->intersectWith(AcGeLineSeg3d(x2, x6), _tmp))
+            return true;
+        if (other.impObj()->intersectWith(AcGeLineSeg3d(x6, x4), _tmp))
+            return true;
+        if (other.impObj()->intersectWith(AcGeLineSeg3d(x4, x1), _tmp))
+            return true;
+    }
+    {
+        AcGeBoundedPlane front(x1, x2 - x1, x4 - x1);
+        if (front.intersectWith(*other.impObj(), _tmp))
+            return true;
+    }
+    {
+        AcGeBoundedPlane left(x3, x1 - x3, x7 - x3);
+        if (left.intersectWith(*other.impObj(), _tmp))
+            return true;
+    }
+    {
+        AcGeBoundedPlane back(x5, x3 - x5, x8 - x5);
+        if (back.intersectWith(*other.impObj(), _tmp))
+            return true;
+    }
+    {
+        AcGeBoundedPlane right(x2, x5 - x2, x6 - x2);
+        if (right.intersectWith(*other.impObj(), _tmp))
+            return true;
+    }
+    {
+        AcGeBoundedPlane top(x4, x5 - x4, x7 - x4);
+        if (top.intersectWith(*other.impObj(), _tmp))
+            return true;
+    }
+    {
+        AcGeBoundedPlane bottom(x1, x2 - x1, x3 - x1);
+        if (bottom.intersectWith(*other.impObj(), _tmp))
+            return true;
+    }
+    return false;
+}
+
+static bool AcDbExtentsContains2(const AcDbExtents& extents, const AcDbExtents& other)
+{
+    return AcDbExtentsContains1(extents, other.minPoint()) && AcDbExtentsContains1(extents, other.maxPoint());
 }
 
 static void makePyDbExtentsWrapper()
@@ -242,10 +335,12 @@ static void makePyDbExtentsWrapper()
         .def("addExt", &AcDbExtents::addExt, DS.ARGS({ "extents: PyDb.Extents" }, 4529))
         .def("expandBy", &AcDbExtents::expandBy, DS.ARGS({ "vec: PyGe.Vector3d" }, 4531))
         .def("transformBy", &AcDbExtents::transformBy, DS.ARGS({ "xform: PyGe.Matrix3d" }, 4535))
-        .def("intersectsWith", &AcDbExtents3dIntersects, DS.ARGS({ "other: PyDb.Extents" }))
+        .def("intersectsWith", &AcDbExtents3dIntersects1)
+        .def("intersectsWith", &AcDbExtents3dIntersects2, DS.ARGS({ "other: PyDb.Extents|PyGe.LinearEnt3d" }))
         .def("coords", &AcDbExtents3dCoords, DS.ARGS())
         .def("addBlockExt", &AcDbExtentsaddBlockExt, DS.ARGS({ "btr: PyDb.BlockTableRecord" }, 4528))
-        .def("contains", &AcDbExtentsContains, DS.ARGS({ "pt: PyGe.Point3d" }))
+        .def("contains", &AcDbExtentsContains1)
+        .def("contains", &AcDbExtentsContains2, DS.ARGS({ "val: PyDb.Extents|PyGe.Point3d" }))
         .def("__str__", &AcDbExtentsToString, DS.ARGS())
         .def("__repr__", &AcDbExtentsToStringRepr, DS.ARGS())
         ;
@@ -256,6 +351,13 @@ static BOOST_PYTHON_MODULE(PyDb)
     docstring_options local_docstring_options(py_show_user_defined, py_show_py_signatures, py_show_cpp_signatures);
 
     PyErrorStatusException::makePyErrorStatusExceptionWrapper();
+
+    makePyDbGraphNodeWrapper();
+    makePyDbObjectIdGraphNodeWrapper();
+    makePyDbXrefGraphNodeWrapper();
+    makePyDbGraphWrapper();
+    makePyObjectIdGraphWrapper();
+    makePyAcDbXrefGraphWrapper();
     makePyDbDateWrapper();
     makePyDbGripDataWrapper();
     makePyDbSubentIdWrapper();
@@ -275,11 +377,14 @@ static BOOST_PYTHON_MODULE(PyDb)
     makePyAdsNameWrapper();
     makePyDbObjectWrapper();
     makePyDbSpatialFilterWrapper();
+    makePyDbIndexFilterManagerWrapper();
     makePyDbLayerFilterWrapper();
     makePyDbObjectReactorWrapper();
     makePyDbEntityReactorWrapper();
     makePyDbDatabaseReactorWrapper();
-    makePyDbFieldtWrapper();
+    makePyDbFieldWrapper();
+    makePyDdFieldEvaluatorWrapper();
+    makePyDbFieldEngineWrapper();
     makePyDbEntityWrapper();
     makePyDbBlockBeginWrapper();
     makePyDbBlockEndWrapper();
@@ -405,12 +510,12 @@ static BOOST_PYTHON_MODULE(PyDb)
     makePyDbPointRefWrapper();
     makePyDbOsnapPointRefWrapper();
     makePyDbDimAssocWrapper();
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     makePyDb3dProfileWrapper();
 #endif
     makePyDbObjectOverruleWrapper();
     makePyDbOsnapOverruleWrapper();
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     makePyDbPointCloudCropWrapper();
     makePyDbPointCloudClassificationColorRampWrapper();
     makePyDbPointCloudColorRampWrapper();
@@ -437,6 +542,15 @@ static BOOST_PYTHON_MODULE(PyDb)
     makePyDbHyperlinkWrapper();
     makePyDbHyperlinkCollectionWrapper();
     makePyDbEntityHyperlinkPEWrapper();
+    makePyDbOverrulableEntity();
+    makePyDbAssocDependencyWrapper();
+    makePyDbAssocActionWrapper();
+    makePyDbAssocNetworkWrapper();
+    makePyDbAssocVariableWrapper();
+    makePyDbAssocValueDependencyWrapper();
+#if defined(_ARXTARGET)
+    makeXRefLayerPropertyOverride();
+#endif
     makeDbCoreWrapper();//LAST?
 
     //convenience 
@@ -457,19 +571,20 @@ static BOOST_PYTHON_MODULE(PyDb)
         .value("kLineWeight", AcDbLayerStateManager::LayerStateMask::kLineWeight)
         .value("kPlotStyle", AcDbLayerStateManager::LayerStateMask::kPlotStyle)
         .value("kCurrentViewport", AcDbLayerStateManager::LayerStateMask::kCurrentViewport)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kTransparency", AcDbLayerStateManager::LayerStateMask::kTransparency)
 #endif
         .value("kAll", AcDbLayerStateManager::LayerStateMask::kAll)
         .value("kStateIsHidden", AcDbLayerStateManager::LayerStateMask::kStateIsHidden)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kLastRestored", AcDbLayerStateManager::LayerStateMask::kLastRestored)
 #endif
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kDecomposition", AcDbLayerStateManager::LayerStateMask::kDecomposition)
 #endif
         .export_values()
         ;
+
     enum_<AcDb::CellOption>("CellOption")
         .value("kNoMap", AcDb::CellOption::kCellOptionNone)
         .value("kAerial", AcDb::CellOption::kInheritCellFormat)
@@ -962,7 +1077,7 @@ static BOOST_PYTHON_MODULE(PyDb)
         .value("kDxfLinetypeAlign", AcDb::kDxfLinetypeAlign)
         .value("kDxfLinetypePDC", AcDb::kDxfLinetypePDC)
         .value("kDxfInt32", AcDb::kDxfInt32)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kDxfVertexIdentifier", AcDb::kDxfVertexIdentifier)
 #endif
         .value("kDxfSubclass", AcDb::kDxfSubclass)
@@ -1021,7 +1136,7 @@ static BOOST_PYTHON_MODULE(PyDb)
         .value("kDxfGradientTintVal", AcDb::kDxfGradientTintVal)
         .value("kDxfGradientColVal", AcDb::kDxfGradientColVal)
         .value("kDxfGradientName", AcDb::kDxfGradientName)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kDxfFaceStyleId", AcDb::kDxfFaceStyleId)
         .value("kDxfEdgeStyleId", AcDb::kDxfEdgeStyleId)
 #endif
@@ -1049,7 +1164,7 @@ static BOOST_PYTHON_MODULE(PyDb)
         .value("kDxfXdScale", AcDb::kDxfXdScale)
         .value("kDxfXdInteger16", AcDb::kDxfXdInteger16)
         .value("kDxfXdInteger32", AcDb::kDxfXdInteger32)
-#if !defined (_BRXTARGET250)
+#if !defined (_BRXTARGET260)
         .value("kDxfXdMax", AcDb::kDxfXdMax)
 #endif
         .export_values()
@@ -1948,6 +2063,91 @@ static BOOST_PYTHON_MODULE(PyDb)
         .value("kUnitMillisec", AcDbGeoCoordinateSystem::Unit::kUnitMillisec)
         .export_values()
         ;
+
+    enum_<AcDbAssocStatus>("AssocStatus")
+        .value("kIsUpToDateAssocStatus", AcDbAssocStatus::kIsUpToDateAssocStatus)
+        .value("kChangedDirectlyAssocStatus", AcDbAssocStatus::kChangedDirectlyAssocStatus)
+        .value("kChangedTransitivelyAssocStatus", AcDbAssocStatus::kChangedTransitivelyAssocStatus)
+        .value("kChangedNoDifferenceAssocStatus", AcDbAssocStatus::kChangedNoDifferenceAssocStatus)
+        .value("kFailedToEvaluateAssocStatus", AcDbAssocStatus::kFailedToEvaluateAssocStatus)
+        .value("kErasedAssocStatus", AcDbAssocStatus::kErasedAssocStatus)
+        .value("kSuppressedAssocStatus", AcDbAssocStatus::kSuppressedAssocStatus)
+        .value("kUnresolvedAssocStatus", AcDbAssocStatus::kUnresolvedAssocStatus)
+        .export_values()
+        ;
+
+    enum_<AcDbAssocEvaluationPriority>("AssocEvaluationPriority")
+        .value("kIsUpToDateAssocStatus", AcDbAssocEvaluationPriority::kCannotBeEvaluatedAssocEvaluationPriority)
+        .value("kCannotDermineAssocEvaluationPriority", AcDbAssocEvaluationPriority::kCannotDermineAssocEvaluationPriority)
+        .value("kCanBeEvaluatedAssocEvaluationPriority", AcDbAssocEvaluationPriority::kCanBeEvaluatedAssocEvaluationPriority)
+        .export_values()
+        ;
+
+    enum_<AcDbAssocConstraintType>("AssocConstraintType")
+        .value("kNoneAssocConstraintType", AcDbAssocConstraintType::kNoneAssocConstraintType)
+        .value("kDistanceAssocConstraintType", AcDbAssocConstraintType::kDistanceAssocConstraintType)
+        .value("kHorizontalDistanceAssocConstraintType", AcDbAssocConstraintType::kHorizontalDistanceAssocConstraintType)
+        .value("kVerticalDistanceAssocConstraintType", AcDbAssocConstraintType::kVerticalDistanceAssocConstraintType)
+        .value("kAngle0AssocConstraintType", AcDbAssocConstraintType::kAngle0AssocConstraintType)
+        .value("kAngle1AssocConstraintType", AcDbAssocConstraintType::kAngle1AssocConstraintType)
+        .value("kAngle2AssocConstraintType", AcDbAssocConstraintType::kAngle2AssocConstraintType)
+        .value("kAngle3AssocConstraintType", AcDbAssocConstraintType::kAngle3AssocConstraintType)
+        .value("kRadiusAssocConstraintType", AcDbAssocConstraintType::kRadiusAssocConstraintType)
+        .value("kDiameterAssocConstraintType", AcDbAssocConstraintType::kDiameterAssocConstraintType)
+        .export_values()
+        ;
+
+    enum_<AcDbAssocEvaluationMode>("AssocEvaluationMode")
+        .value("kModifyObjectsAssocEvaluationMode", AcDbAssocEvaluationMode::kModifyObjectsAssocEvaluationMode)
+        .value("kModifyActionAssocEvaluationMode", AcDbAssocEvaluationMode::kModifyActionAssocEvaluationMode)
+        .export_values()
+        ;
+
+    enum_<AcDbAssocDraggingState>("AssocDraggingState")
+        .value("kNotDraggingAssocDraggingState", AcDbAssocDraggingState::kNotDraggingAssocDraggingState)
+        .value("kFirstSampleAssocDraggingState", AcDbAssocDraggingState::kFirstSampleAssocDraggingState)
+        .value("kIntermediateSampleAssocDraggingState", AcDbAssocDraggingState::kIntermediateSampleAssocDraggingState)
+        .value("kLastSampleAssocDraggingState", AcDbAssocDraggingState::kLastSampleAssocDraggingState)
+        .export_values()
+        ;
+
+    enum_<AcDbAssocTransformationType>("AssocTransformationType")
+        .value("kNotSpecified", AcDbAssocTransformationType::kNotSpecified)
+        .value("kStretch", AcDbAssocTransformationType::kStretch)
+        .value("kRotate", AcDbAssocTransformationType::kRotate)
+        .value("kMove", AcDbAssocTransformationType::kMove)
+        .export_values()
+        ;
+    enum_<AcDb::DragStat>("DragStat")
+        .value("kDragStart", AcDb::DragStat::kDragStart)
+        .value("kDragEnd", AcDb::DragStat::kDragEnd)
+        .value("kDragAbort", AcDb::DragStat::kDragAbort)
+        .export_values()
+        ;
+
+#if defined(_ARXTARGET)
+    enum_<AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType>("XRefLayerPropertyOverrideType")
+        .value("kXrOn", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::On)
+        .value("kXrFreeze", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Freeze)
+        .value("kXrLock", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Lock)
+        .value("kXrPlot", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Plot)
+        .value("kXrColor", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Color)
+        .value("kXrLinetype", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Linetype)
+        .value("kXrLineweight", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Lineweight)
+        .value("kXrTransparency", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Transparency)
+        .value("kXrPlotStyle", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::PlotStyle)
+        .value("kXrNewVPFreeze", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::NewVPFreeze)
+        .value("kXrDescription", AcXRefLayerPropertyOverride::XRefLayerPropertyOverrideType::Description)
+        .export_values()
+        ;
+#endif
+
+    enum_<Adesk::Boolean>("AdskBoolean")
+        .value("kFalse", Adesk::kFalse)
+        .value("kTrue", Adesk::kTrue)
+        .export_values()
+        ;
+
 };
 
 void initPyDbModule()

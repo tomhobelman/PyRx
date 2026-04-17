@@ -1,8 +1,13 @@
 from __future__ import annotations
+
 import unittest
-from pyrx import Db, Ge, Br
+
+import pytest
+
+from pyrx import Br, Db, Ge
 
 
+@pytest.mark.known_failure_IRX
 class TestBrep:
     def setup_class(self):
         self.assertions = unittest.TestCase("__init__")

@@ -7,15 +7,21 @@ using namespace boost::python;
 
 void makePyDbSpatialFilterWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
     PyDocString DS("SpatialFilter");
     class_<PyDbSpatialFilter, bases<PyDbObject>>("SpatialFilter")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 8701)))
         .def("indexClass", &PyDbSpatialFilter::indexClass, DS.ARGS(8709))
         .def("queryBounds", &PyDbSpatialFilter::queryBounds1)
-        .def("queryBounds", &PyDbSpatialFilter::queryBounds2, DS.ARGS({ "ref : PyDb.BlockReference=None" }, 8711))
+        .def("queryBounds", &PyDbSpatialFilter::queryBounds2, DS.ARGS({ "ref : PyDb.BlockReference = ..." }, 8711))
         .def("getVolume", &PyDbSpatialFilter::getVolume, DS.ARGS(8707))
         .def("setDefinition", &PyDbSpatialFilter::setDefinition, DS.ARGS({ "pnt2d: list[PyGe.Point2d]","normal: PyGe.Vector3d","elev: float","frontclip: float","backclip: float","enabled: bool" }, 8712))
         .def("getDefinition", &PyDbSpatialFilter::getDefinition, DS.ARGS(8705))
@@ -86,7 +92,7 @@ AcDbExtents PyDbSpatialFilter::queryBounds2(const PyDbBlockReference& pRefBlkRef
 
 boost::python::tuple PyDbSpatialFilter::getVolume() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyAutoLockGIL lock;
@@ -99,12 +105,12 @@ boost::python::tuple PyDbSpatialFilter::getVolume() const
 #endif
 }
 
-void PyDbSpatialFilter::setDefinition(const boost::python::list& pts, const AcGeVector3d& normal, double elevation, double frontClip, double backClip, Adesk::Boolean enabled)
+void PyDbSpatialFilter::setDefinition(const boost::python::list& pts, const AcGeVector3d& normal, double elevation, double frontClip, double backClip, Adesk::Boolean enabled) const
 {
     PyThrowBadEs(impObj()->setDefinition(PyListToPoint2dArray(pts), normal, elevation, frontClip, backClip, enabled));
 }
 
-boost::python::tuple PyDbSpatialFilter::getDefinition()
+boost::python::tuple PyDbSpatialFilter::getDefinition() const
 {
     PyAutoLockGIL lock;
     AcGePoint2dArray pts;
@@ -131,9 +137,9 @@ AcGeMatrix3d PyDbSpatialFilter::getOriginalInverseBlockXform() const
     return mat;
 }
 
-void PyDbSpatialFilter::setPerspectiveCamera(const AcGePoint3d& fromPt)
+void PyDbSpatialFilter::setPerspectiveCamera(const AcGePoint3d& fromPt) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     PyThrowBadEs(impObj()->setPerspectiveCamera(fromPt));
@@ -142,7 +148,7 @@ void PyDbSpatialFilter::setPerspectiveCamera(const AcGePoint3d& fromPt)
 
 Adesk::Boolean PyDbSpatialFilter::clipVolumeIntersectsExtents(const AcDbExtents& ext) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->clipVolumeIntersectsExtents(ext);
@@ -151,7 +157,7 @@ Adesk::Boolean PyDbSpatialFilter::clipVolumeIntersectsExtents(const AcDbExtents&
 
 Adesk::Boolean PyDbSpatialFilter::hasPerspectiveCamera() const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->hasPerspectiveCamera();
@@ -163,7 +169,7 @@ bool PyDbSpatialFilter::isInverted() const
     return impObj()->isInverted();
 }
 
-void PyDbSpatialFilter::setInverted(bool bInverted)
+void PyDbSpatialFilter::setInverted(bool bInverted) const
 {
     PyThrowBadEs(impObj()->setInverted(bInverted));
 }
@@ -196,17 +202,81 @@ AcDbSpatialFilter* PyDbSpatialFilter::impObj(const std::source_location& src /*=
     return static_cast<AcDbSpatialFilter*>(m_pyImp.get());
 }
 
+//----------------------------------------------------------------------------------------
+//PyDbIndexFilterManager
+void makePyDbIndexFilterManagerWrapper()
+{
+    constexpr const std::string_view getFilterOverloads = "Overloads:\n"
+        "- ref: PyDb.BlockReference,key: PyRx.Class, mode: PyDb.OpenMode\n"
+        "- ref: PyDb.BlockReference,index: int, mode: PyDb.OpenMode, erased: bool\n";
+
+    PyDocString DS("IndexFilterManager");
+    class_<PyDbIndexFilterManager>("IndexFilterManager")
+        .def(init<>(DS.ARGS(5632)))
+        .def("numIndexes", &PyDbIndexFilterManager::numIndexes, DS.SARGS({ "blkRef:PyDb.BlockTableRecord" }, 5638)).staticmethod("numIndexes")
+        .def("addFilter", &PyDbIndexFilterManager::addFilter, DS.SARGS({ "blkRef:PyDb.BlockReference","filter:PyDb.SpatialFilter" }, 5633)).staticmethod("addFilter")
+        .def("removeFilter", &PyDbIndexFilterManager::removeFilter, DS.SARGS({ "blkRef:PyDb.BlockReference","key:PyRx.Class" }, 5639)).staticmethod("removeFilter")
+        .def("getFilter", &PyDbIndexFilterManager::getFilter1)
+        .def("getFilter", &PyDbIndexFilterManager::getFilter2, DS.SOVRL(getFilterOverloads, 5635)).staticmethod("getFilter")
+        .def("className", &PyDbIndexFilterManager::className, DS.SARGS()).staticmethod("className")
+        ;
+}
+
+int PyDbIndexFilterManager::numIndexes(const PyDbBlockTableRecord& pBtr)
+{
+#if defined(_BRXTARGET260)
+    throw PyNotimplementedByHost();
+#else
+    return AcDbIndexFilterManager::numIndexes(pBtr.impObj());
+#endif
+}
+
+void PyDbIndexFilterManager::addFilter(const PyDbBlockReference& pBlkRef, const PyDbSpatialFilter& pFilter)
+{
+    PyThrowBadEs(AcDbIndexFilterManager::addFilter(pBlkRef.impObj(), pFilter.impObj()));
+}
+
+void PyDbIndexFilterManager::removeFilter(const PyDbBlockReference& blkRef, const PyRxClass& key)
+{
+    PyThrowBadEs(AcDbIndexFilterManager::removeFilter(blkRef.impObj(), key.impObj()));
+}
+
+PyDbSpatialFilter PyDbIndexFilterManager::getFilter1(const PyDbBlockReference& pRef, const PyRxClass& key, AcDb::OpenMode readOrWrite)
+{
+    AcDbFilter* pFilter = nullptr;
+    PyThrowBadEs(AcDbIndexFilterManager::getFilter(pRef.impObj(), key.impObj(), readOrWrite, pFilter));
+    return PyDbSpatialFilter(static_cast<AcDbSpatialFilter*>(pFilter), false);
+}
+
+PyDbSpatialFilter PyDbIndexFilterManager::getFilter2(const PyDbBlockReference& pRef, int index, AcDb::OpenMode readOrWrite)
+{
+    AcDbFilter* pFilter = nullptr;
+    PyThrowBadEs(AcDbIndexFilterManager::getFilter(pRef.impObj(), index, readOrWrite, pFilter));
+    return PyDbSpatialFilter(static_cast<AcDbSpatialFilter*>(pFilter), false);
+}
+
+std::string PyDbIndexFilterManager::className()
+{
+    return "AcDbSpatialFilter";
+}
 
 //----------------------------------------------------------------------------------------
 //PyDbLayerFilter
 void makePyDbLayerFilterWrapper()
 {
+    constexpr const std::string_view ctords = "Overloads:\n"
+        "- None: Any\n"
+        "- id: PyDb.ObjectId\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode\n"
+        "- id: PyDb.ObjectId, mode: PyDb.OpenMode, erased: bool\n";
+
+
     PyDocString DS("LayerFilter");
     class_<PyDbLayerFilter, bases<PyDbObject>>("LayerFilter")
         .def(init<>())
         .def(init<const PyDbObjectId&>())
         .def(init<const PyDbObjectId&, AcDb::OpenMode>())
-        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.ARGS({ "id: PyDb.ObjectId", "mode: PyDb.OpenMode = PyDb.OpenMode.kForRead", "erased: bool=False" })))
+        .def(init<const PyDbObjectId&, AcDb::OpenMode, bool>(DS.CTOR(ctords, 5699)))
         .def("indexClass", &PyDbLayerFilter::indexClass, DS.ARGS())
         .def("isValid", &PyDbLayerFilter::isValid, DS.ARGS())
         .def("add", &PyDbLayerFilter::add, DS.ARGS({ "val : str" }))
@@ -255,12 +325,12 @@ Adesk::Boolean PyDbLayerFilter::isValid() const
     return impObj()->isValid();
 }
 
-void PyDbLayerFilter::add(const std::string& pLayer)
+void PyDbLayerFilter::add(const std::string& pLayer) const
 {
     PyThrowBadEs(impObj()->add(utf8_to_wstr(pLayer).c_str()));
 }
 
-void PyDbLayerFilter::remove(const std::string& pLayer)
+void PyDbLayerFilter::remove(const std::string& pLayer) const
 {
     PyThrowBadEs(impObj()->remove(utf8_to_wstr(pLayer).c_str()));
 }

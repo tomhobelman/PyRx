@@ -20,7 +20,7 @@ void makePyGeIntervalWrapper()
     class_<PyGeInterval>("Interval")
         .def(init<>())
         .def(init<double, double>())
-        .def(init<Adesk::Boolean, double>(DS.CTOR(ctor)))
+        .def(init<Adesk::Boolean, double>(DS.CTOR(ctor, 12155)))
         .def("lowerBound", &PyGeInterval::lowerBound, DS.ARGS())
         .def("upperBound", &PyGeInterval::upperBound, DS.ARGS())
         .def("element", &PyGeInterval::element, DS.ARGS())
@@ -271,42 +271,42 @@ boost::python::tuple PyGeInterval::isPeriodicallyOn(double period)
     return boost::python::make_tuple(res, val);
 }
 
-bool PyGeInterval::isGreater1(double val)
+bool PyGeInterval::isGreater1(double val) const
 {
     return imp > val;
 }
 
-bool PyGeInterval::isGreater2(const PyGeInterval& otherInterval)
+bool PyGeInterval::isGreater2(const PyGeInterval& otherInterval) const
 {
     return imp > otherInterval.imp;
 }
 
-bool PyGeInterval::isGreaterOrEqual1(double val)
+bool PyGeInterval::isGreaterOrEqual1(double val) const
 {
     return imp >= val;
 }
 
-bool PyGeInterval::isGreaterOrEqual2(const PyGeInterval& otherInterval)
+bool PyGeInterval::isGreaterOrEqual2(const PyGeInterval& otherInterval) const
 {
     return imp >= otherInterval.imp;
 }
 
-bool PyGeInterval::isLess1(double val)
+bool PyGeInterval::isLess1(double val) const
 {
     return imp < val;
 }
 
-bool PyGeInterval::isLess2(const PyGeInterval& otherInterval)
+bool PyGeInterval::isLess2(const PyGeInterval& otherInterval) const
 {
     return imp < otherInterval.imp;
 }
 
-bool PyGeInterval::isLessOrEqual1(double val)
+bool PyGeInterval::isLessOrEqual1(double val) const
 {
     return imp <= val;
 }
 
-bool PyGeInterval::isLessOrEqual2(const PyGeInterval& otherInterval)
+bool PyGeInterval::isLessOrEqual2(const PyGeInterval& otherInterval) const
 {
     return imp <= otherInterval.imp;
 }

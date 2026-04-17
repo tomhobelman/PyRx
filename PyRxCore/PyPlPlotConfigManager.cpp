@@ -5,9 +5,6 @@
 using namespace boost::python;
 
 
-#if defined(_BRXTARGET250)
-// dead
-#else
 void makePyPlPlotConfigManagerWrapper()
 {
     PyDocString DS("PlotConfigManager");
@@ -15,7 +12,7 @@ void makePyPlPlotConfigManagerWrapper()
         .def("getDevicesList", &PyPlPlotConfigManager::getDevicesList, DS.ARGS())
         .def("getStyleList", &PyPlPlotConfigManager::getStyleList, DS.ARGS())
         .def("refreshList", &PyPlPlotConfigManager::refreshList1)
-        .def("refreshList", &PyPlPlotConfigManager::refreshList2, DS.ARGS({"refreshCode:PyPl.RefreshCode= PyPl.RefreshCode.kAll"}))
+        .def("refreshList", &PyPlPlotConfigManager::refreshList2, DS.ARGS({ "refreshCode:PyPl.RefreshCode= PyPl.RefreshCode.kAll" }))
         .def("getCurrentConfig", &PyPlPlotConfigManager::getCurrentConfig)
         .def("setCurrentConfig", &PyPlPlotConfigManager::setCurrentConfig, DS.ARGS({ "deviceName: str" }))
         .def("getStdConfigName", &PyPlPlotConfigManager::getStdConfigName)
@@ -57,6 +54,7 @@ void makePyPlPlotConfigManagerWrapper()
         .value("kPublishToWebDWF", AcPlPlotConfigManager::StdConfigs::kPublishToWebDWF)
         .value("kPublishToWebJPG", AcPlPlotConfigManager::StdConfigs::kPublishToWebJPG)
         .value("kPublishToWebPNG", AcPlPlotConfigManager::StdConfigs::kPublishToWebPNG)
+#if !defined(_BRXTARGET260)
         .value("kDWFxePlot", AcPlPlotConfigManager::StdConfigs::kDWFxePlot)
         .value("kPublishToWebDWFx", AcPlPlotConfigManager::StdConfigs::kPublishToWebDWFx)
         .value("kPDFePlot", AcPlPlotConfigManager::StdConfigs::kPDFePlot)
@@ -65,6 +63,7 @@ void makePyPlPlotConfigManagerWrapper()
         .value("kPDFePlotSmallerFile", AcPlPlotConfigManager::StdConfigs::kPDFePlotSmallerFile)
         .value("kPDFePlotWebMobile", AcPlPlotConfigManager::StdConfigs::kPDFePlotWebMobile)
         .value("kSVFePlot", AcPlPlotConfigManager::StdConfigs::kSVFePlot)
+#endif
         .export_values()
         ;
 }
@@ -74,7 +73,7 @@ PyPlPlotConfigManager::PyPlPlotConfigManager()
 {
 }
 
-boost::python::list PyPlPlotConfigManager::getDevicesList()
+boost::python::list PyPlPlotConfigManager::getDevicesList() const
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
@@ -85,7 +84,7 @@ boost::python::list PyPlPlotConfigManager::getDevicesList()
     return pyList;
 }
 
-boost::python::list PyPlPlotConfigManager::getStyleList()
+boost::python::list PyPlPlotConfigManager::getStyleList() const
 {
     PyAutoLockGIL lock;
     boost::python::list pyList;
@@ -99,17 +98,17 @@ boost::python::list PyPlPlotConfigManager::getStyleList()
     return pyList;
 }
 
-void PyPlPlotConfigManager::refreshList1()
+void PyPlPlotConfigManager::refreshList1() const
 {
     impObj()->refreshList();
 }
 
-void PyPlPlotConfigManager::refreshList2(AcPlPlotConfigManager::RefreshCode refreshCode)
+void PyPlPlotConfigManager::refreshList2(AcPlPlotConfigManager::RefreshCode refreshCode) const
 {
     impObj()->refreshList(refreshCode);
 }
 
-PyPlPlotConfig PyPlPlotConfigManager::getCurrentConfig()
+PyPlPlotConfig PyPlPlotConfigManager::getCurrentConfig() const
 {
     AcPlPlotConfig* pConfig = nullptr;
     PyThrowBadEs(impObj()->getCurrentConfig(pConfig));
@@ -117,14 +116,14 @@ PyPlPlotConfig PyPlPlotConfigManager::getCurrentConfig()
 }
 
 //TODO: should be deleted? but the app crashes if it is, the C++ sample does not delete
-PyPlPlotConfig PyPlPlotConfigManager::setCurrentConfig(const std::string& pDeviceName)
+PyPlPlotConfig PyPlPlotConfigManager::setCurrentConfig(const std::string& pDeviceName) const
 {
     AcPlPlotConfig* pConfig = nullptr;
     PyThrowBadEs(impObj()->setCurrentConfig(pConfig, utf8_to_wstr(pDeviceName).c_str()));
     return PyPlPlotConfig(pConfig, false);
 }
 
-std::string PyPlPlotConfigManager::getStdConfigName(AcPlPlotConfigManager::StdConfigs stdConfig)
+std::string PyPlPlotConfigManager::getStdConfigName(AcPlPlotConfigManager::StdConfigs stdConfig) const
 {
     return wstr_to_utf8(impObj()->getStdConfigName(stdConfig));
 }
@@ -141,4 +140,3 @@ AcPlPlotConfigManager* PyPlPlotConfigManager::impObj(const std::source_location&
     }
     return m_imp;
 }
-#endif

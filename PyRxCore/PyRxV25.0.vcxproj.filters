@@ -475,6 +475,27 @@
     <ClCompile Include="PyAcadTableImpl.cpp">
       <Filter>Source Files\PyAx</Filter>
     </ClCompile>
+    <ClCompile Include="PyDbGraph.cpp">
+      <Filter>Source Files\PyDb</Filter>
+    </ClCompile>
+    <ClCompile Include="PyGePoint3dTree.cpp">
+      <Filter>Source Files\PyGe</Filter>
+    </ClCompile>
+    <ClCompile Include="PyDbAssocAction.cpp">
+      <Filter>Source Files\PyDb</Filter>
+    </ClCompile>
+    <ClCompile Include="PyRxOverrulableEntity.cpp">
+      <Filter>Source Files\PyRxApp</Filter>
+    </ClCompile>
+    <ClCompile Include="PyBrxComponentCustomProperties.cpp">
+      <Filter>Source Files\PyBrx</Filter>
+    </ClCompile>
+    <ClCompile Include="PyBrxComponents.cpp">
+      <Filter>Source Files\PyBrx</Filter>
+    </ClCompile>
+    <ClCompile Include="PyBrxConstraints3d.cpp">
+      <Filter>Source Files\PyBrx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PyDbDatabase.h">
@@ -956,6 +977,36 @@
     </ClInclude>
     <ClInclude Include="PyAcadTableImpl.h">
       <Filter>Header Files\PyAx</Filter>
+    </ClInclude>
+    <ClInclude Include="PyDbGraph.h">
+      <Filter>Header Files\PyDb</Filter>
+    </ClInclude>
+    <ClInclude Include="PyGePoint3dTree.h">
+      <Filter>Header Files\PyGe</Filter>
+    </ClInclude>
+    <ClInclude Include="PyDbAssocAction.h">
+      <Filter>Header Files\PyDb</Filter>
+    </ClInclude>
+    <ClInclude Include="PyRxOverrulableEntity.h">
+      <Filter>Header Files\PyRxApp</Filter>
+    </ClInclude>
+    <ClInclude Include="PyBrxComponentCustomProperties.h">
+      <Filter>Header Files\PyBrx</Filter>
+    </ClInclude>
+    <ClInclude Include="PyBrxComponents.h">
+      <Filter>Header Files\PyBrx</Filter>
+    </ClInclude>
+    <ClInclude Include="PyBrxConstraints3d.h">
+      <Filter>Header Files\PyBrx</Filter>
+    </ClInclude>
+    <ClInclude Include="delaunator.h">
+      <Filter>Header Files\PyRxApp</Filter>
+    </ClInclude>
+    <ClInclude Include="nanoflann.hpp">
+      <Filter>Header Files\PyRxApp</Filter>
+    </ClInclude>
+    <ClInclude Include="concaveman.h">
+      <Filter>Header Files\PyRxApp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

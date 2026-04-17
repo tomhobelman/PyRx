@@ -2,15 +2,81 @@
 #include "PyDbObjectId.h"
 #include "PyAcadDbObject.h"
 
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+
 using namespace boost::python;
+
+static PyDbObjectIdArray objectIdArrayFilter1(const PyDbObjectIdArray& inIds, const PyRxClass& _class)
+{
+    PyDbObjectIdArray idList;
+    const auto _desc = _class.impObj();
+    for (const auto& id : inIds)
+    {
+        if (id.m_id.objectClass()->isDerivedFrom(_desc))
+            idList.push_back(id);
+    }
+    return idList;
+}
+
+static PyDbObjectIdArray objectIdArrayFilter2(const PyDbObjectIdArray& inIds, boost::python::list& _classes)
+{
+    PyDbObjectIdArray idList;
+    std::unordered_set<AcRxClass*> _set;
+    for (auto& item : py_list_to_std_vector<PyRxClass>(_classes))
+        _set.insert(item.impObj());
+    for (const auto& id : inIds)
+    {
+        if (_set.contains(id.m_id.objectClass()))
+            idList.push_back(id);
+    }
+    return idList;
+}
+
+static void objectIdArrayRemoveErased(PyDbObjectIdArray& inIds)
+{
+    size_t erased_count = std::erase_if(inIds, [](PyDbObjectId& id)
+        {
+            return id.isErased();
+        });
+}
+
+static void objectIdArrayClear(PyDbObjectIdArray& inIds)
+{
+    inIds.clear();
+}
+
+static void objectIdArraySort(PyDbObjectIdArray& inIds)
+{
+    std::sort(inIds.begin(), inIds.end());
+}
+
+static void objectIdArrayReverse(PyDbObjectIdArray& inIds)
+{
+    std::reverse(inIds.begin(), inIds.end());
+}
 
 //---------------------------------------------------------------------------------
 // PyDbObjectId
 void makePyDbObjectIdWrapper()
 {
-    PyDocString DS("PyDb.ObjectId");
+    constexpr const std::string_view ObjectIdArrayOverloads = "Overloads:\n"
+        "desc: PyRx.RxClass=PyDb.Entity\n"
+        "descList: list[PyRx.RxClass]\n";
+
+    PyDocString DSIDA("PyDb.ObjectIdArray");
+    class_<PyDbObjectIdArray>("ObjectIdArray")
+        .def(boost::python::vector_indexing_suite<PyDbObjectIdArray>())
+        .def("getIdsOfType", &objectIdArrayFilter1)
+        .def("getIdsOfType", &objectIdArrayFilter2, DSIDA.OVRL(ObjectIdArrayOverloads))
+        .def("removeErased", &objectIdArrayRemoveErased, DSIDA.ARGS())
+        .def("clear", &objectIdArrayClear, DSIDA.ARGS())
+        .def("sort", &objectIdArraySort, DSIDA.ARGS())
+        .def("reverse", &objectIdArrayReverse, DSIDA.ARGS())
+        ;
+
+    PyDocString DS("ObjectId");
     class_<PyDbObjectId>("ObjectId")
-        .def(init<>(DS.ARGS()))
+        .def(init<>(DS.ARGS(7057)))
         .def("asOldId", &PyDbObjectId::asOldId, DS.ARGS(7075))
         .def("isNull", &PyDbObjectId::isNull, DS.ARGS(7081))
         .def("isResident", &PyDbObjectId::isResident, DS.ARGS(7082))
@@ -33,12 +99,12 @@ void makePyDbObjectIdWrapper()
         .def("__repr__", &PyDbObjectId::repr)
         .def("__hash__", &PyDbObjectId::hash)
         //operators
-        .def("__eq__", &PyDbObjectId::operator==)
-        .def("__ne__", &PyDbObjectId::operator!=)
-        .def("__lt__", &PyDbObjectId::operator<)
-        .def("__gt__", &PyDbObjectId::operator>)
-        .def("__le__", &PyDbObjectId::operator<=)
-        .def("__ge__", &PyDbObjectId::operator>=)
+        .def("__eq__", &PyDbObjectId::operator==, DS.ARGS({ "other: PyDb.ObjectId" }))
+        .def("__ne__", &PyDbObjectId::operator!=, DS.ARGS({ "other: PyDb.ObjectId" }))
+        .def("__lt__", &PyDbObjectId::operator<, DS.ARGS({ "other: PyDb.ObjectId" }))
+        .def("__gt__", &PyDbObjectId::operator>, DS.ARGS({ "other: PyDb.ObjectId" }))
+        .def("__le__", &PyDbObjectId::operator<=, DS.ARGS({ "other: PyDb.ObjectId" }))
+        .def("__ge__", &PyDbObjectId::operator>=, DS.ARGS({ "other: PyDb.ObjectId" }))
         ;
 }
 
@@ -103,6 +169,12 @@ bool PyDbObjectId::isResident() const
 
 bool PyDbObjectId::isValid() const
 {
+    static bool flag = false;
+    if (!flag)
+    {
+        flag = true;
+        acutPrintf(_T("\nObjectId::isValid is depreciated and will be removed soon: "));
+    }
     return m_id.isValid();
 }
 
@@ -313,9 +385,9 @@ PyDbSoftPointerId& PyDbSoftPointerId::operator=(const PyDbSoftPointerId& rhs)
     m_id = rhs.m_id;
     return *this;
 }
+
 //-----------------------------------------------------------------------------------------
 //PyDbSoftOwnershipId
-
 void makePyDbSoftOwnershipIdWrapper()
 {
     PyDocString DS("SoftOwnershipId");
@@ -365,7 +437,7 @@ void makePyDbHandleWrapper()
         "- strVal: str\n"
         "- int64Val: int\n";
 
-    PyDocString DS("PyDb.Handle");
+    PyDocString DS("Handle");
     class_<PyDbHandle>("Handle")
         .def(init<>())
         .def(init<int, int>())
@@ -500,7 +572,7 @@ bool PyDbHandle::operator==(const PyDbHandle& rhs) const
 // PyDbXrefObjectId
 void makePyDbXrefObjectIdWrapper()
 {
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
     PyDocString DS("XrefObjectId");
     class_<PyDbXrefObjectId>("XrefObjectId")
         .def(init<>(DS.ARGS()))
@@ -520,7 +592,7 @@ void makePyDbXrefObjectIdWrapper()
 #endif
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyDbXrefObjectId::PyDbXrefObjectId()
 {
 }

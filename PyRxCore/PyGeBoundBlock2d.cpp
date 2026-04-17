@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "PyGeBoundBlock2d.h"
+#include "PyGeLinearEnt2d.h"
+#include "PyGeClipBoundary2d.h"
 
 using namespace boost::python;
 
@@ -7,7 +9,6 @@ using namespace boost::python;
 //PyGeBoundBlock2d wrapper
 void makePyGeBoundBlock2dWrapper()
 {
-#if !defined(_BRXTARGET250)
     constexpr const std::string_view ctor = "Overloads:\n"
         "- None: Any\n"
         "- pt1: PyGe.Point2d, pt2: PyGe.Point2d\n"
@@ -21,7 +22,7 @@ void makePyGeBoundBlock2dWrapper()
     class_<PyGeBoundBlock2d, bases<PyGeEntity2d>>("BoundBlock2d")
         .def(init<>())
         .def(init<const AcGePoint2d&, const AcGePoint2d&>())
-        .def(init<const AcGePoint2d&, const AcGeVector2d&, const AcGeVector2d&>(DS.CTOR(ctor)))
+        .def(init<const AcGePoint2d&, const AcGeVector2d&, const AcGeVector2d&>(DS.CTOR(ctor, 11687)))
         .def("getMinPoint", &PyGeBoundBlock2d::getMinPoint, DS.ARGS())
         .def("getMaxPoint", &PyGeBoundBlock2d::getMaxPoint, DS.ARGS())
         .def("getBasePoint", &PyGeBoundBlock2d::getBasePoint, DS.ARGS())
@@ -33,16 +34,16 @@ void makePyGeBoundBlock2dWrapper()
         .def("swell", &PyGeBoundBlock2d::swell, DS.ARGS({ "val: float" }))
         .def("contains", &PyGeBoundBlock2d::contains, DS.ARGS({ "pt: PyGe.Point2d" }))
         .def("isDisjoint", &PyGeBoundBlock2d::isDisjoint, DS.ARGS({ "block: PyGe.BoundBlock2d" }))
+        .def("clipLineSeg2d", &PyGeBoundBlock2d::clipLineSeg2d, DS.ARGS({ "seg2d: PyGe.LineSeg2d" }, 19140))
+        .def("clipCircArc2d", &PyGeBoundBlock2d::clipCircArc2d, DS.ARGS({ "seg2d: PyGe.CircArc2d" }, 19141))
         .def("isBox", &PyGeBoundBlock2d::isBox, DS.ARGS())
         .def("setToBox", &PyGeBoundBlock2d::setToBox, DS.ARGS({ "val: bool" }))
         .def("cast", &PyGeBoundBlock2d::cast, DS.SARGS({ "otherObject: PyGe.Entity2d" })).staticmethod("cast")
         .def("copycast", &PyGeBoundBlock2d::copycast, DS.SARGS({ "otherObject: PyGe.Entity2d" })).staticmethod("copycast")
         .def("className", &PyGeBoundBlock2d::className, DS.SARGS()).staticmethod("className")
         ;
-#endif
 }
 
-#if !defined(_BRXTARGET250)
 PyGeBoundBlock2d::PyGeBoundBlock2d()
     : PyGeEntity2d(new AcGeBoundBlock2d())
 {
@@ -106,22 +107,22 @@ AcGeVector2d PyGeBoundBlock2d::getDirection2() const
     return dir2;
 }
 
-void PyGeBoundBlock2d::set1(const AcGePoint2d& point1, const AcGePoint2d& point2)
+void PyGeBoundBlock2d::set1(const AcGePoint2d& point1, const AcGePoint2d& point2) const
 {
     impObj()->set(point1, point2);
 }
 
-void PyGeBoundBlock2d::set2(const AcGePoint2d& base, const AcGeVector2d& dir1, const AcGeVector2d& dir2)
+void PyGeBoundBlock2d::set2(const AcGePoint2d& base, const AcGeVector2d& dir1, const AcGeVector2d& dir2) const
 {
     impObj()->set(base, dir1, dir2);
 }
 
-void PyGeBoundBlock2d::extend(const AcGePoint2d& point)
+void PyGeBoundBlock2d::extend(const AcGePoint2d& point) const
 {
     impObj()->extend(point);
 }
 
-void PyGeBoundBlock2d::swell(double distance)
+void PyGeBoundBlock2d::swell(double distance) const
 {
     impObj()->swell(distance);
 }
@@ -131,7 +132,7 @@ Adesk::Boolean PyGeBoundBlock2d::contains(const AcGePoint2d& point) const
     return impObj()->contains(point);
 }
 
-Adesk::Boolean PyGeBoundBlock2d::isDisjoint(const PyGeBoundBlock2d& block)
+Adesk::Boolean PyGeBoundBlock2d::isDisjoint(const PyGeBoundBlock2d& block) const
 {
     return impObj()->isDisjoint(*block.impObj());
 }
@@ -141,9 +142,26 @@ Adesk::Boolean PyGeBoundBlock2d::isBox() const
     return impObj()->isBox();
 }
 
-void PyGeBoundBlock2d::setToBox(Adesk::Boolean val)
+void PyGeBoundBlock2d::setToBox(Adesk::Boolean val) const
 {
     impObj()->setToBox(val);
+}
+
+boost::python::tuple PyGeBoundBlock2d::clipLineSeg2d(const PyGeLineSeg2d& seg) const
+{
+    AcGeLineSeg2d outseg;
+    bool flag = ::clipLineSeg2d(outseg, *seg.impObj(), *impObj());
+    return boost::python::make_tuple(flag, PyGeLineSeg2d(outseg));
+}
+
+boost::python::tuple PyGeBoundBlock2d::clipCircArc2d(const PyGeCircArc2d& seg) const
+{
+    AcArray<AcGeCircArc2d> outsegs;
+    bool flag = ::clipCircArc2d(outsegs, *seg.impObj(), *impObj());
+    boost::python::list _pylist;
+    for (const auto outseg : outsegs)
+        _pylist.append(PyGeCircArc2d(outseg));
+    return boost::python::make_tuple(flag, _pylist);
 }
 
 PyGeBoundBlock2d PyGeBoundBlock2d::cast(const PyGeEntity2d& src)
@@ -168,4 +186,3 @@ AcGeBoundBlock2d* PyGeBoundBlock2d::impObj(const std::source_location& src /*= s
     }
     return static_cast<AcGeBoundBlock2d*>(m_imp.get());
 }
-#endif

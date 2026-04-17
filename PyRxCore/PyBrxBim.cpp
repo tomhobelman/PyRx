@@ -12,7 +12,7 @@
 
 using namespace boost::python;
 
-BOOST_PYTHON_MODULE(PyBrxBim)
+static BOOST_PYTHON_MODULE(PyBrxBim)
 {
     docstring_options local_docstring_options(py_show_user_defined, py_show_py_signatures, py_show_cpp_signatures);
 
@@ -32,7 +32,6 @@ BOOST_PYTHON_MODULE(PyBrxBim)
     makePyIfcHeaderWrapper();
     makePyIfcModelWrapper();
     makePyIfcVariantWrapper();
-    makePyBrxBimIfcImportInfoWrapper();
 
     makePyBrxBimPoliciesWrapper();
     makePyBrxBimObjectWrapper();
@@ -56,8 +55,16 @@ BOOST_PYTHON_MODULE(PyBrxBim)
     makePyBrxBimDialogsWrapper();
 
     makePyBrxIfcImportOptionsWrapper();
+    makePyBrxBimIfcImportInfoWrapper();
     makePyBrxBimIfcImportContextWrapper();
     makePyBimIfcImportReactorWrapper();
+
+    makePyBimIfcProjectDataWrapper();
+    makePyBrxIfcExportOptionsWrapper();
+    makePyBrxBimIfcExportContextWrapper();
+    makePyBimIfcExportReactorWrapper();
+
+
 
     enum_<BimApi::EIfcImportModelOrigin>("IfcImportModelOrigin")
         .value("eIfcGlobalOrigin", BimApi::eIfcGlobalOrigin)
@@ -202,6 +209,7 @@ BOOST_PYTHON_MODULE(PyBrxBim)
         .value("eNoAttributeSet", BimApi::ResultStatus::eNoAttributeSet)
         .export_values()
         ;
+
     enum_<Ice::IfcApi::Result>("IfcResult")
         .value("eOk", Ice::IfcApi::Result::eOk)
         .value("eNotInitialized", Ice::IfcApi::Result::eNotInitialized)
@@ -210,6 +218,7 @@ BOOST_PYTHON_MODULE(PyBrxBim)
         .value("eInternalError", Ice::IfcApi::Result::eInternalError)
         .export_values()
         ;
+
     enum_<Ice::IfcApi::ValueType>("IfcValueType")
         .value("eBool", Ice::IfcApi::ValueType::eBool)
         .value("eInt", Ice::IfcApi::ValueType::eInt)
@@ -226,6 +235,7 @@ BOOST_PYTHON_MODULE(PyBrxBim)
         .value("eEmpty", Ice::IfcApi::ValueType::eEmpty)
         .export_values()
         ;
+
     enum_<Ice::EIfcSchemaId>("IfcSchemaId")
         .value("eIFC2X3", Ice::EIfcSchemaId::eIFC2X3)
         .value("eIFC4", Ice::EIfcSchemaId::eIFC4)
@@ -252,6 +262,29 @@ BOOST_PYTHON_MODULE(PyBrxBim)
         .value("eFootprint", EBimSpaceRepresentation::eFootprint)
         .export_values()
         ;
+
+
+    enum_<BimApi::BrxIfcExportOptions::EModelViewDefType>("IfcModelViewDefType")
+        .value("eNotSet", BimApi::BrxIfcExportOptions::EModelViewDefType::eNotSet)
+        .value("eReference", BimApi::BrxIfcExportOptions::EModelViewDefType::eReference)
+        .value("eDesignTransfer", BimApi::BrxIfcExportOptions::EModelViewDefType::eDesignTransfer)
+        .export_values()
+        ;
+
+#if defined(_BRXTARGET) && (_BRXTARGET >= 250)
+    enum_<BimApi::BrxIfcExportOptions::EOptionFlags>("IfcExportOptionFlags")
+        .value("eBaseQuantities", BimApi::BrxIfcExportOptions::EOptionFlags::eBaseQuantities)
+        .value("eIncludeFrozenHidden", BimApi::BrxIfcExportOptions::EOptionFlags::eIncludeFrozenHidden)
+        .value("eExplodeXrefs", BimApi::BrxIfcExportOptions::EOptionFlags::eExplodeXrefs)
+        .value("eAggregateMultiPly", BimApi::BrxIfcExportOptions::EOptionFlags::eAggregateMultiPly)
+        .value("eMergeGuidForBlocks", BimApi::BrxIfcExportOptions::EOptionFlags::eMergeGuidForBlocks)
+        .value("eMergeGuidForXrefs", BimApi::BrxIfcExportOptions::EOptionFlags::eMergeGuidForXrefs)
+        .value("eTesselateBSplines", BimApi::BrxIfcExportOptions::EOptionFlags::eTesselateBSplines)
+        .value("eSweptSolidsAsBRep", BimApi::BrxIfcExportOptions::EOptionFlags::eSweptSolidsAsBRep)
+        .value("eProfileCenterOfGravity", BimApi::BrxIfcExportOptions::EOptionFlags::eProfileCenterOfGravity)
+        .export_values()
+        ;
+#endif
 }
 
 void initPyBrxBimModule()

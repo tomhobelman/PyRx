@@ -73,7 +73,7 @@ void makePyGePointOnCurve2dWrapper()
     class_<PyGePointOnCurve2d, bases<PyGePointEnt2d>>("PointOnCurve2d")
         .def(init<>())
         .def(init<const PyGeCurve2d&>())
-        .def(init<const PyGeCurve2d&, double>(DS.CTOR(ctor)))
+        .def(init<const PyGeCurve2d&, double>(DS.CTOR(ctor, 12611)))
         .def("curve", &PyGePointOnCurve2d::curve, DS.ARGS())
         .def("parameter", &PyGePointOnCurve2d::parameter, DS.ARGS())
         .def("point", &PyGePointOnCurve2d::point1)
@@ -133,18 +133,18 @@ AcGePoint2d PyGePointOnCurve2d::point1() const
     return impObj()->point();
 }
 
-AcGePoint2d PyGePointOnCurve2d::point2(double param)
+AcGePoint2d PyGePointOnCurve2d::point2(double param) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->point(param);
 #endif
 }
 
-AcGePoint2d PyGePointOnCurve2d::point3(const PyGeCurve2d& crv, double param)
+AcGePoint2d PyGePointOnCurve2d::point3(const PyGeCurve2d& crv, double param) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     return impObj()->point(*crv.impObj(), param);
@@ -156,12 +156,12 @@ AcGeVector2d PyGePointOnCurve2d::deriv1(int order) const
     return impObj()->deriv(order);
 }
 
-AcGeVector2d PyGePointOnCurve2d::deriv2(int order, double param)
+AcGeVector2d PyGePointOnCurve2d::deriv2(int order, double param) const
 {
     return impObj()->deriv(order, param);
 }
 
-AcGeVector2d PyGePointOnCurve2d::deriv3(int order, const PyGeCurve2d& crv, double param)
+AcGeVector2d PyGePointOnCurve2d::deriv3(int order, const PyGeCurve2d& crv, double param) const
 {
     return impObj()->deriv(order, *crv.impObj(), param);
 }
@@ -212,12 +212,12 @@ boost::python::tuple PyGePointOnCurve2d::curvature(double param)
 }
 #endif
 
-void PyGePointOnCurve2d::setCurve(const PyGeCurve2d& crv)
+void PyGePointOnCurve2d::setCurve(const PyGeCurve2d& crv) const
 {
     impObj()->setCurve(*crv.impObj());
 }
 
-void PyGePointOnCurve2d::setParameter(double param)
+void PyGePointOnCurve2d::setParameter(double param) const
 {
     impObj()->setParameter(param);
 }
@@ -262,7 +262,7 @@ void makePyGePosition2dWrapper()
     class_<PyGePosition2d, bases<PyGePointEnt2d>>("Position2d")
         .def(init<>())
         .def(init<const AcGePoint2d&>())
-        .def(init<double, double>(DS.CTOR(ctor)))
+        .def(init<double, double>(DS.CTOR(ctor, 12659)))
         .def("set", &PyGePosition2d::set1)
         .def("set", &PyGePosition2d::set2, DS.OVRL(setOverloads))
         .def("cast", &PyGePosition2d::cast, DS.SARGS({ "otherObject: PyGe.Entity2d" })).staticmethod("cast")
@@ -291,25 +291,25 @@ PyGePosition2d::PyGePosition2d(double x, double y)
 {
 }
 
-#if !defined(_BRXTARGET250)
+#if !defined(_BRXTARGET260)
 PyGePosition2d::PyGePosition2d(const AcGePosition2d& pos)
     : PyGePointEnt2d(new AcGePosition2d(pos))
 {
 }
 #endif
 
-void PyGePosition2d::set1(const AcGePoint2d& pnt)
+void PyGePosition2d::set1(const AcGePoint2d& pnt) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(pnt);
 #endif
 }
 
-void PyGePosition2d::set2(double x, double y)
+void PyGePosition2d::set2(double x, double y) const
 {
-#if defined(_BRXTARGET250)
+#if defined(_BRXTARGET260)
     throw PyNotimplementedByHost();
 #else
     impObj()->set(x, y);

@@ -3,9 +3,36 @@
 #include "PyAcEditor.h"
 #include "PyDbTransactionManager.h"
 #include "PyEdInput.h"
+#include "PyApDocManager.h"
+#include "PyAcadApplication.h"
 
 using namespace boost::python;
 
+class wxDocWin : public wxWindow
+{
+public:
+    explicit wxDocWin(HWND hwnd)
+    {
+        this->SetHWND(hwnd);
+        this->SetParent(wxTheApp->GetMainTopWindow());
+        this->AdoptAttributesFromHWND();
+    }
+};
+
+static PyAcadDocument findDoc(const PyApDocument& ndoc)
+{
+    //TODO: maybe a better way than search?
+    const auto app = PyAcadApplication{};
+    const auto& docs = app.documents();
+    size_t ndocs = docs.count();
+    for (size_t idx = 0; idx < ndocs; idx++)
+    {
+        auto acdoc = docs.item(idx);
+        if (acdoc.modelSpace().objectId() == ndoc.database().modelSpaceId())
+            return acdoc;
+    }
+    throw PyErrorStatusException(eNoDocument);
+}
 
 //-----------------------------------------------------------------------------------------
 //PyApDocument Wrapper
@@ -34,7 +61,10 @@ void makePyApDocumentWrapper()
         .def("inputPointManager", &PyApDocument::inputPointManager, DS.ARGS(151))
         .def("getUserData", &PyApDocument::getUserData, DS.ARGS())
         .def("setUserData", &PyApDocument::setUserData, DS.ARGS({ "data : object" }))
+        .def("autoLock", &PyApDocument::autoLock, DS.ARGS(120))
+        .def("acadDocument", &PyApDocument::acadDocument, DS.ARGS())
         //static
+        .def("getWxWindow", &PyApDocument::getWxWindow, DS.SARGS()).staticmethod("getWxWindow")
         .def("docWnd", &PyApDocument::docWnd, DS.SARGS()).staticmethod("docWnd")
         .def("className", &PyApDocument::className, DS.SARGS()).staticmethod("className")
         ;
@@ -79,6 +109,11 @@ void makePyApDocumentWrapper()
 
 //-----------------------------------------------------------------------------------------
 //PyApDocument
+PyApDocument::PyApDocument(const AcApDocument* ptr)
+: PyApDocument(const_cast<AcApDocument*>(ptr),false)
+{
+}
+
 PyApDocument::PyApDocument(AcApDocument* ptr, bool autoDelete)
     : PyRxObject(ptr, autoDelete, false)
 {
@@ -121,10 +156,7 @@ bool PyApDocument::isQuiescent() const
 
 std::string PyApDocument::docTitle() const
 {
-    const TCHAR* title = impObj()->docTitle();
-    if (title != nullptr)
-        return wstr_to_utf8(title);
-    return std::string{};
+    return wstr_to_utf8(impObj()->docTitle());
 }
 
 void PyApDocument::setDocTitle(const std::string& title) const
@@ -191,9 +223,29 @@ boost::python::object PyApDocument::getUserData()
     return DocVars.docData().m_userdata;
 }
 
+PyObject* PyApDocument::getWxWindow()
+{
+    //TODO: that may cause shutdown issues
+    PyAutoLockGIL lock;
+    static wxDocWin* win = nullptr;//oof
+    if (win == nullptr)
+        win = new wxDocWin(adsw_acadDocWnd());
+    return wxPyConstructObject(win, wxT("wxWindow"), false);
+}
+
 void PyApDocument::setUserData(const boost::python::object& data)
 {
     DocVars.docData().m_userdata = data;
+}
+
+PyAutoDocLock PyApDocument::autoLock() const
+{
+    return PyAutoDocLock(*this);
+}
+
+PyAcadDocument PyApDocument::acadDocument() const
+{
+   return  findDoc(*this);
 }
 
 UINT_PTR PyApDocument::docWnd()
